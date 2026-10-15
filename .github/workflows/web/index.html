@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1f3a5f">
+  <title>Absensi CW Pagi</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Absensi CW Pagi</h1>
+    <p class="sub">Satlantas Polresta Banyuwangi</p>
+  </header>
+
+  <section id="login" class="card" hidden>
+    <label for="pin">PIN akses</label>
+    <input id="pin" type="password" inputmode="numeric" autocomplete="off">
+    <button id="btnLogin" class="primary">Masuk</button>
+    <p id="loginMsg" class="msg"></p>
+  </section>
+
+  <main id="app" hidden>
+    <section class="card toolbar">
+      <div>
+        <label for="day">Tanggal</label>
+        <select id="day"></select>
+        <span id="periode"></span>
+      </div>
+      <div class="actions">
+        <button id="btnAllH">Semua Hadir (yang kosong)</button>
+        <button id="btnReload">Muat ulang</button>
+      </div>
+    </section>
+
+    <section class="card stats" id="stats"></section>
+
+    <section id="list"></section>
+
+    <section class="card">
+      <h2>Teks WhatsApp</h2>
+      <textarea id="waText" rows="12" readonly></textarea>
+      <div class="actions">
+        <button id="btnCopy">Salin</button>
+        <a id="btnWa" class="button" target="_blank" rel="noopener">Kirim ke WhatsApp</a>
+      </div>
+    </section>
+  </main>
+
+  <footer id="saveBar" hidden>
+    <span id="dirtyInfo"></span>
+    <button id="btnSave" class="primary">Simpan ke Spreadsheet</button>
+  </footer>
+
+  <div id="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
