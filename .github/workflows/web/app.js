@@ -140,6 +140,7 @@
       '<div class="top"><span class="no">' + esc(r.no) + '</span><div>' +
       '<div class="name">' + esc(r.petugas) + (r.jml > 1 ? ' (' + r.jml + ' pers)' : '') + '</div>' +
       '<div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.jam) + '</div>' +
+      (st ? '' : '<div style="color:var(--belum);font-weight:600;font-size:.8rem">BELUM LAPOR</div>') +
       (note ? '<div class="note">' + esc(note) + '</div>' : '') +
       '</div></div>';
     const codes = document.createElement('div');
@@ -172,7 +173,7 @@
       'Hadir : ' + (s.H || 0) + ' (' + s.persen.toFixed(1).replace('.', ',') + '%)'
     ];
     data.codes.forEach((c) => { if (c.code !== 'H' && s[c.code]) lines.push(c.label + ' : ' + s[c.code]); });
-    if (s.belum) lines.push('Belum lapor : ' + s.belum);
+    if (s.belum) lines.push(WA_MARK[''] + ' *Belum lapor : ' + s.belum + '*');
 
     const groups = {};
     data.rows.forEach((r) => { (groups[r.wilayah || '-'] = groups[r.wilayah || '-'] || []).push(r); });
@@ -180,13 +181,19 @@
       lines.push('', '*' + w.toUpperCase() + '*');
       groups[w].forEach((r) => {
         const st = statusOf(r);
-        const label = (data.codes.find((c) => c.code === st) || {}).label || 'BELUM LAPOR';
         const note = data.catatan[String(r.no)];
-        lines.push(r.no + '. ' + r.lokasi + ' – ' + r.petugas + ' : ' + label + (note ? ' (' + note + ')' : ''));
+        const code = data.codes.find((c) => c.code === st);
+        // WhatsApp tidak mendukung teks berwarna; belum lapor ditandai 🔴 + huruf tebal
+        const label = code ? code.label : '*BELUM LAPOR*';
+        const mark = WA_MARK[code ? st : ''] || '⚪';
+        lines.push(mark + ' ' + r.no + '. ' + r.lokasi + ' – ' + r.petugas + ' : ' + label + (note ? ' (' + note + ')' : ''));
       });
     });
     return lines.join('\n');
   }
+
+  // Tanda warna per status, mengikuti warna di spreadsheet
+  const WA_MARK = { '': '🔴', H: '✅', LD: '🔵', D: '🔵', S: '🟡', I: '🟠', P: '🟣', N: '⚪' };
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
