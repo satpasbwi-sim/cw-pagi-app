@@ -4,15 +4,16 @@
   const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
   const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
     'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-  // Tanda warna per status di teks WhatsApp, mengikuti warna di spreadsheet
-  const WA_MARK = { '': '🔴', H: '✅', LD: '🔵', D: '🔷', S: '🟡', I: '🟠', P: '🟣', N: '⚪' };
-  const RING = 2 * Math.PI * 50;
+  // Ditekan "Tidak" tapi alasan (kode S/I/LD/…) belum dipilih — belum boleh disimpan
+  const PENDING = '?';
 
   let pin = load('cw_pin');
   let data = null;          // respons terakhir dari API
   let edits = {};           // row -> kode yang belum disimpan
-  let filter = 'all';
-  let query = '';
+  let noteEdits = {};       // no plotting -> catatan yang belum disimpan
+  const openNote = {};      // no plotting -> kolom catatan dibuka manual
+  const closed = {};        // simpul yang dilipat
+  let showNeed = false;     // tandai merah baris "Tidak" tanpa alasan setelah Simpan ditekan
 
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
@@ -22,7 +23,7 @@
     t.textContent = msg;
     t.hidden = false;
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(() => { t.hidden = true; }, 2500);
+    toast.timer = setTimeout(() => { t.hidden = true; }, 2800);
   }
 
   async function fetchData(day) {
@@ -31,9 +32,24 @@
     return res.json();
   }
 
+  function dirtyCount() { return Object.keys(edits).length + Object.keys(noteEdits).length; }
+  function pendingRows() { return data.rows.filter((r) => edits[r.row] === PENDING); }
+
   async function saveData() {
+    const pend = pendingRows();
+    if (pend.length) {
+      // buka simpul yang dilipat agar baris yang belum lengkap terlihat
+      pend.forEach((r) => { delete closed[r.wilayah || '-']; });
+      showNeed = true;
+      render();
+      toast('Ketuk alasan (Sakit / Izin / …) untuk ' + pend.map((r) => r.petugas).join(', '));
+      const el = document.querySelector('.person[data-row="' + pend[0].row + '"]');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     const updates = Object.keys(edits).map((row) => ({ row: Number(row), code: edits[row] }));
-    if (!updates.length) return;
+    const notes = Object.keys(noteEdits).map((no) => ({ no, note: noteEdits[no] }));
+    if (!updates.length && !notes.length) return;
     $('btnSave').disabled = true;
     $('btnSave').textContent = 'Menyimpan…';
     try {
@@ -41,11 +57,15 @@
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ pin, day: data.day, updates })
+        body: JSON.stringify({ pin, day: data.day, updates, notes })
       });
       const out = await res.json();
       if (out.error) throw new Error(out.error);
-      toast('✓ ' + out.saved + ' data tersimpan');
+      if (notes.length && out.notes === undefined) {
+        toast('Status tersimpan, tetapi catatan belum — Code.gs perlu diperbarui');
+      } else {
+        toast('✓ Laporan tersimpan');
+      }
       await reload(data.day);
     } catch (err) {
       toast('Gagal menyimpan: ' + err.message);
@@ -65,6 +85,8 @@
       }
       data = d;
       edits = {};
+      noteEdits = {};
+      showNeed = false;
       render();
     } catch (err) {
       toast('Gagal memuat: ' + err.message);
@@ -74,9 +96,16 @@
   }
 
   function statusOf(r) { return edits[r.row] !== undefined ? edits[r.row] : r.status; }
-  function codeOf(st) { return data.codes.find((c) => c.code === st); }
-  function color(st) { return st && codeOf(st) ? 'var(--' + st + ', var(--N))' : 'var(--belum)'; }
-  function pct(n) { return n.toFixed(1).replace('.', ',') + '%'; }
+  function savedNote(r) { return data.catatan[String(r.no)] || ''; }
+  function noteOf(r) { return noteEdits[r.no] !== undefined ? noteEdits[r.no] : savedNote(r); }
+  // H = hadir, T = tidak hadir (kode apa pun selain H), K = belum diisi
+  function kind(st) { return !st ? 'K' : st === 'H' ? 'H' : 'T'; }
+  function reasons() { return data.codes.filter((c) => c.code !== 'H'); }
+  function labelOf(st) {
+    if (st === PENDING) return 'Tidak hadir';
+    const c = data.codes.find((x) => x.code === st);
+    return c ? c.label : st;
+  }
 
   function monthIndex() {
     const i = BULAN.findIndex((b) => b.toLowerCase() === String(data.bulan).toLowerCase());
@@ -88,16 +117,16 @@
     return HARI[dt.getDay()] + ', ' + data.day + ' ' + BULAN[monthIndex()] + ' ' + data.tahun;
   }
 
-  function summarize(rows) {
-    const s = { total: 0, titik: rows.length, belum: 0 };
-    data.codes.forEach((c) => { s[c.code] = 0; });
+  // dihitung per personil (kolom JML PERS), sama dengan rekap di spreadsheet
+  function count(rows) {
+    const c = { H: 0, T: 0, K: 0, total: 0, alasan: {} };
     rows.forEach((r) => {
-      const st = statusOf(r);
-      s.total += r.jml;
-      if (st && s[st] !== undefined) s[st] += r.jml; else s.belum += r.jml;
+      const st = statusOf(r), k = kind(st);
+      c[k] += r.jml;
+      c.total += r.jml;
+      if (k === 'T') c.alasan[labelOf(st)] = (c.alasan[labelOf(st)] || 0) + r.jml;
     });
-    s.persen = s.total ? (100 * (s.H || 0) / s.total) : 0;
-    return s;
+    return c;
   }
 
   function groups() {
@@ -112,159 +141,164 @@
     sel.innerHTML = '';
     for (let d = 1; d <= data.lastDay; d++) {
       const o = document.createElement('option');
-      o.value = d; o.textContent = d + ' ' + BULAN[monthIndex()].slice(0, 3);
+      o.value = d; o.textContent = d + ' ' + BULAN[monthIndex()];
       if (d === data.day) o.selected = true;
       sel.appendChild(o);
     }
     $('prevDay').disabled = data.day <= 1;
     $('nextDay').disabled = data.day >= data.lastDay;
-    $('todayLabel').textContent = dateLabel();
+    $('dateLabel').textContent = dateLabel() + ' ▾';
 
-    // ringkasan + cincin persentase
-    const s = summarize(data.rows);
-    $('pctText').textContent = pct(s.persen);
-    const ring = $('ringFg');
-    ring.style.strokeDashoffset = RING * (1 - s.persen / 100);
-    ring.style.stroke = s.persen >= 90 ? 'var(--H)' : s.persen >= 60 ? 'var(--S)' : 'var(--belum)';
-    const stat = (v, l, cls) => '<div class="stat ' + (cls || '') + '"><b>' + v + '</b><span>' + l + '</span></div>';
-    $('stats').innerHTML =
-      stat(s.H || 0, 'Hadir', 'hadir') + stat(s.belum, 'Belum lapor', 'belum') +
-      stat(s.total, 'Total personil') + stat(s.titik, 'Titik plotting');
+    const c = count(data.rows);
+    $('sumH').textContent = c.H;
+    $('sumT').textContent = c.T;
+    $('sumK').textContent = c.K;
+    $('progress').textContent = (c.total - c.K) + '/' + c.total + ' personil terisi';
 
-    // progres per simpul (batang bertumpuk per status)
+    renderSimpul();
+    renderSaveBar();
+    renderWa();
+  }
+
+  function renderSimpul() {
     const g = groups();
-    $('simpul').innerHTML = Object.keys(g).map((w) => {
-      const ws = summarize(g[w]);
-      const seg = data.codes.map((c) => ws[c.code]
-        ? '<i style="width:' + (100 * ws[c.code] / ws.total) + '%;background:var(--' + c.code + ')" title="' + esc(c.label) + '"></i>' : '').join('');
-      return '<div class="simpul-row"><div class="top"><b>' + esc(w) + '</b><span>' +
-        (ws.H || 0) + '/' + ws.total + ' hadir · ' + pct(ws.persen) + '</span></div>' +
-        '<div class="bar">' + seg + '</div></div>';
-    }).join('') +
-      '<div class="legend">' + legendItems().map((l) =>
-        '<span><i style="background:' + color(l.code) + '"></i>' + l.mark + ' ' +
-        (l.code ? '<b>' + esc(l.code) + '</b> ' : '') + esc(l.label) + '</span>').join('') + '</div>';
+    const keys = Object.keys(g);
+    if (!keys.length) {
+      $('simpulList').innerHTML = '<p class="empty">Belum ada data plotting.</p>';
+      return;
+    }
+    $('simpulList').innerHTML = keys.map((w) => {
+      const rows = g[w], s = count(rows);
+      const pct = (n) => (s.total ? 100 * n / s.total : 0) + '%';
+      return '<section class="card simpul' + (closed[w] ? ' closed' : '') + '" data-w="' + esc(w) + '">' +
+        '<div class="simpul-head" data-act="toggle"><h2>' + esc(w) + '</h2>' +
+          '<span class="count">' + s.H + ' hadir · ' + s.T + ' tidak' + (s.K ? ' · ' + s.K + ' kosong' : '') + '</span>' +
+          '<span class="chev">▾</span></div>' +
+        '<div class="bar"><i style="width:' + pct(s.H) + ';background:var(--hadir)"></i>' +
+          '<i style="width:' + pct(s.T) + ';background:var(--th)"></i></div>' +
+        '<div class="body">' +
+          '<div class="simpul-tools"><span class="count">' + s.total + ' personil · ' + rows.length + ' titik</span>' +
+            (s.K ? '<button class="link" data-act="allH">✓ Sisanya hadir</button>' : '') + '</div>' +
+          rows.map(person).join('') +
+        '</div></section>';
+    }).join('');
+  }
 
-    renderList(g);
+  function person(r) {
+    const st = statusOf(r), k = kind(st), note = noteOf(r);
+    const dirty = edits[r.row] !== undefined || noteEdits[r.no] !== undefined;
+    const showNote = k === 'T' || note || openNote[r.no];
+    const chips = k === 'T'
+      ? (st === PENDING ? '<p class="need-msg">Wajib: ketuk salah satu alasan di bawah ini</p>' : '') +
+        '<div class="chips' + (st === PENDING ? ' need' : '') + '">' + reasons().map((c) =>
+          '<button data-act="code" data-v="' + esc(c.code) + '"' + (st === c.code ? ' class="on"' : '') + '>' +
+          esc(c.label) + '</button>').join('') + '</div>'
+      : '';
+    return '<div class="person' + (dirty ? ' dirty' : '') + (showNeed && st === PENDING ? ' need' : '') +
+      '" data-row="' + r.row + '">' +
+      '<div class="line"><div class="info">' +
+        '<div class="name">' + esc(r.no) + '. ' + esc(r.petugas) + (r.jml > 1 ? ' · ' + r.jml + ' pers' : '') + '</div>' +
+        '<div class="loc">' + esc(r.lokasi) + (r.jam ? ' · ' + esc(r.jam) : '') + '</div></div>' +
+        '<div class="seg"><button class="h' + (k === 'H' ? ' on' : '') + '" data-act="H">Hadir</button>' +
+        '<button class="t' + (k === 'T' ? ' on' : '') + '" data-act="T">Tidak</button></div></div>' +
+      (showNote
+        ? '<div class="note">' + chips +
+            '<input data-act="note" maxlength="300" value="' + esc(note) + '" placeholder="' +
+              (k === 'T' ? 'Catatan / pengganti (opsional)…' : 'Catatan (opsional)…') + '">' +
+          '</div>'
+        : '<button class="add-note" data-act="addNote">+ catatan</button>') +
+    '</div>';
+  }
 
-    const n = Object.keys(edits).length;
+  function renderSaveBar() {
+    const n = dirtyCount();
     $('saveBar').hidden = n === 0;
-    $('dirtyInfo').textContent = n + ' perubahan belum disimpan';
-
-    $('waText').value = waText(s, g);
-    $('btnWa').href = 'https://wa.me/?text=' + encodeURIComponent($('waText').value);
+    const pend = pendingRows().length;
+    $('saveInfo').textContent = pend
+      ? pend + ' personil belum dipilih alasannya'
+      : n + ' perubahan belum disimpan';
   }
 
-  function renderList(g) {
-    const list = $('list');
-    list.innerHTML = '';
-    const q = query.toLowerCase();
-    let shown = 0;
+  function renderWa() {
+    const txt = waText();
+    $('waText').value = txt;
+    $('btnWa').href = 'https://wa.me/?text=' + encodeURIComponent(txt);
+  }
+
+  function waText() {
+    const ringkas = $('onlyTH').checked;
+    const c = count(data.rows);
+    const alasan = Object.keys(c.alasan).map((a) => a + ' ' + c.alasan[a]).join(', ');
+    const L = [
+      '*LAPORAN PENGATURAN PAGI*',
+      '*SATLANTAS POLRESTA BANYUWANGI*',
+      dateLabel(),
+      '',
+      'Hadir : ' + c.H + ' dari ' + c.total + ' personil',
+      'Tidak hadir : ' + c.T + (alasan ? ' (' + alasan + ')' : '')
+    ];
+    if (c.K) L.push('⚪ *Belum lapor : ' + c.K + '*');
+
+    const g = groups();
     Object.keys(g).forEach((w) => {
-      const rows = g[w].filter((r) => {
-        const st = statusOf(r);
-        if (filter === 'belum' && st) return false;
-        if (filter === 'sudah' && !st) return false;
-        return !q || (r.petugas + ' ' + r.lokasi).toLowerCase().includes(q);
+      const rows = g[w], s = count(rows);
+      L.push('', '*' + w.toUpperCase() + '* (' + s.H + '/' + s.total + ' hadir)');
+      let tulis = 0;
+      rows.forEach((r) => {
+        const st = statusOf(r), k = kind(st), note = noteOf(r);
+        if (ringkas && k === 'H' && !note) return;
+        const mark = k === 'H' ? '✅' : k === 'T' ? '❌' : '⚪';
+        const ket = k === 'T' ? ' : ' + labelOf(st) : k === 'K' ? ' : *belum lapor*' : '';
+        L.push(mark + ' ' + r.no + '. ' + r.petugas + ' – ' + r.lokasi + ket + (note ? ' _(' + note + ')_' : ''));
+        tulis++;
       });
-      if (!rows.length) return;
-      const ws = summarize(g[w]);
-      const head = document.createElement('div');
-      head.className = 'group-title';
-      head.innerHTML = '<h3>' + esc(w) + '</h3><span>' + ws.belum + ' belum lapor</span>';
-      list.appendChild(head);
-      rows.forEach((r) => list.appendChild(renderItem(r)));
-      shown += rows.length;
+      if (ringkas && !tulis) L.push('✅ Semua hadir');
     });
-    if (!shown) list.innerHTML = '<p class="empty">' +
-      (filter === 'belum' ? '🎉 Semua petugas sudah lapor.' : 'Tidak ada data yang cocok.') + '</p>';
+    return L.join('\n');
   }
 
-  function initials(name) {
-    const parts = String(name).replace(/^(Aiptu|Aipda|Bripka|Brigpol|Briptu|Bripda|Ipda|Iptu|AKP)\s+/i, '')
-      .split(/\s+/).filter((p) => /[a-z]/i.test(p));
-    return ((parts[0] || '?')[0] + ((parts[1] || '')[0] || '')).toUpperCase();
-  }
-
-  function renderItem(r) {
-    const st = statusOf(r);
-    const code = codeOf(st);
-    const el = document.createElement('div');
-    el.className = 'item' + (code ? '' : ' is-belum') + (edits[r.row] !== undefined ? ' dirty' : '');
-    el.style.setProperty('--accent', color(st));
-    const note = data.catatan[String(r.no)];
-    el.innerHTML =
-      '<div class="row">' +
-        '<div class="avatar">' + esc(initials(r.petugas)) + '</div>' +
-        '<div class="info">' +
-          '<div class="name">' + esc(r.petugas) + (r.jml > 1 ? ' · ' + r.jml + ' pers' : '') + '</div>' +
-          '<div class="loc">#' + esc(r.no) + ' · ' + esc(r.lokasi) + ' · ' + esc(r.jam) + '</div>' +
-          (note ? '<div class="note">📝 ' + esc(note) + '</div>' : '') +
-        '</div>' +
-        (code ? '<span class="pill">' + esc(code.label) + '</span>' : '<span class="pill belum">BELUM LAPOR</span>') +
-      '</div>';
-    const codes = document.createElement('div');
-    codes.className = 'codes';
-    data.codes.forEach((c) => {
-      const b = document.createElement('button');
-      b.textContent = c.code;
-      b.title = c.label;
-      b.style.setProperty('--c', 'var(--' + c.code + ', var(--N))');
-      if (st === c.code) b.className = 'on';
-      b.onclick = () => setStatus(r, st === c.code ? '' : c.code);
-      codes.appendChild(b);
-    });
-    el.appendChild(codes);
-    return el;
+  function rowByEl(el) {
+    const pe = el.closest('.person');
+    return pe && data.rows.find((r) => r.row === Number(pe.dataset.row));
   }
 
   function setStatus(r, code) {
     if (code === r.status) delete edits[r.row]; else edits[r.row] = code;
+  }
+
+  function setNote(r, text) {
+    if (text === savedNote(r)) delete noteEdits[r.no]; else noteEdits[r.no] = text;
+  }
+
+  $('simpulList').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-act]');
+    if (!el || el.dataset.act === 'note') return;
+    const act = el.dataset.act;
+    const w = el.closest('.simpul').dataset.w;
+    const r = rowByEl(el);
+    if (act === 'toggle') closed[w] = !closed[w];
+    if (act === 'allH') groups()[w].forEach((x) => { if (!statusOf(x)) setStatus(x, 'H'); });
+    if (act === 'H') setStatus(r, statusOf(r) === 'H' ? '' : 'H');
+    if (act === 'T') setStatus(r, kind(statusOf(r)) === 'T' ? '' : PENDING);
+    if (act === 'code') setStatus(r, el.dataset.v);
+    if (act === 'addNote') openNote[r.no] = true;
     const y = window.scrollY;
     render();
     window.scrollTo(0, y);
-  }
-
-  function waText(s, g) {
-    const lines = [
-      '*ABSENSI PENGATURAN PAGI (CW PAGI)*',
-      '*SATLANTAS POLRESTA BANYUWANGI*',
-      dateLabel(),
-      '',
-      'Titik plotting : ' + s.titik,
-      'Total personil : ' + s.total,
-      mark('H') + ' Hadir : ' + (s.H || 0) + ' (' + pct(s.persen) + ')'
-    ];
-    data.codes.forEach((c) => { if (c.code !== 'H' && s[c.code]) lines.push(mark(c.code) + ' ' + c.label + ' : ' + s[c.code]); });
-    if (s.belum) lines.push(WA_MARK[''] + ' *Belum lapor : ' + s.belum + '*');
-    lines.push('', '_Keterangan:_', legendItems().map((l) => l.mark + ' ' + l.label).join(' · '));
-
-    Object.keys(g).forEach((w) => {
-      lines.push('', '*' + w.toUpperCase() + '*');
-      g[w].forEach((r) => {
-        const st = statusOf(r);
-        const note = data.catatan[String(r.no)];
-        const code = codeOf(st);
-        // WhatsApp tidak mendukung teks berwarna; belum lapor ditandai 🔴 + huruf tebal
-        const label = code ? code.label : '*BELUM LAPOR*';
-        lines.push(mark(code ? st : '') + ' ' + r.no + '. ' + r.lokasi + ' – ' + r.petugas + ' : ' + label + (note ? ' (' + note + ')' : ''));
-      });
-    });
-    return lines.join('\n');
-  }
-
-  function mark(code) { return WA_MARK[code] || '⚪'; }
-
-  // Daftar keterangan: semua kode status + belum lapor
-  function legendItems() {
-    return data.codes.map((c) => ({ code: c.code, label: c.label, mark: mark(c.code) }))
-      .concat([{ code: '', label: 'Belum lapor', mark: WA_MARK[''] }]);
-  }
-
-  function esc(s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
-      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-  }
+    if (act === 'addNote') {
+      const i = document.querySelector('.person[data-row="' + r.row + '"] input');
+      if (i) i.focus();
+    }
+  });
+  $('simpulList').addEventListener('input', (e) => {
+    if (e.target.dataset.act !== 'note') return;
+    const r = rowByEl(e.target);
+    setNote(r, e.target.value);
+    e.target.closest('.person').classList.toggle('dirty',
+      edits[r.row] !== undefined || noteEdits[r.no] !== undefined);
+    renderSaveBar();
+    renderWa();
+  });
 
   function showLogin(msg) {
     $('app').hidden = true;
@@ -274,7 +308,7 @@
   }
 
   function goDay(d) {
-    if (Object.keys(edits).length && !confirm('Perubahan belum disimpan akan hilang. Lanjut?')) {
+    if (dirtyCount() && !confirm('Perubahan belum disimpan akan hilang. Lanjut?')) {
       $('day').value = data.day;
       return;
     }
@@ -292,20 +326,10 @@
   $('day').onchange = (e) => goDay(Number(e.target.value));
   $('prevDay').onclick = () => goDay(data.day - 1);
   $('nextDay').onclick = () => goDay(data.day + 1);
-  $('btnReload').onclick = () => reload(data && data.day);
+  $('btnReload').onclick = () => goDay(data && data.day);
   $('btnSave').onclick = saveData;
-  $('btnAllH').onclick = () => {
-    data.rows.forEach((r) => { if (!statusOf(r)) edits[r.row] = 'H'; });
-    render();
-  };
-  $('search').oninput = (e) => { query = e.target.value; renderList(groups()); };
-  $('tabs').onclick = (e) => {
-    const b = e.target.closest('button');
-    if (!b) return;
-    filter = b.dataset.f;
-    [...$('tabs').children].forEach((x) => x.classList.toggle('on', x === b));
-    renderList(groups());
-  };
+  $('onlyTH').checked = load('cw_ringkas') === '1';
+  $('onlyTH').onchange = () => { store('cw_ringkas', $('onlyTH').checked ? '1' : ''); if (data) renderWa(); };
   $('btnCopy').onclick = async () => {
     try {
       await navigator.clipboard.writeText($('waText').value);
@@ -315,6 +339,12 @@
     }
     toast('✓ Teks disalin');
   };
+  window.addEventListener('beforeunload', (e) => { if (data && dirtyCount()) e.preventDefault(); });
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, (c) =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  }
 
   if (pin) { $('app').hidden = false; reload(); } else showLogin();
 })();
