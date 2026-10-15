@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f2341">
+  <title>Lapor Hadir CW Pagi</title>
+  <link rel="icon" type="image/png" href="../favicon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../style.css">
+  <style>
+    .proto { display: inline-block; margin-top: 10px; font-size: .7rem; font-weight: 700; letter-spacing: .06em;
+      background: var(--gold); color: var(--navy); padding: 3px 8px; border-radius: 999px; }
+    .mode { display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+      padding: 5px; margin-bottom: 14px; box-shadow: var(--shadow); }
+    .mode button { flex: 1; border: 0; background: none; border-radius: 10px; padding: 9px; font-weight: 700; cursor: pointer; color: var(--muted); }
+    .mode button.on { background: var(--navy); color: #fff; }
+    h2.t { margin: 0 0 4px; font-size: 1.05rem; }
+    .sub { margin: 0 0 12px; color: var(--muted); font-size: .85rem; }
+    .search { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
+    .pick { display: flex; width: 100%; text-align: left; gap: 10px; align-items: center; border: 0; border-top: 1px solid var(--line);
+      background: none; padding: 11px 2px; cursor: pointer; }
+    .pick b { display: block; font-size: .92rem; }
+    .pick span { font-size: .78rem; color: var(--muted); }
+    .pick .go { margin-left: auto; color: var(--muted); }
+    .grp { font-size: .75rem; font-weight: 800; letter-spacing: .05em; color: var(--muted); margin: 12px 0 2px; }
+    .who { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .who b { font-size: 1.05rem; }
+    .who .loc { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+    .step { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+    .step h3 { margin: 0 0 8px; font-size: .9rem; display: flex; justify-content: space-between; align-items: center; }
+    .step h3 small { font-weight: 600; color: var(--muted); font-size: .75rem; }
+    .gps { border-radius: 12px; padding: 10px 12px; font-size: .85rem; background: var(--bg); }
+    .gps.ok { background: var(--hadir-bg); color: var(--hadir); }
+    .gps.far { background: #fff4dc; color: #8a5a00; }
+    @media (prefers-color-scheme: dark) { .gps.far { background: #3a2e12; color: #f2c55c; } }
+    .gps b { display: block; font-size: .95rem; }
+    .gps a { color: inherit; }
+    .sim { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+    .sim button { font-size: .72rem; border: 1px dashed var(--line); background: none; border-radius: 8px; padding: 4px 8px; cursor: pointer; color: var(--muted); }
+    .photo-box { display: flex; gap: 10px; align-items: center; }
+    .photo-box img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+    .file-btn { position: relative; overflow: hidden; }
+    .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .note-in { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 10px; }
+    .big { width: 100%; margin-top: 14px; padding: 14px; font-size: 1rem; }
+    .big.h { background: var(--hadir); border-color: var(--hadir); color: #fff; }
+    .big.t { background: var(--th); border-color: var(--th); color: #fff; }
+    .switch { text-align: center; margin-top: 10px; }
+    .done { text-align: center; padding: 26px 16px; }
+    .done .ic { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 10px;
+      font-size: 2rem; background: var(--hadir-bg); color: var(--hadir); }
+    .done.t .ic { background: var(--th-bg); color: var(--th); }
+    .done img { max-width: 160px; border-radius: 12px; margin-top: 10px; }
+    .row-r { display: flex; gap: 10px; align-items: center; border-top: 1px solid var(--line); padding: 10px 0; }
+    .row-r .info { flex: 1; min-width: 0; }
+    .row-r .name { font-weight: 700; font-size: .9rem; }
+    .row-r .meta { font-size: .75rem; color: var(--muted); }
+    .row-r .meta a { color: var(--text); font-weight: 600; }
+    .row-r .thumb { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex: none; background: var(--bg); cursor: pointer; }
+    .row-r .thumb.none { display: grid; place-items: center; font-size: .65rem; color: var(--muted); cursor: default; }
+    .badge { display: inline-block; font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-left: 4px; }
+    .badge.ok { background: var(--hadir-bg); color: var(--hadir); }
+    .badge.far { background: #fff4dc; color: #8a5a00; }
+    .badge.th { background: var(--th-bg); color: var(--th); }
+    .badge.k { background: var(--bg); color: var(--muted); }
+    .viewer { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: grid; place-items: center; z-index: 30; padding: 16px; }
+    .viewer img { max-width: 100%; max-height: 90vh; border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="brand">
+        <img class="emblem" src="../logo.png" alt="Logo Lalu Lintas">
+        <div>
+          <h1>Lapor Hadir CW Pagi</h1>
+          <p>Satlantas Polresta Banyuwangi</p>
+        </div>
+      </div>
+      <span class="proto">PROTOTYPE · DATA CONTOH · TIDAK MASUK SPREADSHEET</span>
+    </div>
+  </header>
+
+  <section id="login" class="login" hidden>
+    <div class="card login-card">
+      <h2>Masuk</h2>
+      <p class="muted">Masukkan PIN bersama anggota.<br>(Prototype: PIN apa saja)</p>
+      <input id="pin" type="password" inputmode="numeric" autocomplete="off" placeholder="PIN akses">
+      <button id="btnLogin" class="btn primary block">Masuk</button>
+    </div>
+  </section>
+
+  <main id="app" hidden>
+    <div class="mode" id="mode">
+      <button data-m="lapor" class="on">Lapor Saya</button>
+      <button data-m="rekap">Rekap (Admin)</button>
+    </div>
+    <div id="view"></div>
+  </main>
+
+  <div id="viewer" class="viewer" hidden><img id="viewerImg" alt="Foto dokumentasi"></div>
+  <div id="toast" hidden></div>
+
+<script>
+(function () {
+  // ---------- Data contoh (versi final: dari sheet ABSENSI + kolom koordinat titik) ----------
+  const TITIK_DEKAT = 300; // meter
+  const PERSONIL = [
+    { row: 7, no: '1', petugas: 'Briptu Contoh Satu', lokasi: 'Depan Polresta', wilayah: 'Simpul Kota', lat: -8.2133, lng: 114.3676 },
+    { row: 8, no: '2', petugas: 'Briptu Contoh Dua', lokasi: 'Depan Polresta', wilayah: 'Simpul Kota', lat: -8.2133, lng: 114.3676 },
+    { row: 9, no: '3', petugas: 'Aipda Contoh Tiga', lokasi: 'Simp. 4 Mojopanggung', wilayah: 'Simpul Kota', lat: -8.2009, lng: 114.3604 },
+    { row: 10, no: '4', petugas: 'Brigpol Contoh Empat', lokasi: 'Simp. 4 Cungking', wilayah: 'Simpul Kota', lat: -8.2271, lng: 114.3549 },
+    { row: 11, no: '5', petugas: 'Aiptu Contoh Lima', lokasi: 'Simp. 3 Bakungan', wilayah: 'Simpul Kota', lat: -8.2425, lng: 114.3601 },
+    { row: 12, no: '6', petugas: 'Aipda Contoh Enam', lokasi: 'Simp. 3 Kantor Camat Cluring', wilayah: 'Simpul Selatan', lat: -8.4027, lng: 114.2387 },
+    { row: 13, no: '7', petugas: 'Brigpol Contoh Tujuh', lokasi: 'Simp. 3 Benculuk', wilayah: 'Simpul Selatan', lat: -8.4218, lng: 114.2117 },
+    { row: 14, no: '8', petugas: 'Bripka Contoh Delapan', lokasi: 'Depan Bank Jatim Genteng', wilayah: 'Simpul Selatan', lat: -8.3678, lng: 114.1522 }
+  ];
+  const ALASAN = [{ code: 'LD', label: 'Lepas Dinas' }, { code: 'D', label: 'Dinas' }, { code: 'S', label: 'Sakit' },
+    { code: 'I', label: 'Izin' }, { code: 'P', label: 'Pelayanan' }, { code: 'N', label: 'Nihil' }];
+
+  const $ = (id) => document.getElementById(id);
+  const HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+  const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  const today = new Date();
+  const todayKey = today.toISOString().slice(0, 10);
+  const dateLabel = HARI[today.getDay()] + ', ' + today.getDate() + ' ' + BULAN[today.getMonth()] + ' ' + today.getFullYear();
+
+  function load(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+  function store(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+  function toast(m) { const t = $('toast'); t.textContent = m; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2600); }
+  function jam(ts) { const d = new Date(ts); return String(d.getHours()).padStart(2, '0') + '.' + String(d.getMinutes()).padStart(2, '0'); }
+  function fmtJarak(m) { return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km'; }
+  function mapLink(lat, lng) { return 'https://maps.google.com/?q=' + lat.toFixed(6) + ',' + lng.toFixed(6); }
+
+  // jarak dua koordinat (meter), rumus haversine
+  function jarak(a, b) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  // laporan[no] = { st: 'H'|kode, ts, lat, lng, acc, dist, foto (dataURL), note }
+  let laporan = load('cw_lapor_' + todayKey, {});
+  let me = load('cw_lapor_me', null);           // no plotting yang dipilih di HP ini
+  let mode = 'lapor';
+  let draft = { lat: null, lng: null, acc: null, gpsMsg: '', foto: null, fotoKb: 0, note: '', tidak: false, alasan: '' };
+
+  function person(no) { return PERSONIL.find((p) => p.no === no); }
+
+  // ---------- Tampilan anggota ----------
+  function renderLapor() {
+    const p = me && person(me);
+    if (!p) return renderPilih();
+    const sudah = laporan[p.no];
+    if (sudah && !draft.ulang) return renderSelesai(p, sudah);
+    const d = draft.lat != null ? jarak(draft, p) : null;
+    const gpsCls = d == null ? '' : d <= TITIK_DEKAT ? 'ok' : 'far';
+    const gpsHtml = d == null
+      ? '<b>' + (draft.gpsMsg || 'Mengambil lokasi…') + '</b>'
+      : '<b>' + (d <= TITIK_DEKAT ? '✓ Anda di lokasi titik' : '⚠ Jauh dari titik plotting') + '</b>' +
+        'Jarak ' + fmtJarak(d) + ' · akurasi ±' + Math.round(draft.acc) + ' m · <a href="' + mapLink(draft.lat, draft.lng) + '" target="_blank" rel="noopener">lihat peta</a>';
+
+    $('view').innerHTML =
+      '<section class="card">' +
+        '<div class="who"><div><b>' + esc(p.petugas) + '</b><div class="loc">' + esc(p.lokasi) + ' · ' + esc(p.wilayah) + '</div></div>' +
+          '<button class="link muted-link" data-a="ganti">Bukan saya</button></div>' +
+        '<p class="sub" style="margin:8px 0 0">' + dateLabel + '</p>' +
+
+        (draft.tidak ? '' :
+        '<div class="step"><h3>1. Lokasi <small>otomatis</small></h3>' +
+          '<div class="gps ' + gpsCls + '">' + gpsHtml + '</div>' +
+          '<div class="sim"><button data-a="gps">⟳ Ambil ulang lokasi</button>' +
+            '<button data-a="simDekat">Simulasi: di titik</button><button data-a="simJauh">Simulasi: jauh</button></div>' +
+        '</div>' +
+        '<div class="step"><h3>2. Foto dokumentasi <small>opsional</small></h3>' +
+          '<div class="photo-box">' + (draft.foto ? '<img src="' + draft.foto + '" alt="Foto">' : '') +
+            '<label class="btn file-btn">' + (draft.foto ? 'Ganti foto' : '📷 Ambil foto') +
+              '<input type="file" id="foto" accept="image/*" capture="environment"></label>' +
+            (draft.foto ? '<span class="muted">' + draft.fotoKb + ' KB</span>' : '') +
+          '</div></div>') +
+
+        (draft.tidak
+          ? '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + ALASAN.map((a) =>
+              '<button data-a="alasan" data-v="' + a.code + '"' + (draft.alasan === a.code ? ' class="on"' : '') + '>' + a.label + '</button>').join('') + '</div></div>'
+          : '') +
+
+        '<div class="step"><h3>' + (draft.tidak ? 'Catatan' : '3. Catatan') + ' <small>opsional</small></h3>' +
+          '<input class="note-in" id="note" maxlength="300" placeholder="' + (draft.tidak ? 'Mis. digantikan oleh …' : 'Mis. arus padat, ada kecelakaan kecil …') + '" value="' + esc(draft.note) + '"></div>' +
+
+        (draft.tidak
+          ? '<button class="btn big t" data-a="kirimTidak">Kirim: Tidak Hadir</button>' +
+            '<div class="switch"><button class="link muted-link" data-a="modeHadir">← Kembali ke Lapor Hadir</button></div>'
+          : '<button class="btn big h" data-a="kirimHadir">✓ Kirim Laporan Hadir</button>' +
+            '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>') +
+      '</section>';
+  }
+
+  function renderPilih(q) {
+    q = (q || '').toLowerCase();
+    const g = {};
+    PERSONIL.filter((p) => !q || (p.petugas + ' ' + p.lokasi).toLowerCase().includes(q))
+      .forEach((p) => { (g[p.wilayah] = g[p.wilayah] || []).push(p); });
+    $('view').innerHTML =
+      '<section class="card"><h2 class="t">Siapa Anda?</h2><p class="sub">Pilih nama sekali saja, HP ini akan mengingatnya.</p>' +
+        '<input class="search" id="cari" type="search" placeholder="Cari nama / lokasi…" value="' + esc(q) + '">' +
+        Object.keys(g).map((w) => '<div class="grp">' + esc(w.toUpperCase()) + '</div>' + g[w].map((p) =>
+          '<button class="pick" data-a="pilih" data-no="' + p.no + '"><div><b>' + esc(p.petugas) + '</b><span>' + esc(p.lokasi) + '</span></div><span class="go">›</span></button>').join('')).join('') +
+      '</section>';
+    const c = $('cari');
+    c.oninput = () => { const pos = c.selectionStart; renderPilih(c.value); const n = $('cari'); n.focus(); n.setSelectionRange(pos, pos); };
+  }
+
+  function renderSelesai(p, r) {
+    const hadir = r.st === 'H';
+    const al = ALASAN.find((a) => a.code === r.st);
+    $('view').innerHTML =
+      '<section class="card done' + (hadir ? '' : ' t') + '">' +
+        '<div class="ic">' + (hadir ? '✓' : '✕') + '</div>' +
+        '<h2 class="t">' + (hadir ? 'Laporan hadir terkirim' : 'Laporan tidak hadir terkirim') + '</h2>' +
+        '<p class="sub">' + esc(p.petugas) + ' · ' + esc(p.lokasi) + '<br>pukul ' + jam(r.ts) + ' · ' + dateLabel + '</p>' +
+        (hadir && r.dist != null ? '<span class="badge ' + (r.dist <= TITIK_DEKAT ? 'ok">✓ di lokasi' : 'far">⚠ ' + fmtJarak(r.dist) + ' dari titik') + '</span>' : '') +
+        (!hadir && al ? '<span class="badge th">' + al.label + '</span>' : '') +
+        (r.note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(r.note) + '</p>' : '') +
+        (r.foto ? '<div><img src="' + r.foto + '" alt="Foto dokumentasi"></div>' : '') +
+        '<div class="switch" style="margin-top:14px"><button class="link muted-link" data-a="ulang">Perbaiki laporan</button></div>' +
+      '</section>';
+  }
+
+  // ---------- Tampilan admin ----------
+  function renderRekap() {
+    const g = {};
+    PERSONIL.forEach((p) => { (g[p.wilayah] = g[p.wilayah] || []).push(p); });
+    const c = { H: 0, T: 0, K: 0, jauh: 0 };
+    PERSONIL.forEach((p) => {
+      const r = laporan[p.no];
+      if (!r) c.K++; else if (r.st === 'H') { c.H++; if (r.dist != null && r.dist > TITIK_DEKAT) c.jauh++; } else c.T++;
+    });
+    $('view').innerHTML =
+      '<section class="card"><div class="date-row" style="margin-bottom:10px"><div class="date-mid"><b>' + dateLabel + '</b></div></div>' +
+        '<div class="top"><div class="h"><b>' + c.H + '</b><span>Hadir</span></div><div class="t"><b>' + c.T + '</b><span>Tidak hadir</span></div>' +
+        '<div class="k"><b>' + c.K + '</b><span>Belum lapor</span></div></div>' +
+        (c.jauh ? '<p class="sub" style="margin:10px 0 0">⚠ ' + c.jauh + ' laporan hadir dikirim jauh dari titik (&gt; ' + TITIK_DEKAT + ' m)</p>' : '') +
+      '</section>' +
+      Object.keys(g).map((w) => '<section class="card"><div class="simpul-head"><h2>' + esc(w) + '</h2></div>' + g[w].map((p) => {
+        const r = laporan[p.no];
+        let badge = '<span class="badge k">belum lapor</span>', meta = esc(p.lokasi);
+        if (r) {
+          const al = ALASAN.find((a) => a.code === r.st);
+          badge = r.st === 'H'
+            ? (r.dist == null ? '<span class="badge ok">hadir</span>' : r.dist <= TITIK_DEKAT ? '<span class="badge ok">✓ di lokasi</span>' : '<span class="badge far">⚠ ' + fmtJarak(r.dist) + '</span>')
+            : '<span class="badge th">' + esc(al ? al.label : r.st) + '</span>';
+          meta += ' · ' + jam(r.ts) + (r.lat != null ? ' · <a href="' + mapLink(r.lat, r.lng) + '" target="_blank" rel="noopener">peta</a>' : '') +
+            (r.note ? '<br>📝 ' + esc(r.note) : '');
+        }
+        return '<div class="row-r">' +
+          (r && r.foto ? '<img class="thumb" data-a="lihat" data-no="' + p.no + '" src="' + r.foto + '" alt="Foto">' : '<div class="thumb none">' + (r ? 'tanpa foto' : '') + '</div>') +
+          '<div class="info"><div class="name">' + esc(p.no) + '. ' + esc(p.petugas) + badge + '</div><div class="meta">' + meta + '</div></div></div>';
+      }).join('') + '</section>').join('') +
+      '<section class="card wa"><h2>Teks Laporan WhatsApp</h2><textarea id="waText" rows="12" readonly>' + esc(waText(g, c)) + '</textarea>' +
+        '<div class="actions"><button class="btn" data-a="salin">Salin teks</button>' +
+        '<a class="btn wa-btn" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(waText(g, c)) + '">Kirim ke WhatsApp</a></div>' +
+        '<div class="sim" style="margin-top:10px"><button data-a="isiContoh">Isi laporan contoh</button><button data-a="reset">Kosongkan semua laporan</button></div>' +
+      '</section>';
+  }
+
+  function waText(g, c) {
+    const L = ['*LAPORAN PENGATURAN PAGI*', '*SATLANTAS POLRESTA BANYUWANGI*', dateLabel, '',
+      'Hadir : ' + c.H + ' | Tidak hadir : ' + c.T + (c.K ? ' | Belum lapor : ' + c.K : '')];
+    Object.keys(g).forEach((w) => {
+      L.push('', '*' + w.toUpperCase() + '*');
+      g[w].forEach((p) => {
+        const r = laporan[p.no];
+        if (!r) return L.push('⚪ ' + p.no + '. ' + p.petugas + ' – ' + p.lokasi + ' : *belum lapor*');
+        const al = ALASAN.find((a) => a.code === r.st);
+        if (r.st !== 'H') return L.push('❌ ' + p.no + '. ' + p.petugas + ' – ' + p.lokasi + ' : ' + (al ? al.label : r.st) + (r.note ? ' _(' + r.note + ')_' : ''));
+        const far = r.dist != null && r.dist > TITIK_DEKAT;
+        L.push((far ? '⚠️ ' : '✅ ') + p.no + '. ' + p.petugas + ' – ' + p.lokasi + ' (' + jam(r.ts) + (far ? ', ' + fmtJarak(r.dist) + ' dari titik' : '') + ')' +
+          (r.note ? ' _(' + r.note + ')_' : ''));
+      });
+    });
+    return L.join('\n');
+  }
+
+  function render() {
+    [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
+    if (mode === 'rekap') renderRekap(); else renderLapor();
+  }
+
+  // ---------- GPS & foto ----------
+  function ambilLokasi() {
+    draft.lat = null; draft.gpsMsg = 'Mengambil lokasi…';
+    if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; return render(); }
+    navigator.geolocation.getCurrentPosition((pos) => {
+      draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
+      if (mode === 'lapor') render();
+    }, (err) => {
+      draft.gpsMsg = err.code === 1 ? 'Izin lokasi ditolak — aktifkan izin lokasi untuk situs ini' : 'Lokasi tidak didapat, coba ambil ulang';
+      if (mode === 'lapor') render();
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }
+
+  // perkecil foto agar hemat kuota & penyimpanan (sisi terpanjang 1024 px, JPEG 70%)
+  function kecilkanFoto(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, 1024 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(img.src);
+        resolve(cv.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  function simpan(r) {
+    laporan[me] = r;
+    if (!store('cw_lapor_' + todayKey, laporan)) { delete r.foto; store('cw_lapor_' + todayKey, laporan); }
+    draft = { lat: draft.lat, lng: draft.lng, acc: draft.acc, gpsMsg: '', foto: null, fotoKb: 0, note: '', tidak: false, alasan: '' };
+    render();
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- Event ----------
+  $('view').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-a]');
+    if (!el) return;
+    const a = el.dataset.a, p = me && person(me);
+    if (a === 'pilih') { me = el.dataset.no; store('cw_lapor_me', me); ambilLokasi(); }
+    if (a === 'ganti') { me = null; store('cw_lapor_me', null); }
+    if (a === 'gps') return ambilLokasi();
+    if (a === 'simDekat') { draft.lat = p.lat + 0.0006; draft.lng = p.lng + 0.0004; draft.acc = 12; }
+    if (a === 'simJauh') { draft.lat = p.lat + 0.012; draft.lng = p.lng - 0.008; draft.acc = 20; }
+    if (a === 'modeTidak') draft.tidak = true;
+    if (a === 'modeHadir') draft.tidak = false;
+    if (a === 'alasan') draft.alasan = el.dataset.v;
+    if (a === 'ulang') { draft.ulang = true; draft.note = laporan[me].note || ''; ambilLokasi(); }
+    if (a === 'kirimHadir') {
+      if (draft.lat == null && !confirm('Lokasi belum didapat. Kirim tanpa lokasi?')) return;
+      const dist = draft.lat != null ? jarak(draft, p) : null;
+      if (dist != null && dist > TITIK_DEKAT && !confirm('Anda ' + fmtJarak(dist) + ' dari titik ' + p.lokasi + '. Tetap kirim? Laporan akan ditandai ⚠.')) return;
+      return simpan({ st: 'H', ts: Date.now(), lat: draft.lat, lng: draft.lng, acc: draft.acc, dist, foto: draft.foto, note: draft.note.trim() });
+    }
+    if (a === 'kirimTidak') {
+      if (!draft.alasan) return toast('Ketuk salah satu alasan dulu');
+      return simpan({ st: draft.alasan, ts: Date.now(), lat: null, lng: null, dist: null, foto: null, note: draft.note.trim() });
+    }
+    if (a === 'lihat') { $('viewerImg').src = laporan[el.dataset.no].foto; $('viewer').hidden = false; return; }
+    if (a === 'salin') { navigator.clipboard.writeText($('waText').value).then(() => toast('✓ Teks disalin'), () => { $('waText').select(); document.execCommand('copy'); }); return; }
+    if (a === 'isiContoh') {
+      const now = Date.now();
+      PERSONIL.forEach((x, i) => {
+        if (laporan[x.no] || i === 7) return;
+        laporan[x.no] = i === 4 ? { st: 'S', ts: now - 9e5, note: 'Demam', dist: null }
+          : { st: 'H', ts: now - (8 - i) * 2e5, lat: x.lat + 0.0005, lng: x.lng, acc: 15, dist: i === 3 ? 1250 : 60 + i * 20, note: '' };
+      });
+      store('cw_lapor_' + todayKey, laporan);
+    }
+    if (a === 'reset') { if (!confirm('Kosongkan semua laporan contoh hari ini?')) return; laporan = {}; store('cw_lapor_' + todayKey, laporan); }
+    render();
+  });
+  $('view').addEventListener('input', (e) => { if (e.target.id === 'note') draft.note = e.target.value; });
+  $('view').addEventListener('change', async (e) => {
+    if (e.target.id !== 'foto' || !e.target.files[0]) return;
+    try {
+      draft.foto = await kecilkanFoto(e.target.files[0]);
+      draft.fotoKb = Math.round(draft.foto.length * 0.75 / 1024);
+    } catch (err) { toast('Foto tidak bisa dibaca'); }
+    render();
+  });
+  $('mode').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; mode = b.dataset.m; render(); };
+  $('viewer').onclick = () => { $('viewer').hidden = true; };
+
+  function masuk() { $('login').hidden = true; $('app').hidden = false; if (me) ambilLokasi(); render(); }
+  $('btnLogin').onclick = () => { store('cw_lapor_pin', '1'); masuk(); };
+  $('pin').onkeydown = (e) => { if (e.key === 'Enter') $('btnLogin').click(); };
+  if (load('cw_lapor_pin', null)) masuk(); else $('login').hidden = false;
+})();
+</script>
+</body>
+</html>
