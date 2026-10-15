@@ -51,6 +51,27 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .brand h1 { margin: 0; font-size: 1.15rem; font-weight: 800; }
 .brand p { margin: 2px 0 0; font-size: .8rem; color: #c4d2e8; }
 
+/* ---------- Ajakan pasang aplikasi ---------- */
+.install {
+  display: flex; align-items: center; gap: 10px; margin-top: 14px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+  border-radius: 14px; padding: 10px 10px 10px 12px;
+}
+.install img { width: 36px; height: 36px; border-radius: 9px; flex: none; background: #fff; }
+.install-text { flex: 1; min-width: 0; display: grid; }
+.install-text b { font-size: .9rem; }
+.install-text span { font-size: .75rem; color: #c4d2e8; }
+.btn.install-btn { background: var(--gold); border-color: var(--gold); color: var(--navy); padding: 8px 14px; flex: none; }
+.install-close { background: none; border: 0; color: #c4d2e8; font-size: 1.3rem; cursor: pointer; padding: 0 4px; flex: none; }
+.ios-sheet {
+  position: fixed; inset: 0; z-index: 20; background: rgba(5, 12, 25, .55);
+  display: flex; align-items: flex-end; justify-content: center; padding: 16px;
+}
+.ios-card { width: 100%; max-width: 420px; margin: 0; }
+.ios-card h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.ios-card ol { margin: 0 0 8px; padding-left: 20px; line-height: 1.7; font-size: .9rem; }
+.ios-share { display: inline-block; border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
+
 main { max-width: 760px; margin: -42px auto 0; padding: 0 16px; }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 14px; }
 

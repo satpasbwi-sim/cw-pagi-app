@@ -25,8 +25,26 @@
           <p>Satlantas Polresta Banyuwangi</p>
         </div>
       </div>
+      <div id="installBar" class="install" hidden>
+        <img src="icon-192.png" alt="">
+        <div class="install-text">
+          <b>Pasang aplikasi di HP</b>
+          <span id="installHint">Buka langsung dari layar utama, tanpa browser.</span>
+        </div>
+        <button id="btnInstall" class="btn install-btn">Pasang</button>
+        <button id="btnInstallClose" class="install-close" aria-label="Tutup">×</button>
+      </div>
     </div>
   </header>
+
+  <div id="installSheet" class="ios-sheet" hidden>
+    <div class="card ios-card">
+      <h2 id="sheetTitle"></h2>
+      <ol id="sheetSteps"></ol>
+      <p id="sheetNote" class="muted"></p>
+      <button id="btnSheetOk" class="btn primary block">Mengerti</button>
+    </div>
+  </div>
 
   <section id="login" class="login" hidden>
     <div class="card login-card">

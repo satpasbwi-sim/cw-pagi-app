@@ -346,5 +346,69 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   }
 
+  // ---------- Pasang aplikasi di HP ----------
+  const GUIDE = {
+    ios: {
+      title: 'Pasang di iPhone',
+      steps: ['Ketuk tombol <b>Bagikan</b> <span class="ios-share">⬆︎</span> di bawah layar Safari.',
+        'Pilih <b>Tambahkan ke Layar Utama</b>.', 'Ketuk <b>Tambah</b> di pojok kanan atas.'],
+      note: 'Harus dibuka di Safari. Di Chrome iPhone menu ini tidak tersedia.'
+    },
+    android: {
+      title: 'Pasang di Android',
+      steps: ['Ketuk menu <b>⋮</b> di pojok kanan atas browser.',
+        'Pilih <b>Instal aplikasi</b> atau <b>Tambahkan ke layar utama</b>.', 'Ketuk <b>Instal</b> / <b>Tambahkan</b>.'],
+      note: 'Paling lancar di Google Chrome.'
+    }
+  };
+  let installPrompt = null;
+  const ua = navigator.userAgent;
+  const isIos = /iphone|ipad|ipod/i.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /android/i.test(ua);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  const dismissedAt = Number(load('cw_install_tutup')) || 0;
+  const canOffer = !standalone && Date.now() - dismissedAt > 3 * 24 * 3600 * 1000;
+
+  function showInstallBar(hint) {
+    if (!canOffer) return;
+    if (hint) $('installHint').textContent = hint;
+    $('installBar').hidden = false;
+  }
+  function showGuide(kind) {
+    const g = GUIDE[kind];
+    $('sheetTitle').textContent = g.title;
+    $('sheetSteps').innerHTML = g.steps.map((s) => '<li>' + s + '</li>').join('');
+    $('sheetNote').textContent = g.note;
+    $('installSheet').hidden = false;
+  }
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    showInstallBar('Buka langsung dari layar utama, tanpa browser.');
+  });
+  window.addEventListener('appinstalled', () => { $('installBar').hidden = true; toast('✓ Aplikasi terpasang'); });
+  if (isIos) showInstallBar('Ketuk Pasang untuk melihat caranya.');
+  // browser Android yang tidak memunculkan dialog instal: tampilkan panduan manual
+  else if (isAndroid) setTimeout(() => { if (!installPrompt) showInstallBar('Ketuk Pasang untuk melihat caranya.'); }, 2500);
+
+  $('btnInstall').onclick = async () => {
+    if (installPrompt) {
+      installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      installPrompt = null;
+      if (choice.outcome === 'accepted') $('installBar').hidden = true;
+      return;
+    }
+    showGuide(isIos ? 'ios' : 'android');
+  };
+  $('btnInstallClose').onclick = () => { $('installBar').hidden = true; store('cw_install_tutup', String(Date.now())); };
+  $('btnSheetOk').onclick = () => { $('installSheet').hidden = true; };
+  $('installSheet').onclick = (e) => { if (e.target === $('installSheet')) $('installSheet').hidden = true; };
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+  }
+
   if (pin) { $('app').hidden = false; reload(); } else showLogin();
 })();
