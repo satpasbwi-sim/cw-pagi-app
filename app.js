@@ -5,7 +5,7 @@
   const BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli',
     'Agustus', 'September', 'Oktober', 'November', 'Desember'];
   // Tanda warna per status di teks WhatsApp, mengikuti warna di spreadsheet
-  const WA_MARK = { '': '🔴', H: '✅', LD: '🔵', D: '🔵', S: '🟡', I: '🟠', P: '🟣', N: '⚪' };
+  const WA_MARK = { '': '🔴', H: '✅', LD: '🔵', D: '🔷', S: '🟡', I: '🟠', P: '🟣', N: '⚪' };
   const RING = 2 * Math.PI * 50;
 
   let pin = load('cw_pin');
@@ -140,7 +140,10 @@
       return '<div class="simpul-row"><div class="top"><b>' + esc(w) + '</b><span>' +
         (ws.H || 0) + '/' + ws.total + ' hadir · ' + pct(ws.persen) + '</span></div>' +
         '<div class="bar">' + seg + '</div></div>';
-    }).join('');
+    }).join('') +
+      '<div class="legend">' + legendItems().map((l) =>
+        '<span><i style="background:' + color(l.code) + '"></i>' + l.mark + ' ' +
+        (l.code ? '<b>' + esc(l.code) + '</b> ' : '') + esc(l.label) + '</span>').join('') + '</div>';
 
     renderList(g);
 
@@ -230,10 +233,11 @@
       '',
       'Titik plotting : ' + s.titik,
       'Total personil : ' + s.total,
-      'Hadir : ' + (s.H || 0) + ' (' + pct(s.persen) + ')'
+      mark('H') + ' Hadir : ' + (s.H || 0) + ' (' + pct(s.persen) + ')'
     ];
-    data.codes.forEach((c) => { if (c.code !== 'H' && s[c.code]) lines.push(c.label + ' : ' + s[c.code]); });
+    data.codes.forEach((c) => { if (c.code !== 'H' && s[c.code]) lines.push(mark(c.code) + ' ' + c.label + ' : ' + s[c.code]); });
     if (s.belum) lines.push(WA_MARK[''] + ' *Belum lapor : ' + s.belum + '*');
+    lines.push('', '_Keterangan:_', legendItems().map((l) => l.mark + ' ' + l.label).join(' · '));
 
     Object.keys(g).forEach((w) => {
       lines.push('', '*' + w.toUpperCase() + '*');
@@ -243,11 +247,18 @@
         const code = codeOf(st);
         // WhatsApp tidak mendukung teks berwarna; belum lapor ditandai 🔴 + huruf tebal
         const label = code ? code.label : '*BELUM LAPOR*';
-        const mark = WA_MARK[code ? st : ''] || '⚪';
-        lines.push(mark + ' ' + r.no + '. ' + r.lokasi + ' – ' + r.petugas + ' : ' + label + (note ? ' (' + note + ')' : ''));
+        lines.push(mark(code ? st : '') + ' ' + r.no + '. ' + r.lokasi + ' – ' + r.petugas + ' : ' + label + (note ? ' (' + note + ')' : ''));
       });
     });
     return lines.join('\n');
+  }
+
+  function mark(code) { return WA_MARK[code] || '⚪'; }
+
+  // Daftar keterangan: semua kode status + belum lapor
+  function legendItems() {
+    return data.codes.map((c) => ({ code: c.code, label: c.label, mark: mark(c.code) }))
+      .concat([{ code: '', label: 'Belum lapor', mark: WA_MARK[''] }]);
   }
 
   function esc(s) {
