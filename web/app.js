@@ -13,6 +13,7 @@
   let noteEdits = {};       // no plotting -> catatan yang belum disimpan
   const openNote = {};      // no plotting -> kolom catatan dibuka manual
   const closed = {};        // simpul yang dilipat
+  let showNeed = false;     // tandai merah baris "Tidak" tanpa alasan setelah Simpan ditekan
 
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
@@ -37,7 +38,11 @@
   async function saveData() {
     const pend = pendingRows();
     if (pend.length) {
-      toast('Pilih alasan tidak hadir untuk ' + pend.map((r) => r.petugas).join(', '));
+      // buka simpul yang dilipat agar baris yang belum lengkap terlihat
+      pend.forEach((r) => { delete closed[r.wilayah || '-']; });
+      showNeed = true;
+      render();
+      toast('Ketuk alasan (Sakit / Izin / …) untuk ' + pend.map((r) => r.petugas).join(', '));
       const el = document.querySelector('.person[data-row="' + pend[0].row + '"]');
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
@@ -81,6 +86,7 @@
       data = d;
       edits = {};
       noteEdits = {};
+      showNeed = false;
       render();
     } catch (err) {
       toast('Gagal memuat: ' + err.message);
@@ -183,12 +189,13 @@
     const dirty = edits[r.row] !== undefined || noteEdits[r.no] !== undefined;
     const showNote = k === 'T' || note || openNote[r.no];
     const chips = k === 'T'
-      ? (st === PENDING ? '<p class="need-msg">Pilih alasan:</p>' : '') +
+      ? (st === PENDING ? '<p class="need-msg">Wajib: ketuk salah satu alasan di bawah ini</p>' : '') +
         '<div class="chips' + (st === PENDING ? ' need' : '') + '">' + reasons().map((c) =>
           '<button data-act="code" data-v="' + esc(c.code) + '"' + (st === c.code ? ' class="on"' : '') + '>' +
           esc(c.label) + '</button>').join('') + '</div>'
       : '';
-    return '<div class="person' + (dirty ? ' dirty' : '') + '" data-row="' + r.row + '">' +
+    return '<div class="person' + (dirty ? ' dirty' : '') + (showNeed && st === PENDING ? ' need' : '') +
+      '" data-row="' + r.row + '">' +
       '<div class="line"><div class="info">' +
         '<div class="name">' + esc(r.no) + '. ' + esc(r.petugas) + (r.jml > 1 ? ' · ' + r.jml + ' pers' : '') + '</div>' +
         '<div class="loc">' + esc(r.lokasi) + (r.jam ? ' · ' + esc(r.jam) : '') + '</div></div>' +

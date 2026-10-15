@@ -47,7 +47,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .hero-inner { max-width: 760px; margin: 0 auto; }
 .brand { display: flex; gap: 12px; align-items: center; }
-.emblem { width: 38px; height: 44px; flex: none; filter: drop-shadow(0 2px 6px rgba(0,0,0,.3)); }
+.emblem { width: 40px; height: 47px; flex: none; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
 .brand h1 { margin: 0; font-size: 1.15rem; font-weight: 800; }
 .brand p { margin: 2px 0 0; font-size: .8rem; color: #c4d2e8; }
 
@@ -106,6 +106,7 @@ main { max-width: 760px; margin: -42px auto 0; padding: 0 16px; }
 
 .person { border-top: 1px solid var(--line); padding: 10px 0; }
 .person.dirty { box-shadow: inset 3px 0 0 var(--gold); padding-left: 8px; }
+.person.need { background: var(--th-bg); box-shadow: inset 3px 0 0 var(--th); border-radius: 10px; }
 .person .line { display: flex; gap: 10px; align-items: center; }
 .person .info { flex: 1; min-width: 0; }
 .person .name { font-weight: 700; font-size: .92rem; }

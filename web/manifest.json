@@ -1,8 +1,15 @@
 {
   "name": "Laporan CW Pagi",
   "short_name": "CW Pagi",
+  "description": "Laporan Pengaturan Pagi Satlantas Polresta Banyuwangi",
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
-  "background_color": "#f4f6f9",
-  "theme_color": "#0f2341"
+  "background_color": "#0f2341",
+  "theme_color": "#0f2341",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
 }
