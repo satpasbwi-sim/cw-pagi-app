@@ -1,0 +1,195 @@
+# Laporan CW Pagi – Satlantas Polresta Banyuwangi
+
+Aplikasi web (bisa dipasang di HP) untuk laporan **Pengaturan Pagi (CW Pagi)**:
+anggota melapor sendiri dengan **NRP**, lokasi **GPS**, dan foto; admin melihat
+**Rekap** per simpul dan mengirim teks laporan ke grup WhatsApp.
+
+- Aplikasi: **https://satpasbwi-sim.github.io/cw-pagi-app/**
+- Data: spreadsheet **"CW Pagi Okt'26"** di Google Drive (sekaligus database)
+- Kode tampilan: repo GitHub **satpasbwi-sim/cw-pagi-app** (folder `web/`)
+- Kode server: Apps Script di spreadsheet tersebut (file **Kode.gs**)
+
+Aplikasi tidak bergantung pada Claude atau layanan berbayar: semuanya berjalan di
+GitHub Pages, Google Apps Script, Google Sheets, dan Google Drive milik satuan.
+
+---
+
+## 1. Cara kerja singkat
+
+```
+ HP anggota / admin                 Google (akun satuan)                    GitHub
+┌───────────────────┐  JSON   ┌──────────────────────────┐          ┌──────────────────┐
+│ Aplikasi web      │ ──────▶ │ Apps Script (Kode.gs)    │          │ Repo cw-pagi-app │
+│ (folder web/)     │ ◀────── │ = API, cek NRP/jam/GPS   │          │ folder web/      │
+└───────────────────┘         └────────────┬─────────────┘          └────────┬─────────┘
+        ▲                                  │ baca/tulis                      │ otomatis
+        │                                  ▼                                 ▼
+        │                     ┌──────────────────────────┐          ┌──────────────────┐
+        └──── dibuka dari ─── │ Spreadsheet + Drive      │          │ GitHub Pages     │
+              github.io       │ ABSENSI, ANGGOTA, JADWAL │          │ (situs aplikasi) │
+                              │ KOORDINAT, LOG LAPOR, …  │          └──────────────────┘
+                              └──────────────────────────┘
+```
+
+## 2. Siapa bisa apa
+
+| Login dengan | Menu | Bisa melakukan |
+| --- | --- | --- |
+| NRP anggota (sheet **ANGGOTA**) | **Lapor Saya** | Lapor Datang, Lapor Selesai, atau lapor Tidak Hadir **untuk dirinya sendiri** |
+| NRP admin (daftar `ADMIN_NRP` di Kode.gs) | **Lapor Saya** + **Rekap** | Semua di atas + lihat/ubah status semua personil, catatan, kirim teks WhatsApp |
+
+Tidak ada lagi PIN bersama. NRP yang tidak terdaftar ditolak ("NRP tidak terdaftar").
+
+## 3. Aturan lapor anggota
+
+| Jam (bawaan) | Yang bisa dilakukan |
+| --- | --- |
+| sebelum 06.00 | Belum dibuka |
+| 06.00 – 06.30 | **Lapor Datang** (langkah 1) – wajib di dalam radius titik |
+| 06.30 – 07.00 | Tetap di lokasi, ada hitung mundur |
+| 07.00 – 07.15 | **Lapor Selesai** (langkah 2) – wajib di dalam radius titik |
+| setelah 07.15 | Ditutup |
+
+- Status **H** baru masuk ke sheet ABSENSI setelah **Lapor Selesai** yang sah.
+  Yang hanya Lapor Datang tidak dihitung (kolom tetap kosong, tercatat di LOG LAPOR).
+- Di luar radius (bawaan **100 m**) tombol lapor terkunci dan muncul pemberitahuan merah.
+- Titik yang **belum punya koordinat** tetap bisa lapor, ditandai "jarak belum dicek".
+- **Tidak hadir** (Sakit/Izin/…) bisa dilaporkan 06.00–07.15 tanpa cek lokasi.
+- Foto dokumentasi **opsional**, otomatis dikecilkan (±50–150 KB) dan disimpan di
+  Google Drive folder **"CW Pagi - Foto Lapor"**.
+- Jam dan radius dicek di server, memakai jam server (tidak bisa diakali jam HP).
+
+## 4. Pengoperasian harian (cukup di spreadsheet, tanpa push)
+
+| Ingin mengubah | Caranya |
+| --- | --- |
+| Jam lapor / radius | Sheet **JADWAL**, kolom B (mis. `06:45`, radius `150`). Berlaku langsung. |
+| Anggota & NRP | Sheet **ANGGOTA**: kolom A = nama **persis** seperti kolom B (PETUGAS) di ABSENSI, kolom B = NRP. |
+| Koordinat titik | Sheet **KOORDINAT**: kolom A = nama lokasi (sama dengan ABSENSI), kolom B = `lat, lng` dari Google Maps (tekan lama titik → salin angka). |
+| Plotting petugas | Sheet **ABSENSI** seperti biasa. Lokasi baru otomatis ditambahkan ke KOORDINAT. |
+| Kode alasan (S, I, LD, …) | Sheet **PENGATURAN** E5:F11 (seperti sebelumnya). |
+
+Catatan:
+- Kolom NRP di ANGGOTA berformat **teks** agar angka 0 di depan (mis. `00012345`) tidak hilang.
+- Urutan jam di JADWAL harus: Buka < Batas Datang ≤ Mulai Selesai < Tutup. Jika salah,
+  aplikasi otomatis memakai jam bawaan 06.00 / 06.30 / 07.00 / 07.15.
+- Cara paling akurat mengisi koordinat: buka link **peta** dari laporan anggota yang
+  benar-benar berdiri di titik (menu Rekap atau sheet LOG LAPOR), salin koordinatnya.
+
+## 5. Sheet di spreadsheet
+
+| Sheet | Isi | Dibuat oleh |
+| --- | --- | --- |
+| ABSENSI | Plotting & kode harian (H/S/I/…) per tanggal | sudah ada |
+| PENGATURAN | Bulan, tahun, tanggal akhir (C7), kode & status | sudah ada |
+| CATATAN | Catatan / pengganti per tanggal & no plotting | sudah ada (aplikasi ikut menulis) |
+| ANGGOTA | Nama petugas ↔ NRP (untuk login) | aplikasi |
+| KOORDINAT | Nama lokasi ↔ koordinat titik | aplikasi |
+| JADWAL | Jam lapor & radius | aplikasi |
+| LOG LAPOR | Riwayat setiap laporan: waktu, status (DATANG/H/kode), jarak, akurasi, peta, foto, catatan | aplikasi |
+
+## 6. Struktur folder di laptop
+
+```
+cw-pagi-app/
+├── web/                     ← aplikasi (ikut ke GitHub, tampil di github.io)
+│   ├── index.html, app.js, style.css
+│   ├── config.js            ← URL Apps Script (/exec)
+│   ├── sw.js, manifest.json ← agar bisa dipasang di HP
+│   ├── logo.png, icon-*.png ← logo Lalu Lintas & ikon
+│   └── prototype/lapor.html ← prototipe lama (data contoh)
+├── .github/workflows/pages.yml ← publish otomatis folder web/ ke GitHub Pages
+├── apps-script/Code.gs      ← salinan kode server (TIDAK ke GitHub, lihat §9)
+├── README.md                ← panduan ini
+└── _arsip-lokal/            ← salinan lama, tidak dipakai (TIDAK ke GitHub)
+```
+
+## 7. Mengubah tampilan aplikasi lalu "push"
+
+Folder ini sudah tersambung ke repo GitHub (Git). Setelah mengubah file di `web/`:
+
+**Cara A – GitHub Desktop (paling mudah)**
+1. Pasang GitHub Desktop, login akun GitHub satuan, *File → Add local repository* →
+   pilih folder `cw-pagi-app`.
+2. Tulis ringkasan perubahan → **Commit to main** → **Push origin**.
+
+**Cara B – perintah Git**
+```bash
+git add web
+git commit -m "Ubah ..."
+git push
+```
+
+**Cara C – lewat browser**: github.com → repo → masuk folder `web` → *Add file →
+Upload files* → **pastikan jalurnya `cw-pagi-app / web /`** → Commit changes.
+
+Setelah push, tab **Actions** di GitHub menjalankan "Deploy ke GitHub Pages" (±1 menit).
+Jika hijau, situs sudah memakai versi baru. Di HP: tutup lalu buka ulang aplikasi.
+
+## 8. Mengubah kode server (Kode.gs) lalu deploy
+
+1. Ubah `apps-script/Code.gs` di laptop (simpan sebagai cadangan).
+2. Buka spreadsheet → **Extensions → Apps Script** → file **Kode.gs** → tempel isinya → simpan (Ctrl+S).
+3. **Terapkan → Kelola deployment** → ikon pensil → **Versi: Versi baru** → **Terapkan**.
+   URL `/exec` **tidak berubah**, jadi `web/config.js` tidak perlu diubah.
+4. Jika muncul *"Dibutuhkan otorisasi"*: klik **Tinjau izin** → pilih akun → **Pilih semua** → Lanjutkan.
+
+Pengaturan penting di Kode.gs:
+- `ADMIN_NRP` – daftar NRP yang boleh membuka Rekap.
+- `JADWAL`, `RADIUS_M` – nilai **bawaan** (dipakai jika sheet JADWAL kosong/salah).
+
+Catatan proyek Apps Script:
+- File **AutoDeploy.gs** (menu "🚀 CW PAGI APP" di spreadsheet) fungsi `doGet/doPost`-nya
+  sudah diganti nama menjadi `doGet_AutoDeploy/doPost_AutoDeploy` agar tidak bentrok dengan
+  API di Kode.gs. **Jangan dikembalikan**, karena aplikasi akan berhenti bekerja.
+- `appsscript.json` memuat `oauthScopes` (Spreadsheet, Drive, menu, akses internet).
+  Jika menambah layanan Google baru di kode, tambahkan juga cakupannya di sini.
+- Ada fungsi `izinkanAkses` untuk dijalankan sekali bila izin Drive perlu diberikan ulang.
+
+## 9. Keamanan
+
+- Repo GitHub **publik**. Karena itu yang **tidak** di-upload (lihat `.gitignore`):
+  `apps-script/` (memuat NRP admin), dokumen jadwal `.docx/.pdf` (nama personel), `_arsip-lokal/`.
+- Data personil & NRP hanya ada di spreadsheet; aplikasi mengambilnya lewat Apps Script
+  setelah login. Anggota hanya menerima data dirinya sendiri.
+- Siapa pun yang tahu NRP seseorang bisa login sebagai orang itu. Jika perlu lebih aman,
+  bisa ditambah kode kedua (mis. 4 digit tanggal lahir).
+- **Cadangkan** `apps-script/Code.gs` (mis. salin ke Google Drive), karena tidak ada di GitHub.
+
+## 10. Ganti bulan
+
+**Pilihan A – satu spreadsheet dipakai terus (paling mudah)**
+Kosongkan kolom tanggal di ABSENSI, ubah bulan/tahun/tanggal akhir di PENGATURAN (C4, C5, C7),
+sesuaikan plotting. URL tidak berubah; tidak perlu deploy atau push.
+Sheet LOG LAPOR boleh dibiarkan (data dipisah per bulan otomatis) atau dipindah ke arsip.
+
+**Pilihan B – salinan spreadsheet per bulan**
+1. *File → Buat salinan* spreadsheet (Apps Script ikut tersalin).
+2. Di salinan: Extensions → Apps Script → **Terapkan → Deployment baru → Aplikasi web**
+   (Jalankan sebagai: Saya; Akses: Siapa saja) → izinkan akses → salin **URL /exec** baru.
+3. Ubah `API_URL` di `web/config.js` menjadi URL baru → commit & push (bagian 7).
+4. Kosongkan sheet LOG LAPOR di salinan (sisakan baris judul).
+
+Selama spreadsheet bukan untuk bulan berjalan (C7 di PENGATURAN), menu Lapor Saya
+menampilkan "Lapor belum dibuka".
+
+## 11. Masalah yang sering terjadi
+
+| Gejala | Penyebab & solusi |
+| --- | --- |
+| HP masih tampilan lama | Tutup aplikasi sepenuhnya lalu buka lagi / tarik layar untuk refresh. |
+| "NRP tidak terdaftar" | NRP belum ada / salah ketik di sheet ANGGOTA. |
+| "NRP terdaftar, tetapi nama … tidak ada di plotting" | Kolom A ANGGOTA tidak sama persis dengan kolom B ABSENSI. |
+| Selalu "Di luar radius" padahal di titik | Koordinat titik di KOORDINAT kurang akurat → perbaiki, atau perbesar radius di JADWAL. |
+| "Izin lokasi ditolak" | Di HP: izinkan akses lokasi untuk situs/aplikasi, lalu Ambil ulang lokasi. |
+| Simpan Rekap gagal / API error | Cek deployment Apps Script masih aktif (Terapkan → Kelola deployment). |
+| Push tidak tampil di situs | Tab Actions di GitHub: pastikan workflow hijau; file harus di folder `web/`. |
+
+## 12. Uji coba lokal (opsional)
+
+```bash
+cd web
+python -m http.server 8000
+```
+Buka http://localhost:8000 (memakai API asli sesuai `config.js`; GPS di browser laptop
+tidak akurat, jadi uji lapor sebaiknya di HP).

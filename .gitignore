@@ -1,0 +1,13 @@
+.DS_Store
+Thumbs.db
+
+# Hanya disimpan di laptop / Apps Script — JANGAN di-upload ke GitHub (repo publik)
+# apps-script/Code.gs memuat daftar NRP admin
+apps-script/
+# dokumen jadwal berisi nama personel
+*.docx
+*.pdf
+~$*
+# salinan lama yang tidak dipakai
+_arsip-lokal/
+*.zip
