@@ -15,7 +15,7 @@
   const closed = {};        // simpul yang dilipat
   let showNeed = false;     // tandai merah baris "Tidak" tanpa alasan setelah Simpan ditekan
   let mode = load('cw_mode') || 'lapor';   // 'lapor' (anggota) atau 'rekap' (admin)
-  let me = load('cw_me');                  // no plotting anggota yang memakai HP ini
+  let me = '';                             // no plotting milik NRP yang login (dari server)
   let draft = newDraft();                  // isian form Lapor Saya yang belum dikirim
   let sending = false;
 
@@ -84,7 +84,7 @@
     try {
       const d = await fetchData(day);
       if (d.error) {
-        if (d.error === 'PIN salah') return showLogin('NRP / PIN salah');
+        if (d.error === 'PIN salah') return showLogin('NRP tidak terdaftar');
         if (/NRP|plotting/.test(d.error)) return showLogin(d.error);
         throw new Error(d.error);
       }
@@ -93,6 +93,7 @@
       // anggota (login NRP) hanya bisa Lapor Saya untuk dirinya sendiri
       $('mode').hidden = d.role === 'anggota';
       if (d.role === 'anggota') { mode = 'lapor'; me = String(d.me); }
+      else if (d.me) me = String(d.me);   // admin (login NRP) melapor untuk dirinya sendiri
       edits = {};
       noteEdits = {};
       showNeed = false;
@@ -411,7 +412,11 @@
       return;
     }
     const r = myRow();
-    if (!r) return renderPilih('');
+    if (!r) {
+      v.innerHTML = '<section class="card"><h2 class="t">Nama Anda tidak ada di plotting bulan ini</h2>' +
+        '<p class="sub">Lapor Saya hanya untuk personil yang terjadwal. ' + gantiBtn() + '</p></section>';
+      return;
+    }
     const l = laporOf(r) || {};
     const f = lastFase = fase(r);
     if (f === 'beres') return renderSelesai(r, l);
@@ -468,22 +473,6 @@
         '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) + '</p>' +
         body +
       '</section>';
-  }
-
-  function renderPilih(q) {
-    const s = q.toLowerCase();
-    const g = {};
-    data.rows.filter((r) => !s || (r.petugas + ' ' + r.lokasi).toLowerCase().includes(s))
-      .forEach((r) => { (g[r.wilayah || '-'] = g[r.wilayah || '-'] || []).push(r); });
-    $('laporView').innerHTML =
-      '<section class="card"><h2 class="t">Siapa Anda?</h2><p class="sub">Pilih nama sekali saja, HP ini akan mengingatnya.</p>' +
-        '<input class="search" id="cariNama" type="search" placeholder="Cari nama / lokasi…" value="' + esc(q) + '">' +
-        (Object.keys(g).length ? Object.keys(g).map((w) => '<div class="grp">' + esc(w.toUpperCase()) + '</div>' + g[w].map((r) =>
-          '<button class="pick" data-a="pilih" data-no="' + esc(r.no) + '"><div><b>' + esc(r.no) + '. ' + esc(r.petugas) + '</b><span>' + esc(r.lokasi) + '</span></div><span class="go">›</span></button>').join('')).join('')
-          : '<p class="empty">Nama tidak ditemukan.</p>') +
-      '</section>';
-    const c = $('cariNama');
-    c.oninput = () => { const pos = c.selectionStart; renderPilih(c.value); const n = $('cariNama'); n.focus(); n.setSelectionRange(pos, pos); };
   }
 
   function renderSelesai(r, l) {
@@ -588,8 +577,6 @@
     const el = e.target.closest('[data-a]');
     if (!el || sending) return;
     const a = el.dataset.a;
-    if (a === 'pilih') { me = el.dataset.no; store('cw_me', me); draft = newDraft(); render(); return ambilLokasi(); }
-    if (a === 'ganti') { me = ''; store('cw_me', ''); draft = newDraft(); }
     if (a === 'keluar') return logout();
     if (a === 'gps') return ambilLokasi(true);
     if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
@@ -641,11 +628,7 @@
   };
 
   // anggota: "Keluar" (ganti akun NRP); admin: "Bukan saya" (pilih nama lain)
-  function gantiBtn() {
-    return data.role === 'anggota'
-      ? '<button class="link muted-link" data-a="keluar">Keluar</button>'
-      : '<button class="link muted-link" data-a="ganti">Bukan saya</button>';
-  }
+  function gantiBtn() { return '<button class="link muted-link" data-a="keluar">Keluar</button>'; }
 
   function logout() {
     pin = '';
@@ -683,6 +666,7 @@
   $('prevDay').onclick = () => goDay(data.day - 1);
   $('nextDay').onclick = () => goDay(data.day + 1);
   $('btnReload').onclick = () => goDay(data && data.day);
+  $('btnLogout').onclick = () => { if (!dirtyCount() || confirm('Perubahan belum disimpan akan hilang. Keluar?')) logout(); };
   $('btnSave').onclick = saveData;
   $('onlyTH').checked = load('cw_ringkas') === '1';
   $('onlyTH').onchange = () => { store('cw_ringkas', $('onlyTH').checked ? '1' : ''); if (data) renderWa(); };
