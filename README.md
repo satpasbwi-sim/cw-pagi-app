@@ -103,8 +103,7 @@ cw-pagi-app/
 │   ├── index.html, app.js, style.css
 │   ├── config.js            ← URL Apps Script (/exec)
 │   ├── sw.js, manifest.json ← agar bisa dipasang di HP
-│   ├── logo.png, icon-*.png ← logo Lalu Lintas & ikon
-│   └── prototype/lapor.html ← prototipe lama (data contoh)
+│   └── logo.png, icon-*.png ← logo Lalu Lintas & ikon
 ├── .github/workflows/pages.yml ← publish otomatis folder web/ ke GitHub Pages
 ├── apps-script/Code.gs      ← salinan kode server (TIDAK ke GitHub, lihat §9)
 ├── README.md                ← panduan ini
