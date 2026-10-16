@@ -50,7 +50,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
   padding-top: max(18px, env(safe-area-inset-top));
 }
 .hero-inner { max-width: 760px; margin: 0 auto; }
-.brand { display: flex; gap: 12px; align-items: center; }
+.brand { display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center; }
 .emblem { width: 40px; height: 47px; flex: none; object-fit: contain; filter: drop-shadow(0 2px 6px rgba(0,0,0,.35)); }
 .brand h1 { margin: 0; font-size: 1.15rem; font-weight: 800; }
 .brand p { margin: 2px 0 0; font-size: .8rem; color: #c4d2e8; }

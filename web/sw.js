@@ -1,7 +1,7 @@
 // Service worker: membuat aplikasi bisa dipasang di HP.
-// Selalu ambil versi terbaru dari jaringan; cache hanya cadangan saat offline.
+// Selalu ambil versi terbaru dari jaringan (tanpa cache HTTP browser); cache hanya cadangan saat offline.
 // Permintaan ke Apps Script (domain lain) tidak disentuh.
-const CACHE = 'cw-pagi-v1';
+const CACHE = 'cw-pagi-v2';
 const SHELL = ['./', 'index.html', 'app.js', 'style.css', 'config.js', 'manifest.json', 'logo.png', 'icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -18,7 +18,7 @@ self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
   e.respondWith(
-    fetch(req)
+    fetch(req, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
