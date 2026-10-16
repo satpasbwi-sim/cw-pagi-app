@@ -364,7 +364,7 @@
 
   // ---------- Lapor Saya (anggota melapor sendiri) ----------
   function newDraft() {
-    return { lat: null, lng: null, acc: null, gpsMsg: '', foto: null, fotoKb: 0, note: '', tidak: false, alasan: '' };
+    return { lat: null, lng: null, acc: null, gpsMsg: '', note: '', tidak: false, alasan: '' };
   }
   function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
 
@@ -439,12 +439,6 @@
     const tidakLink = '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>';
     const gpsStep = '<div class="step"><h3>Lokasi <small>otomatis</small></h3><div id="gpsBox">' + gpsHtml(r) + '</div>' +
       '<div class="mini"><button data-a="gps">⟳ Ambil ulang lokasi</button></div></div>';
-    const fotoStep = '<div class="step"><h3>Foto dokumentasi <small>opsional</small></h3><div class="photo-box">' +
-      (draft.foto ? '<img src="' + draft.foto + '" alt="Foto">' : '') +
-      '<label class="btn file-btn">' + (draft.foto ? 'Ganti foto' : '📷 Ambil foto') +
-        '<input type="file" id="foto" accept="image/*" capture="environment"></label>' +
-      (draft.foto ? '<span class="muted">' + draft.fotoKb + ' KB</span> <button class="link muted-link" data-a="hapusFoto">hapus</button>' : '') +
-      '</div></div>';
     const noteStep = '<div class="step"><h3>Catatan <small>opsional</small></h3>' +
       '<input class="note-in" id="laporNote" maxlength="300" placeholder="' +
       (draft.tidak ? 'Mis. digantikan oleh …' : 'Mis. arus padat, ada kecelakaan kecil …') + '" value="' + esc(draft.note) + '"></div>';
@@ -468,11 +462,11 @@
       body = info('Langkah 1 dari 2: Lapor Datang', data.bebasWaktu ? 'Lapor Selesai sesudahnya di titik yang sama.'
         : 'Batas pukul ' + jamTeks(j.batasDatang) + '. Lapor Selesai pukul ' +
         jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ' di titik yang sama.') +
-        gpsStep + fotoStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
+        gpsStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
     } else if (f === 'selesai') {
       body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang tercatat pukul ' + esc(l.datang.jam) + '.' +
         (data.bebasWaktu ? '' : ' Batas Lapor Selesai pukul ' + jamTeks(j.tutup) + '.')) +
-        gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
+        gpsStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
     } else if (f === 'tidak') {
       body = '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + reasons().map((c) =>
           '<button data-a="alasan" data-v="' + esc(c.code) + '"' + (draft.alasan === c.code ? ' class="on"' : '') + '>' + esc(c.label) + '</button>').join('') +
@@ -538,23 +532,6 @@
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   }
 
-  // perkecil foto agar hemat kuota & penyimpanan (sisi terpanjang 1024 px, JPEG 70%)
-  function kecilkanFoto(file) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        const s = Math.min(1, 1024 / Math.max(img.width, img.height));
-        const cv = document.createElement('canvas');
-        cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
-        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-        URL.revokeObjectURL(img.src);
-        resolve(cv.toDataURL('image/jpeg', 0.7));
-      };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
-    });
-  }
-
   async function kirimLapor(tahap, st) {
     const r = myRow();
     sending = true;
@@ -567,7 +544,7 @@
         body: JSON.stringify({
           pin, kode, action: 'lapor', tahap, no: r.no, st,
           lat: pakaiLokasi ? draft.lat : null, lng: pakaiLokasi ? draft.lng : null, acc: pakaiLokasi ? draft.acc : null,
-          foto: pakaiLokasi ? draft.foto : null, note: draft.note.trim()
+          note: draft.note.trim()
         })
       });
       const out = await res.json();
@@ -594,7 +571,6 @@
     const a = el.dataset.a;
     if (a === 'keluar') return logout();
     if (a === 'gps') return ambilLokasi(true);
-    if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
     if (a === 'modeTidak') draft.tidak = true;
     if (a === 'modeHadir') draft.tidak = false;
     if (a === 'alasan') draft.alasan = el.dataset.v;
@@ -622,14 +598,6 @@
     if (++detak % 3 === 0 && ['datang', 'tunggu', 'selesai'].includes(f)) ambilLokasi();
   }, 20000);
   $('laporView').addEventListener('input', (e) => { if (e.target.id === 'laporNote') draft.note = e.target.value; });
-  $('laporView').addEventListener('change', async (e) => {
-    if (e.target.id !== 'foto' || !e.target.files[0]) return;
-    try {
-      draft.foto = await kecilkanFoto(e.target.files[0]);
-      draft.fotoKb = Math.round(draft.foto.length * 0.75 / 1024);
-    } catch (err) { toast('Foto tidak bisa dibaca'); }
-    renderLapor();
-  });
   $('mode').onclick = (e) => {
     const b = e.target.closest('button');
     if (!b || !data || b.dataset.m === mode) return;

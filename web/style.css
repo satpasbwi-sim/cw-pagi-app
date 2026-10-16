@@ -214,10 +214,6 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .gps a { color: inherit; }
 .mini { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
 .mini button { font-size: .75rem; border: 1px solid var(--line); background: none; border-radius: 8px; padding: 5px 9px; cursor: pointer; color: var(--muted); }
-.photo-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.photo-box img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
-.file-btn { position: relative; overflow: hidden; }
-.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .note-in { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 10px; }
 .big { width: 100%; margin-top: 14px; padding: 14px; font-size: 1rem; }
 .btn.big.h { background: var(--hadir); border-color: var(--hadir); color: #fff; }
