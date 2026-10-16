@@ -36,9 +36,16 @@ GitHub Pages, Google Apps Script, Google Sheets, dan Google Drive milik satuan.
 | Login dengan | Menu | Bisa melakukan |
 | --- | --- | --- |
 | NRP anggota (sheet **ANGGOTA**) | **Lapor Saya** | Lapor Datang, Lapor Selesai, atau lapor Tidak Hadir **untuk dirinya sendiri** |
-| NRP admin (daftar `ADMIN_NRP` di Kode.gs) | **Lapor Saya** + **Rekap** | Semua di atas + lihat/ubah status semua personil, catatan, kirim teks WhatsApp |
+| NRP admin (daftar `ADMIN_NRP` di Kode.gs) **+ kode admin** | **Lapor Saya** + **Rekap** | Semua di atas + lihat/ubah status semua personil, catatan, kirim teks WhatsApp |
 
 Tidak ada lagi PIN bersama. NRP yang tidak terdaftar ditolak ("NRP tidak terdaftar").
+
+**Kode admin (pengaman kedua):** NRP admin saja hanya membuka Lapor Saya. Untuk membuka
+Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di bawah Lapor Saya.
+- Atur / ganti kode: buka spreadsheet → menu **🚀 CW PAGI APP → 🔐 Atur Kode Admin Aplikasi**
+  (minimal 6 karakter). Yang disimpan hanya sidik (hash) kode di *Script Properties*, bukan kodenya.
+- Salah 5 kali → kotak admin terkunci 15 menit.
+- Lupa kode: atur ulang lewat menu yang sama (perlu akses edit spreadsheet).
 
 ## 3. Aturan lapor anggota
 
@@ -135,10 +142,12 @@ Jika hijau, situs sudah memakai versi baru. Di HP: tutup lalu buka ulang aplikas
 4. Jika muncul *"Dibutuhkan otorisasi"*: klik **Tinjau izin** → pilih akun → **Pilih semua** → Lanjutkan.
 
 Pengaturan penting di Kode.gs:
-- `ADMIN_NRP` – daftar NRP yang boleh membuka Rekap.
+- `ADMIN_NRP` – daftar NRP yang boleh membuka Rekap (tetap wajib kode admin).
+- Kode admin **tidak** ada di kode: diatur lewat menu spreadsheet (lihat bagian 2).
 - `JADWAL`, `RADIUS_M` – nilai **bawaan** (dipakai jika sheet JADWAL kosong/salah).
 
 Catatan proyek Apps Script:
+- Menu **🔐 Atur Kode Admin Aplikasi** ditambahkan di fungsi `onOpen` file **AutoDeploy.gs**.
 - File **AutoDeploy.gs** (menu "🚀 CW PAGI APP" di spreadsheet) fungsi `doGet/doPost`-nya
   sudah diganti nama menjadi `doGet_AutoDeploy/doPost_AutoDeploy` agar tidak bentrok dengan
   API di Kode.gs. **Jangan dikembalikan**, karena aplikasi akan berhenti bekerja.
@@ -152,8 +161,9 @@ Catatan proyek Apps Script:
   `apps-script/` (memuat NRP admin), dokumen jadwal `.docx/.pdf` (nama personel), `_arsip-lokal/`.
 - Data personil & NRP hanya ada di spreadsheet; aplikasi mengambilnya lewat Apps Script
   setelah login. Anggota hanya menerima data dirinya sendiri.
-- Siapa pun yang tahu NRP seseorang bisa login sebagai orang itu. Jika perlu lebih aman,
-  bisa ditambah kode kedua (mis. 4 digit tanggal lahir).
+- Rekap dilindungi NRP admin **+ kode admin** (bagian 2), jadi NRP admin saja tidak cukup.
+- Untuk anggota, siapa pun yang tahu NRP seseorang bisa melapor sebagai orang itu, tetapi
+  tetap terikat jam & radius titik. Jika perlu, bisa ditambah kode kedua untuk anggota juga.
 - **Cadangkan** `apps-script/Code.gs` (mis. salin ke Google Drive), karena tidak ada di GitHub.
 
 ## 10. Ganti bulan
@@ -179,6 +189,8 @@ menampilkan "Lapor belum dibuka".
 | --- | --- |
 | HP masih tampilan lama | Tutup aplikasi sepenuhnya lalu buka lagi / tarik layar untuk refresh. |
 | "NRP tidak terdaftar" | NRP belum ada / salah ketik di sheet ANGGOTA. |
+| "Kode admin belum diatur" | Atur dulu lewat menu spreadsheet 🚀 CW PAGI APP → 🔐 Atur Kode Admin Aplikasi. |
+| "Kode admin salah 5 kali" | Tunggu 15 menit, lalu coba lagi (atau atur kode baru lewat menu). |
 | "NRP terdaftar, tetapi nama … tidak ada di plotting" | Kolom A ANGGOTA tidak sama persis dengan kolom B ABSENSI. |
 | Selalu "Di luar radius" padahal di titik | Koordinat titik di KOORDINAT kurang akurat → perbaiki, atau perbesar radius di JADWAL. |
 | "Izin lokasi ditolak" | Di HP: izinkan akses lokasi untuk situs/aplikasi, lalu Ambil ulang lokasi. |

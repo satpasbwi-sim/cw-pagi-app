@@ -8,6 +8,8 @@
   const PENDING = '?';
 
   let pin = load('cw_pin');
+  let kode = load('cw_kode');   // kode admin (kedua setelah NRP) untuk membuka Rekap
+  let mintaAdmin = false;
   let data = null;          // respons terakhir dari API
   let edits = {};           // row -> kode yang belum disimpan
   let noteEdits = {};       // no plotting -> catatan yang belum disimpan
@@ -31,7 +33,8 @@
   }
 
   async function fetchData(day) {
-    const url = API + '?pin=' + encodeURIComponent(pin) + (day ? '&day=' + day : '');
+    const url = API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') +
+      (day ? '&day=' + day : '');
     const res = await fetch(url);
     return res.json();
   }
@@ -61,7 +64,7 @@
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ pin, day: data.day, updates, notes })
+        body: JSON.stringify({ pin, kode, day: data.day, updates, notes })
       });
       const out = await res.json();
       if (out.error) throw new Error(out.error);
@@ -85,6 +88,12 @@
       const d = await fetchData(day);
       if (d.error) {
         if (d.error === 'PIN salah') return showLogin('NRP tidak terdaftar');
+        if (/Kode admin/.test(d.error)) {
+          // kode salah/terkunci: tetap masuk sebagai anggota tanpa Rekap
+          kode = ''; store('cw_kode', ''); mintaAdmin = false;
+          toast(d.error);
+          return reload(day);
+        }
         if (/NRP|plotting/.test(d.error)) return showLogin(d.error);
         throw new Error(d.error);
       }
@@ -94,6 +103,8 @@
       $('mode').hidden = d.role === 'anggota';
       if (d.role === 'anggota') { mode = 'lapor'; me = String(d.me); }
       else if (d.me) me = String(d.me);   // admin (login NRP) melapor untuk dirinya sendiri
+      if (mintaAdmin && d.role === 'admin') { mode = 'rekap'; store('cw_mode', mode); toast('✓ Masuk sebagai admin'); }
+      mintaAdmin = false;
       edits = {};
       noteEdits = {};
       showNeed = false;
@@ -471,7 +482,7 @@
         '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
           gantiBtn() + '</div>' +
         '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) + '</p>' +
-        body +
+        body + adminBox() +
       '</section>';
   }
 
@@ -489,6 +500,7 @@
             '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
           : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>') +
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
+        adminBox() +
         '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
       '</section>';
   }
@@ -550,7 +562,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          pin, action: 'lapor', tahap, no: r.no, st,
+          pin, kode, action: 'lapor', tahap, no: r.no, st,
           lat: pakaiLokasi ? draft.lat : null, lng: pakaiLokasi ? draft.lng : null, acc: pakaiLokasi ? draft.acc : null,
           foto: pakaiLokasi ? draft.foto : null, note: draft.note.trim()
         })
@@ -578,6 +590,12 @@
     if (!el || sending) return;
     const a = el.dataset.a;
     if (a === 'keluar') return logout();
+    if (a === 'masukAdmin') {
+      const k = ($('kodeAdmin').value || '').trim();
+      if (!k) return toast('Ketik kode admin dulu');
+      kode = k; store('cw_kode', k); mintaAdmin = true;
+      return reload(data.today);
+    }
     if (a === 'gps') return ambilLokasi(true);
     if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
     if (a === 'modeTidak') draft.tidak = true;
@@ -628,11 +646,21 @@
   };
 
   // anggota: "Keluar" (ganti akun NRP); admin: "Bukan saya" (pilih nama lain)
+  // NRP admin yang belum memasukkan kode: form untuk membuka Rekap
+  function adminBox() {
+    if (data.role !== 'anggota' || !data.bisaAdmin) return '';
+    return '<div class="step"><h3>Admin <small>buka menu Rekap</small></h3><div class="admin-row">' +
+      '<input class="note-in" id="kodeAdmin" type="password" autocomplete="off" placeholder="Kode admin">' +
+      '<button class="btn primary" data-a="masukAdmin">Buka Rekap</button></div></div>';
+  }
+
   function gantiBtn() { return '<button class="link muted-link" data-a="keluar">Keluar</button>'; }
 
   function logout() {
     pin = '';
     store('cw_pin', '');
+    kode = '';
+    store('cw_kode', '');
     data = null;
     draft = newDraft();
     $('pin').value = '';
