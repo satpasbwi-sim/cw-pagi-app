@@ -240,3 +240,8 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 @media (max-width: 420px) {
   .seg button { padding: 8px; font-size: .75rem; }
 }
+
+/* ---------- Form kode admin ---------- */
+.admin-row { display: flex; gap: 8px; }
+.admin-row input { flex: 1; min-width: 0; }
+.admin-row .btn { flex: none; }
