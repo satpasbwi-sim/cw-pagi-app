@@ -82,6 +82,7 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
 | Anggota & NRP | Sheet **ANGGOTA**: kolom A = nama **persis** seperti kolom B (PETUGAS) di ABSENSI, kolom B = NRP. |
 | Koordinat titik | Sheet **KOORDINAT**: kolom A = nama lokasi (sama dengan ABSENSI), kolom B = `lat, lng` dari Google Maps (tekan lama titik → salin angka). |
 | Plotting petugas | Sheet **ABSENSI** seperti biasa. Lokasi baru otomatis ditambahkan ke KOORDINAT. |
+| Personel pos jaga (BM) | Baris ABSENSI "Pos 12.04 Karangente / Pos 12.02 Ketapang" tidak memuat nama. Saat login, server membaca spreadsheet **Jadwal Piket BM** (sheet *Piket BM*) dan mengarahkan ke baris sesuai shift hari itu: KETERANGAN TUGAS "…Piket Malam" = M, "…Lepas Dinas" = LD, "Piket Siang" = S. Nama di ANGGOTA kolom A harus **sama persis** dengan nama di jadwal (mis. `AIPTU SUGIHARTO`). LOG LAPOR dan CATATAN mencatat nama asli pelapor. |
 | Kode alasan (S, I, LD, …) | Sheet **PENGATURAN** E5:F11 (seperti sebelumnya). |
 
 Catatan:
