@@ -425,7 +425,8 @@
     return m < j.mulaiSelesai ? 'tunggu' : 'selesai';
   }
 
-  function okLokasi(r) { return draft.lat != null && (r.lat == null || jarakM(draft, r) <= radius()); }
+  // masa uji coba (data.bebasWaktu): GPS & radius tidak wajib, lokasi tetap dicatat bila ada
+  function okLokasi(r) { return data.bebasWaktu || (draft.lat != null && (r.lat == null || jarakM(draft, r) <= radius())); }
 
   function gpsHtml(r) {
     if (draft.lat == null) {
@@ -441,7 +442,8 @@
     const d = jarakM(draft, r);
     return d <= radius()
       ? '<div class="gps ok"><b>✓ Di dalam radius titik</b>' + fmtJarak(d) + ' dari titik (maks ' + radius() + ' m) · ' + akurasi + '</div>'
-      : '<div class="gps out"><b>✕ Di luar radius — belum bisa lapor</b>' + fmtJarak(d) + ' dari titik ' + esc(r.lokasi) +
+      : '<div class="gps out"><b>✕ Di luar radius' + (data.bebasWaktu ? ' (uji coba: tetap bisa lapor)' : ' — belum bisa lapor') + '</b>' +
+        fmtJarak(d) + ' dari titik ' + esc(r.lokasi) +
         ' (maks ' + radius() + ' m). Mendekatlah ke titik lalu ketuk Ambil ulang lokasi. · ' + akurasi + '</div>';
   }
 
@@ -549,7 +551,7 @@
     navigator.geolocation.getCurrentPosition((pos) => {
       draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
       draft.gpsMsg = '';
-      if (mode !== 'lapor') return;
+      if (!data || mode !== 'lapor') return;
       updateGps();
       const r = myRow();
       if (r && !okLokasi(r)) {
