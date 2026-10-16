@@ -84,10 +84,14 @@
     try {
       const d = await fetchData(day);
       if (d.error) {
-        if (d.error === 'PIN salah') return showLogin('PIN salah');
+        if (d.error === 'PIN salah') return showLogin('NRP / PIN salah');
+        if (/NRP|plotting/.test(d.error)) return showLogin(d.error);
         throw new Error(d.error);
       }
       data = d;
+      // anggota (login NRP) hanya bisa Lapor Saya untuk dirinya sendiri
+      $('mode').hidden = d.role === 'anggota';
+      if (d.role === 'anggota') { mode = 'lapor'; me = String(d.me); }
       edits = {};
       noteEdits = {};
       showNeed = false;
@@ -380,7 +384,7 @@
     v.innerHTML =
       '<section class="card">' +
         '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
-          '<button class="link muted-link" data-a="ganti">Bukan saya</button></div>' +
+          gantiBtn() + '</div>' +
         '<p class="sub" style="margin:8px 0 0">' + dateLabel() + '</p>' + statusAdmin +
         (draft.tidak ? '' :
           '<div class="step"><h3>1. Lokasi <small>otomatis</small></h3>' + gps +
@@ -436,7 +440,7 @@
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
         (l.foto ? '<p class="sub"><a href="' + esc(l.foto) + '" target="_blank" rel="noopener">📷 Lihat foto</a></p>' : '') +
         '<div class="switch" style="margin-top:14px"><button class="link muted-link" data-a="ulang">Perbaiki laporan</button>' +
-          ' · <button class="link muted-link" data-a="ganti">Bukan saya</button></div>' +
+          ' · ' + gantiBtn() + '</div>' +
       '</section>';
   }
 
@@ -506,6 +510,7 @@
     const a = el.dataset.a;
     if (a === 'pilih') { me = el.dataset.no; store('cw_me', me); draft = newDraft(); ambilLokasi(); return; }
     if (a === 'ganti') { me = ''; store('cw_me', ''); draft = newDraft(); }
+    if (a === 'keluar') return logout();
     if (a === 'gps') return ambilLokasi();
     if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
     if (a === 'modeTidak') draft.tidak = true;
@@ -546,6 +551,22 @@
     render();
     window.scrollTo(0, 0);
   };
+
+  // anggota: "Keluar" (ganti akun NRP); admin: "Bukan saya" (pilih nama lain)
+  function gantiBtn() {
+    return data.role === 'anggota'
+      ? '<button class="link muted-link" data-a="keluar">Keluar</button>'
+      : '<button class="link muted-link" data-a="ganti">Bukan saya</button>';
+  }
+
+  function logout() {
+    pin = '';
+    store('cw_pin', '');
+    data = null;
+    draft = newDraft();
+    $('pin').value = '';
+    showLogin('');
+  }
 
   function showLogin(msg) {
     $('app').hidden = true;
