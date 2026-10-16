@@ -386,9 +386,11 @@
   function J() { return data.jadwal || { buka: 360, batasDatang: 390, mulaiSelesai: 420, tutup: 435 }; }
 
   // fase Lapor Saya: belumBuka → datang → tunggu → selesai → beres; telat/tutup bila waktunya lewat
+  // masa uji coba (data.bebasWaktu): tanpa batas jam, datang → selesai → beres
   function fase(r) {
     const l = laporOf(r) || {}, m = menitSekarang(), j = J();
     if (l.st) return 'beres';
+    if (data.bebasWaktu) return draft.tidak ? 'tidak' : l.datang ? 'selesai' : 'datang';
     if (m < j.buka) return 'belumBuka';
     if (m > j.tutup) return 'tutup';
     if (draft.tidak) return 'tidak';
@@ -463,12 +465,14 @@
         'Tetap di lokasi. Lapor Selesai dibuka pukul ' + jamTeks(j.mulaiSelesai) + ' (' + Math.max(1, Math.ceil(j.mulaiSelesai - m)) +
         ' menit lagi). Tanpa Lapor Selesai di lokasi, kehadiran tidak dihitung.') + gpsStep + tidakLink;
     } else if (f === 'datang') {
-      body = info('Langkah 1 dari 2: Lapor Datang', 'Batas pukul ' + jamTeks(j.batasDatang) + '. Lapor Selesai pukul ' +
+      body = info('Langkah 1 dari 2: Lapor Datang', data.bebasWaktu ? 'Lapor Selesai sesudahnya di titik yang sama.'
+        : 'Batas pukul ' + jamTeks(j.batasDatang) + '. Lapor Selesai pukul ' +
         jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ' di titik yang sama.') +
         gpsStep + fotoStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
     } else if (f === 'selesai') {
-      body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang tercatat pukul ' + esc(l.datang.jam) + '. Batas Lapor Selesai pukul ' +
-        jamTeks(j.tutup) + '.') + gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
+      body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang tercatat pukul ' + esc(l.datang.jam) + '.' +
+        (data.bebasWaktu ? '' : ' Batas Lapor Selesai pukul ' + jamTeks(j.tutup) + '.')) +
+        gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
     } else if (f === 'tidak') {
       body = '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + reasons().map((c) =>
           '<button data-a="alasan" data-v="' + esc(c.code) + '"' + (draft.alasan === c.code ? ' class="on"' : '') + '>' + esc(c.label) + '</button>').join('') +
@@ -648,7 +652,7 @@
   // anggota: "Keluar" (ganti akun NRP); admin: "Bukan saya" (pilih nama lain)
   // NRP admin yang belum memasukkan kode: form untuk membuka Rekap
   function adminBox() {
-    if (data.role !== 'anggota' || !data.bisaAdmin) return '';
+    if (data.role !== 'anggota' || !data.bisaAdmin || data.bebasWaktu) return '';
     return '<div class="step"><h3>Admin <small>buka menu Rekap</small></h3><div class="admin-row">' +
       '<input class="note-in" id="kodeAdmin" type="password" autocomplete="off" placeholder="Kode admin">' +
       '<button class="btn primary" data-a="masukAdmin">Buka Rekap</button></div></div>';
