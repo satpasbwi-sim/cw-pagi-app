@@ -20,9 +20,21 @@
   let me = '';                             // no plotting milik NRP yang login (dari server)
   let draft = newDraft();                  // isian form Lapor Saya yang belum dikirim
   let sending = false;
+  let memuat = false;                      // sedang mengambil data terbaru dari server
+  const CARI_GPS = 'Mencari lokasi GPS…';
 
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
+
+  // data terakhir disimpan di HP agar Lapor Saya langsung tampil saat dibuka, lalu diperbarui dari server
+  function tglLokal() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function simpanCache(d) { store('cw_data', JSON.stringify({ pin, tgl: tglLokal(), d })); }
+  function bacaCache() {
+    try {
+      const c = JSON.parse(load('cw_data') || 'null');
+      return c && c.pin === pin && c.tgl === tglLokal() ? c.d : null;   // hanya data hari ini milik NRP ini
+    } catch (e) { return null; }
+  }
 
   function toast(msg) {
     const t = $('toast');
@@ -84,8 +96,11 @@
 
   async function reload(day) {
     $('btnReload').disabled = true;
+    memuat = true;
+    if (data && mode === 'lapor' && !sending) renderLapor(); else if (!data) renderMemuat();
     try {
       const d = await fetchData(day);
+      memuat = false;
       if (d.error) {
         if (d.error === 'PIN salah') return showLogin('NRP tidak terdaftar');
         if (/Kode admin/.test(d.error)) {
@@ -98,6 +113,7 @@
         throw new Error(d.error);
       }
       data = d;
+      if (!day || day === d.today) simpanCache(d);
       if (d.now != null) jamSync = { now: d.now, at: Date.now() };
       // tombol Rekap dihapus: semua (termasuk admin) hanya Lapor Saya untuk dirinya sendiri
       $('mode').hidden = false;
@@ -111,10 +127,22 @@
       const r = mode === 'lapor' && myRow();
       if (r && ['datang', 'tunggu', 'selesai'].includes(fase(r)) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
     } catch (err) {
+      memuat = false;
       toast('Gagal memuat: ' + err.message);
+      if (data && mode === 'lapor' && !sending) renderLapor();
+      else if (!data) $('laporView').innerHTML = '<section class="card"><div class="gps out"><b>Gagal memuat data</b>' +
+        'Periksa sinyal internet lalu ketuk Lapor Saya untuk mencoba lagi.</div></section>';
     } finally {
+      memuat = false;
       $('btnReload').disabled = false;
     }
+  }
+
+  // belum ada data tersimpan: tampilkan tanda memuat, bukan layar kosong
+  function renderMemuat() {
+    $('laporView').hidden = false;
+    $('laporView').innerHTML = '<section class="card"><div class="gps"><b>⟳ Memuat data…</b>' +
+      'Mengambil jadwal & titik plotting dari server (biasanya 2–5 detik).</div></section>';
   }
 
   function statusOf(r) { return edits[r.row] !== undefined ? edits[r.row] : r.status; }
@@ -400,7 +428,10 @@
   function okLokasi(r) { return draft.lat != null && (r.lat == null || jarakM(draft, r) <= radius()); }
 
   function gpsHtml(r) {
-    if (draft.lat == null) return '<div class="gps"><b>' + esc(draft.gpsMsg || 'Mengambil lokasi…') + '</b></div>';
+    if (draft.lat == null) {
+      return draft.gpsMsg && draft.gpsMsg !== CARI_GPS ? '<div class="gps"><b>' + esc(draft.gpsMsg) + '</b></div>'
+        : '<div class="gps"><b>📡 Mencari lokasi GPS…</b>Biasanya 2–15 detik, lebih cepat di luar ruangan.</div>';
+    }
     const peta = '<a href="https://maps.google.com/?q=' + draft.lat.toFixed(6) + ',' + draft.lng.toFixed(6) + '" target="_blank" rel="noopener">lihat peta</a>';
     const akurasi = 'akurasi ±' + Math.round(draft.acc) + ' m · ' + peta;
     if (r.lat == null) {
@@ -478,7 +509,8 @@
       '<section class="card">' +
         '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
           gantiBtn() + '</div>' +
-        '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) + '</p>' +
+        '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) +
+          (memuat ? ' · <span class="muted">⟳ memperbarui…</span>' : '') + '</p>' +
         body +
       '</section>';
   }
@@ -503,6 +535,7 @@
 
   // perbarui kotak lokasi & tombol kirim tanpa menggambar ulang form (isian catatan tidak hilang)
   function updateGps() {
+    if (!data || mode !== 'lapor') return;   // GPS bisa selesai sebelum data dari server tiba
     const r = myRow();
     if (!r || !$('gpsBox')) return render();
     $('gpsBox').innerHTML = gpsHtml(r);
@@ -510,8 +543,8 @@
   }
 
   function ambilLokasi(manual) {
-    if (draft.lat == null || manual) draft.gpsMsg = 'Mengambil lokasi…';
-    if (manual && $('gpsBox')) $('gpsBox').innerHTML = '<div class="gps"><b>Mengambil lokasi…</b></div>';
+    if (draft.lat == null || manual) draft.gpsMsg = CARI_GPS;
+    if (manual && $('gpsBox')) $('gpsBox').innerHTML = '<div class="gps"><b>📡 Mencari lokasi GPS…</b></div>';
     if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; if (mode === 'lapor') updateGps(); return; }
     navigator.geolocation.getCurrentPosition((pos) => {
       draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
@@ -599,7 +632,9 @@
   $('laporView').addEventListener('input', (e) => { if (e.target.id === 'laporNote') draft.note = e.target.value; });
   $('mode').onclick = (e) => {
     const b = e.target.closest('button');
-    if (!b || !data || b.dataset.m === mode) return;
+    if (!b || memuat || sending) return;
+    // ketuk Lapor Saya saat sudah terbuka (atau gagal memuat): ambil data terbaru dari server
+    if (!data || b.dataset.m === mode) return reload(data && data.today);
     if (b.dataset.m === 'lapor' && dirtyCount() && data.day !== data.today &&
       !confirm('Perubahan rekap yang belum disimpan akan hilang. Lanjut?')) return;
     mode = b.dataset.m;
@@ -617,6 +652,7 @@
     store('cw_pin', '');
     kode = '';
     store('cw_kode', '');
+    store('cw_data', '');
     data = null;
     draft = newDraft();
     $('pin').value = '';
@@ -642,8 +678,7 @@
     pin = $('pin').value.trim();
     store('cw_pin', pin);
     $('login').hidden = true;
-    $('app').hidden = false;
-    reload();
+    mulai();
   };
   $('pin').onkeydown = (e) => { if (e.key === 'Enter') $('btnLogin').click(); };
   $('day').onchange = (e) => goDay(Number(e.target.value));
@@ -734,5 +769,20 @@
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 
-  if (pin) { $('app').hidden = false; reload(); } else showLogin();
+  // buka aplikasi: tampilkan data tersimpan (bila ada) seketika, GPS & data server diambil bersamaan
+  function mulai() {
+    $('app').hidden = false;
+    $('mode').hidden = false;
+    mode = 'lapor';
+    const c = bacaCache();
+    if (c) {
+      data = c;
+      if (c.me) me = String(c.me);
+      render();
+    }
+    ambilLokasi();
+    reload();
+  }
+
+  if (pin) mulai(); else showLogin();
 })();
