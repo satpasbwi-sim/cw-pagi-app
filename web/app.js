@@ -99,8 +99,8 @@
       }
       data = d;
       if (d.now != null) jamSync = { now: d.now, at: Date.now() };
-      // menu Rekap disembunyikan: semua (termasuk admin) hanya Lapor Saya untuk dirinya sendiri
-      $('mode').hidden = true;
+      // tombol Rekap dihapus: semua (termasuk admin) hanya Lapor Saya untuk dirinya sendiri
+      $('mode').hidden = false;
       mode = 'lapor';
       if (d.me) me = String(d.me);
       mintaAdmin = false;
