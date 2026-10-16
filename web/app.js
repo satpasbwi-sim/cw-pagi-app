@@ -99,11 +99,10 @@
       }
       data = d;
       if (d.now != null) jamSync = { now: d.now, at: Date.now() };
-      // anggota (login NRP) hanya bisa Lapor Saya untuk dirinya sendiri
-      $('mode').hidden = d.role === 'anggota';
-      if (d.role === 'anggota') { mode = 'lapor'; me = String(d.me); }
-      else if (d.me) me = String(d.me);   // admin (login NRP) melapor untuk dirinya sendiri
-      if (mintaAdmin && d.role === 'admin') { mode = 'rekap'; store('cw_mode', mode); toast('✓ Masuk sebagai admin'); }
+      // menu Rekap disembunyikan: semua (termasuk admin) hanya Lapor Saya untuk dirinya sendiri
+      $('mode').hidden = true;
+      mode = 'lapor';
+      if (d.me) me = String(d.me);
       mintaAdmin = false;
       edits = {};
       noteEdits = {};
