@@ -58,6 +58,14 @@
   </section>
 
   <main id="app" hidden>
+    <div class="mode" id="mode">
+      <button data-m="lapor">Lapor Saya</button>
+      <button data-m="rekap">Rekap</button>
+    </div>
+
+    <div id="laporView" hidden></div>
+
+    <div id="rekapView" hidden>
     <section class="card">
       <div class="date-row">
         <button class="icon-btn" id="prevDay" aria-label="Hari sebelumnya">‹</button>
@@ -89,6 +97,7 @@
         <a class="btn wa-btn" id="btnWa" target="_blank" rel="noopener">Kirim ke WhatsApp</a>
       </div>
     </section>
+    </div>
   </main>
 
   <footer id="saveBar" class="savebar" hidden>

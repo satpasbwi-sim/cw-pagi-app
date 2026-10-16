@@ -14,6 +14,10 @@
   const openNote = {};      // no plotting -> kolom catatan dibuka manual
   const closed = {};        // simpul yang dilipat
   let showNeed = false;     // tandai merah baris "Tidak" tanpa alasan setelah Simpan ditekan
+  let mode = load('cw_mode') || 'lapor';   // 'lapor' (anggota) atau 'rekap' (admin)
+  let me = load('cw_me');                  // no plotting anggota yang memakai HP ini
+  let draft = newDraft();                  // isian form Lapor Saya yang belum dikirim
+  let sending = false;
 
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
@@ -88,6 +92,8 @@
       noteEdits = {};
       showNeed = false;
       render();
+      const r = mode === 'lapor' && myRow();
+      if (r && !laporOf(r) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
     } catch (err) {
       toast('Gagal memuat: ' + err.message);
     } finally {
@@ -136,6 +142,19 @@
   }
 
   function render() {
+    [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
+    $('laporView').hidden = mode !== 'lapor';
+    $('rekapView').hidden = mode !== 'rekap';
+    if (mode === 'lapor') {
+      $('saveBar').hidden = true;
+      // Lapor Saya selalu untuk hari ini
+      if (data.today && data.day !== data.today) return reload(data.today);
+      return renderLapor();
+    }
+    renderRekap();
+  }
+
+  function renderRekap() {
     // tanggal
     const sel = $('day');
     sel.innerHTML = '';
@@ -198,7 +217,8 @@
       '" data-row="' + r.row + '">' +
       '<div class="line"><div class="info">' +
         '<div class="name">' + esc(r.no) + '. ' + esc(r.petugas) + (r.jml > 1 ? ' · ' + r.jml + ' pers' : '') + '</div>' +
-        '<div class="loc">' + esc(r.lokasi) + (r.jam ? ' · ' + esc(r.jam) : '') + '</div></div>' +
+        '<div class="loc">' + esc(r.lokasi) + (r.jam ? ' · ' + esc(r.jam) : '') + '</div>' +
+        laporInfo(r) + '</div>' +
         '<div class="seg"><button class="h' + (k === 'H' ? ' on' : '') + '" data-act="H">Hadir</button>' +
         '<button class="t' + (k === 'T' ? ' on' : '') + '" data-act="T">Tidak</button></div></div>' +
       (showNote
@@ -209,6 +229,21 @@
         : '<button class="add-note" data-act="addNote">+ catatan</button>') +
     '</div>';
   }
+
+  // keterangan laporan mandiri anggota (jam, jarak dari titik, peta, foto)
+  function laporOf(r) { return (data.lapor || {})[String(r.no)]; }
+  function jauh(l) { return l && l.dist != null && l.dist > radius(); }
+  function radius() { return data.radius || 300; }
+  function laporInfo(r) {
+    const l = laporOf(r);
+    if (!l) return '';
+    const badge = l.st !== 'H' ? '' : l.dist == null ? ''
+      : jauh(l) ? '<span class="badge far">⚠ ' + fmtJarak(l.dist) + '</span>' : '<span class="badge ok">✓ di lokasi</span>';
+    return '<div class="lapor-info">📍 lapor ' + esc(l.jam) + badge +
+      (l.peta ? ' · <a href="' + esc(l.peta) + '" target="_blank" rel="noopener">peta</a>' : '') +
+      (l.foto ? ' · <a href="' + esc(l.foto) + '" target="_blank" rel="noopener">📷 foto</a>' : '') + '</div>';
+  }
+  function fmtJarak(m) { return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km'; }
 
   function renderSaveBar() {
     const n = dirtyCount();
@@ -246,10 +281,12 @@
       let tulis = 0;
       rows.forEach((r) => {
         const st = statusOf(r), k = kind(st), note = noteOf(r);
-        if (ringkas && k === 'H' && !note) return;
-        const mark = k === 'H' ? '✅' : k === 'T' ? '❌' : '⚪';
+        if (ringkas && k === 'H' && !note && !jauh(laporOf(r))) return;
+        const l = laporOf(r), far = k === 'H' && jauh(l);
+        const mark = far ? '⚠️' : k === 'H' ? '✅' : k === 'T' ? '❌' : '⚪';
         const ket = k === 'T' ? ' : ' + labelOf(st) : k === 'K' ? ' : *belum lapor*' : '';
-        L.push(mark + ' ' + r.no + '. ' + r.petugas + ' – ' + r.lokasi + ket + (note ? ' _(' + note + ')_' : ''));
+        const waktu = k === 'H' && l ? ' (' + l.jam + (far ? ', ' + fmtJarak(l.dist) + ' dari titik' : '') + ')' : '';
+        L.push(mark + ' ' + r.no + '. ' + r.petugas + ' – ' + r.lokasi + waktu + ket + (note ? ' _(' + note + ')_' : ''));
         tulis++;
       });
       if (ringkas && !tulis) L.push('✅ Semua hadir');
@@ -299,6 +336,216 @@
     renderSaveBar();
     renderWa();
   });
+
+  // ---------- Lapor Saya (anggota melapor sendiri) ----------
+  function newDraft() {
+    return { lat: null, lng: null, acc: null, gpsMsg: '', foto: null, fotoKb: 0, note: '', tidak: false, alasan: '', ulang: false };
+  }
+  function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
+
+  function jarakM(a, b) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * rad, dLng = (b.lng - a.lng) * rad;
+    const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+
+  function renderLapor() {
+    const v = $('laporView');
+    if (!data.today) {
+      v.innerHTML = '<section class="card"><h2 class="t">Lapor belum dibuka</h2>' +
+        '<p class="sub">Spreadsheet yang terhubung bukan untuk bulan berjalan. Hubungi admin.</p></section>';
+      return;
+    }
+    const r = myRow();
+    if (!r) return renderPilih('');
+    const l = laporOf(r);
+    if (l && !draft.ulang) return renderSelesai(r, l);
+
+    const punyaTitik = r.lat != null;
+    const d = draft.lat != null && punyaTitik ? jarakM(draft, r) : null;
+    let gps;
+    if (draft.lat == null) gps = '<div class="gps"><b>' + esc(draft.gpsMsg || 'Mengambil lokasi…') + '</b></div>';
+    else {
+      const peta = '<a href="https://maps.google.com/?q=' + draft.lat.toFixed(6) + ',' + draft.lng.toFixed(6) + '" target="_blank" rel="noopener">lihat peta</a>';
+      gps = d == null
+        ? '<div class="gps ok"><b>✓ Lokasi didapat</b>Akurasi ±' + Math.round(draft.acc) + ' m · ' + peta +
+          '<br><small>Koordinat titik ini belum diisi admin, jarak tidak dicek.</small></div>'
+        : '<div class="gps ' + (d <= radius() ? 'ok' : 'far') + '"><b>' +
+          (d <= radius() ? '✓ Anda di lokasi titik' : '⚠ Jauh dari titik plotting') + '</b>' +
+          'Jarak ' + fmtJarak(d) + ' · akurasi ±' + Math.round(draft.acc) + ' m · ' + peta + '</div>';
+    }
+    const statusAdmin = r.status ? '<p class="sub" style="margin:8px 0 0">Status hari ini di rekap: <b>' + esc(labelOf(r.status)) + '</b></p>' : '';
+
+    v.innerHTML =
+      '<section class="card">' +
+        '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
+          '<button class="link muted-link" data-a="ganti">Bukan saya</button></div>' +
+        '<p class="sub" style="margin:8px 0 0">' + dateLabel() + '</p>' + statusAdmin +
+        (draft.tidak ? '' :
+          '<div class="step"><h3>1. Lokasi <small>otomatis</small></h3>' + gps +
+            '<div class="mini"><button data-a="gps">⟳ Ambil ulang lokasi</button></div></div>' +
+          '<div class="step"><h3>2. Foto dokumentasi <small>opsional</small></h3><div class="photo-box">' +
+            (draft.foto ? '<img src="' + draft.foto + '" alt="Foto">' : '') +
+            '<label class="btn file-btn">' + (draft.foto ? 'Ganti foto' : '📷 Ambil foto') +
+              '<input type="file" id="foto" accept="image/*" capture="environment"></label>' +
+            (draft.foto ? '<span class="muted">' + draft.fotoKb + ' KB</span> <button class="link muted-link" data-a="hapusFoto">hapus</button>' : '') +
+          '</div></div>') +
+        (draft.tidak
+          ? '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + reasons().map((c) =>
+              '<button data-a="alasan" data-v="' + esc(c.code) + '"' + (draft.alasan === c.code ? ' class="on"' : '') + '>' + esc(c.label) + '</button>').join('') + '</div></div>'
+          : '') +
+        '<div class="step"><h3>' + (draft.tidak ? 'Catatan' : '3. Catatan') + ' <small>opsional</small></h3>' +
+          '<input class="note-in" id="laporNote" maxlength="300" placeholder="' +
+            (draft.tidak ? 'Mis. digantikan oleh …' : 'Mis. arus padat, ada kecelakaan kecil …') + '" value="' + esc(draft.note) + '"></div>' +
+        (draft.tidak
+          ? '<button class="btn big t" data-a="kirimTidak"' + (sending ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : 'Kirim: Tidak Hadir') + '</button>' +
+            '<div class="switch"><button class="link muted-link" data-a="modeHadir">← Kembali ke Lapor Hadir</button></div>'
+          : '<button class="btn big h" data-a="kirimHadir"' + (sending ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : '✓ Kirim Laporan Hadir') + '</button>' +
+            '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>') +
+        (draft.ulang ? '<div class="switch"><button class="link muted-link" data-a="batalUlang">Batal</button></div>' : '') +
+      '</section>';
+  }
+
+  function renderPilih(q) {
+    const s = q.toLowerCase();
+    const g = {};
+    data.rows.filter((r) => !s || (r.petugas + ' ' + r.lokasi).toLowerCase().includes(s))
+      .forEach((r) => { (g[r.wilayah || '-'] = g[r.wilayah || '-'] || []).push(r); });
+    $('laporView').innerHTML =
+      '<section class="card"><h2 class="t">Siapa Anda?</h2><p class="sub">Pilih nama sekali saja, HP ini akan mengingatnya.</p>' +
+        '<input class="search" id="cariNama" type="search" placeholder="Cari nama / lokasi…" value="' + esc(q) + '">' +
+        (Object.keys(g).length ? Object.keys(g).map((w) => '<div class="grp">' + esc(w.toUpperCase()) + '</div>' + g[w].map((r) =>
+          '<button class="pick" data-a="pilih" data-no="' + esc(r.no) + '"><div><b>' + esc(r.no) + '. ' + esc(r.petugas) + '</b><span>' + esc(r.lokasi) + '</span></div><span class="go">›</span></button>').join('')).join('')
+          : '<p class="empty">Nama tidak ditemukan.</p>') +
+      '</section>';
+    const c = $('cariNama');
+    c.oninput = () => { const pos = c.selectionStart; renderPilih(c.value); const n = $('cariNama'); n.focus(); n.setSelectionRange(pos, pos); };
+  }
+
+  function renderSelesai(r, l) {
+    const hadir = l.st === 'H';
+    const note = savedNote(r);
+    $('laporView').innerHTML =
+      '<section class="card done' + (hadir ? '' : ' t') + '">' +
+        '<div class="ic">' + (hadir ? '✓' : '✕') + '</div>' +
+        '<h2 class="t">' + (hadir ? 'Laporan hadir terkirim' : 'Laporan tidak hadir terkirim') + '</h2>' +
+        '<p class="sub">' + esc(r.petugas) + ' · ' + esc(r.lokasi) + '<br>pukul ' + esc(l.jam) + ' · ' + dateLabel() + '</p>' +
+        (hadir && l.dist != null ? (jauh(l) ? '<span class="badge far">⚠ ' + fmtJarak(l.dist) + ' dari titik</span>' : '<span class="badge ok">✓ di lokasi</span>') : '') +
+        (!hadir ? '<span class="badge th">' + esc(labelOf(l.st)) + '</span>' : '') +
+        (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
+        (l.foto ? '<p class="sub"><a href="' + esc(l.foto) + '" target="_blank" rel="noopener">📷 Lihat foto</a></p>' : '') +
+        '<div class="switch" style="margin-top:14px"><button class="link muted-link" data-a="ulang">Perbaiki laporan</button>' +
+          ' · <button class="link muted-link" data-a="ganti">Bukan saya</button></div>' +
+      '</section>';
+  }
+
+  function ambilLokasi() {
+    draft.lat = null;
+    draft.gpsMsg = 'Mengambil lokasi…';
+    if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; return render(); }
+    navigator.geolocation.getCurrentPosition((pos) => {
+      draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
+      if (mode === 'lapor') render();
+    }, (err) => {
+      draft.gpsMsg = err.code === 1 ? 'Izin lokasi ditolak — izinkan akses lokasi untuk situs ini' : 'Lokasi belum didapat, ketuk Ambil ulang lokasi';
+      if (mode === 'lapor') render();
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }
+
+  // perkecil foto agar hemat kuota & penyimpanan (sisi terpanjang 1024 px, JPEG 70%)
+  function kecilkanFoto(file) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, 1024 / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        URL.revokeObjectURL(img.src);
+        resolve(cv.toDataURL('image/jpeg', 0.7));
+      };
+      img.onerror = reject;
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
+  async function kirimLapor(st) {
+    const r = myRow();
+    sending = true;
+    renderLapor();
+    try {
+      const hadir = st === 'H';
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          pin, action: 'lapor', no: r.no, st,
+          lat: hadir ? draft.lat : null, lng: hadir ? draft.lng : null, acc: hadir ? draft.acc : null,
+          foto: hadir ? draft.foto : null, note: draft.note.trim()
+        })
+      });
+      const out = await res.json();
+      if (out.error) throw new Error(out.error);
+      if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk fitur Lapor');
+      draft = newDraft();
+      toast('✓ Laporan terkirim pukul ' + out.jam);
+      sending = false;
+      await reload(data.today);
+      window.scrollTo(0, 0);
+    } catch (err) {
+      sending = false;
+      renderLapor();
+      toast('Gagal mengirim: ' + err.message);
+    }
+  }
+
+  $('laporView').addEventListener('click', (e) => {
+    const el = e.target.closest('[data-a]');
+    if (!el || sending) return;
+    const a = el.dataset.a;
+    if (a === 'pilih') { me = el.dataset.no; store('cw_me', me); draft = newDraft(); ambilLokasi(); return; }
+    if (a === 'ganti') { me = ''; store('cw_me', ''); draft = newDraft(); }
+    if (a === 'gps') return ambilLokasi();
+    if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
+    if (a === 'modeTidak') draft.tidak = true;
+    if (a === 'modeHadir') draft.tidak = false;
+    if (a === 'alasan') draft.alasan = el.dataset.v;
+    if (a === 'ulang') { draft = newDraft(); draft.ulang = true; draft.note = savedNote(myRow()); return ambilLokasi(); }
+    if (a === 'batalUlang') draft = newDraft();
+    if (a === 'kirimHadir') {
+      const r = myRow();
+      if (draft.lat == null && !confirm('Lokasi belum didapat. Kirim tanpa lokasi?')) return;
+      const d = draft.lat != null && r.lat != null ? jarakM(draft, r) : null;
+      if (d != null && d > radius() && !confirm('Anda ' + fmtJarak(d) + ' dari titik ' + r.lokasi + '. Tetap kirim? Laporan akan ditandai ⚠.')) return;
+      return kirimLapor('H');
+    }
+    if (a === 'kirimTidak') {
+      if (!draft.alasan) return toast('Ketuk salah satu alasan dulu');
+      return kirimLapor(draft.alasan);
+    }
+    renderLapor();
+  });
+  $('laporView').addEventListener('input', (e) => { if (e.target.id === 'laporNote') draft.note = e.target.value; });
+  $('laporView').addEventListener('change', async (e) => {
+    if (e.target.id !== 'foto' || !e.target.files[0]) return;
+    try {
+      draft.foto = await kecilkanFoto(e.target.files[0]);
+      draft.fotoKb = Math.round(draft.foto.length * 0.75 / 1024);
+    } catch (err) { toast('Foto tidak bisa dibaca'); }
+    renderLapor();
+  });
+  $('mode').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (!b || !data || b.dataset.m === mode) return;
+    if (b.dataset.m === 'lapor' && dirtyCount() && data.day !== data.today &&
+      !confirm('Perubahan rekap yang belum disimpan akan hilang. Lanjut?')) return;
+    mode = b.dataset.m;
+    store('cw_mode', mode);
+    if (mode === 'lapor' && myRow() && draft.lat == null) ambilLokasi();
+    render();
+    window.scrollTo(0, 0);
+  };
 
   function showLogin(msg) {
     $('app').hidden = true;

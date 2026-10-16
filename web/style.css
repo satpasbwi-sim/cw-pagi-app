@@ -11,6 +11,8 @@
   --th: #dc3545;
   --th-bg: #fdecee;
   --kosong: #8a94a3;
+  --warn: #8a5a00;
+  --warn-bg: #fff4dc;
   --shadow: 0 1px 2px rgba(15, 35, 65, .06), 0 6px 20px rgba(15, 35, 65, .06);
 }
 @media (prefers-color-scheme: dark) {
@@ -22,6 +24,8 @@
     --line: #253149;
     --hadir-bg: #15321f;
     --th-bg: #3a1a20;
+    --warn: #f2c55c;
+    --warn-bg: #3a2e12;
     --shadow: 0 1px 2px rgba(0, 0, 0, .3);
   }
 }
@@ -173,6 +177,62 @@ textarea {
   position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff;
   padding: 10px 16px; border-radius: 10px; font-size: .85rem; max-width: 90vw; text-align: center; z-index: 10;
 }
+
+/* ---------- Pilihan mode ---------- */
+.mode {
+  display: flex; gap: 6px; background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 5px; margin-bottom: 14px; box-shadow: var(--shadow);
+}
+.mode button { flex: 1; border: 0; background: none; border-radius: 10px; padding: 9px; font-weight: 700; cursor: pointer; color: var(--muted); }
+.mode button.on { background: var(--navy); color: #fff; }
+@media (prefers-color-scheme: dark) { .mode button.on { background: #26508a; } }
+
+/* ---------- Lapor Saya ---------- */
+h2.t { margin: 0 0 4px; font-size: 1.05rem; }
+.sub { margin: 0 0 12px; color: var(--muted); font-size: .85rem; }
+.search { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
+.pick {
+  display: flex; width: 100%; text-align: left; gap: 10px; align-items: center; border: 0; border-top: 1px solid var(--line);
+  background: none; padding: 11px 2px; cursor: pointer;
+}
+.pick b { display: block; font-size: .92rem; }
+.pick span { font-size: .78rem; color: var(--muted); }
+.pick .go { margin-left: auto; color: var(--muted); }
+.grp { font-size: .75rem; font-weight: 800; letter-spacing: .05em; color: var(--muted); margin: 12px 0 2px; }
+.who { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.who b { font-size: 1.05rem; }
+.who .loc { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+.step { border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+.step h3 { margin: 0 0 8px; font-size: .9rem; display: flex; justify-content: space-between; align-items: center; }
+.step h3 small { font-weight: 600; color: var(--muted); font-size: .75rem; }
+.gps { border-radius: 12px; padding: 10px 12px; font-size: .85rem; background: var(--bg); }
+.gps.ok { background: var(--hadir-bg); color: var(--hadir); }
+.gps.far { background: var(--warn-bg); color: var(--warn); }
+.gps b { display: block; font-size: .95rem; }
+.gps a { color: inherit; }
+.mini { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.mini button { font-size: .75rem; border: 1px solid var(--line); background: none; border-radius: 8px; padding: 5px 9px; cursor: pointer; color: var(--muted); }
+.photo-box { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.photo-box img { width: 84px; height: 84px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.file-btn { position: relative; overflow: hidden; }
+.file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.note-in { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 10px; padding: 9px 10px; }
+.big { width: 100%; margin-top: 14px; padding: 14px; font-size: 1rem; }
+.btn.big.h { background: var(--hadir); border-color: var(--hadir); color: #fff; }
+.btn.big.t { background: var(--th); border-color: var(--th); color: #fff; }
+.switch { text-align: center; margin-top: 10px; }
+.done { text-align: center; padding: 26px 16px; }
+.done .ic {
+  width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; margin: 0 auto 10px;
+  font-size: 2rem; background: var(--hadir-bg); color: var(--hadir);
+}
+.done.t .ic { background: var(--th-bg); color: var(--th); }
+.badge { display: inline-block; font-size: .68rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; margin-left: 4px; vertical-align: middle; }
+.badge.ok { background: var(--hadir-bg); color: var(--hadir); }
+.badge.far { background: var(--warn-bg); color: var(--warn); }
+.badge.th { background: var(--th-bg); color: var(--th); }
+.lapor-info { font-size: .75rem; color: var(--muted); margin-top: 2px; }
+.lapor-info a { color: var(--text); font-weight: 600; }
 
 @media (max-width: 420px) {
   .seg button { padding: 8px; font-size: .75rem; }
