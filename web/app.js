@@ -397,6 +397,8 @@
       foto: '', fotoMs: 0, kameraGagal: '' };
   }
   function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
+  // personel pos jaga melapor di baris "Pos 12.04 …": tampilkan nama aslinya (dari ANGGOTA)
+  function namaSaya(r) { return data.nama || r.petugas; }
 
   function jarakM(a, b) {
     const R = 6371000, rad = Math.PI / 180;
@@ -516,7 +518,7 @@
 
     v.innerHTML =
       '<section class="card">' +
-        '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
+        '<div class="who"><div><b>' + esc(namaSaya(r)) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + (data.piket ? '<br>' + esc(data.piket) : '') + '</div></div>' +
           gantiBtn() + '</div>' +
         '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) +
           (memuat ? ' · <span class="muted">⟳ memperbarui…</span>' : '') + '</p>' +
@@ -534,7 +536,7 @@
         '<section class="card done w">' +
           '<div class="ic">!</div>' +
           '<h2 class="t">Laporan diterima, menunggu verifikasi admin</h2>' +
-          '<p class="sub">' + esc(r.petugas) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
+          '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + esc(s.jam) + '</p>' +
           '<span class="badge far">⚠️ lokasi perlu dicek admin</span>' +
           '<p class="sub" style="margin-top:8px">Kehadiran belum dihitung. Bila Anda memang di titik, hubungi admin.</p>' +
@@ -546,7 +548,7 @@
       '<section class="card done' + (hadir ? '' : ' t') + '">' +
         '<div class="ic">' + (hadir ? '✓' : '✕') + '</div>' +
         '<h2 class="t">' + (hadir ? 'Kehadiran tercatat' : 'Laporan tidak hadir terkirim') + '</h2>' +
-        '<p class="sub">' + esc(r.petugas) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
+        '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
         (hadir
           ? '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + (s ? esc(s.jam) : '–') + '</p>' +
             '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
@@ -597,7 +599,7 @@
       'CW PAGI SATLANTAS POLRESTA BANYUWANGI · ' + (fase(r) === 'datang' ? 'LAPOR DATANG' : 'LAPOR SELESAI'),
       '📍 ' + r.lokasi + ' (' + r.wilayah + ')',
       '🕒 ' + tgl + ' · ' + jam + ' ' + zonaTeks(tz) + ' (jam server)',
-      r.petugas + (draft.lat != null
+      namaSaya(r) + (draft.lat != null
         ? ' · ' + draft.lat.toFixed(6) + ', ' + draft.lng.toFixed(6) + ' ±' + Math.round(draft.acc) + ' m'
         : ' · GPS belum didapat')
     ];
