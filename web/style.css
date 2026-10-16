@@ -242,6 +242,3 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 }
 
 /* ---------- Form kode admin ---------- */
-.admin-row { display: flex; gap: 8px; }
-.admin-row input { flex: 1; min-width: 0; }
-.admin-row .btn { flex: none; }

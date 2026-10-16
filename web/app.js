@@ -486,7 +486,7 @@
         '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
           gantiBtn() + '</div>' +
         '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) + '</p>' +
-        body + adminBox() +
+        body +
       '</section>';
   }
 
@@ -504,7 +504,6 @@
             '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
           : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>') +
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
-        adminBox() +
         '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
       '</section>';
   }
@@ -594,12 +593,6 @@
     if (!el || sending) return;
     const a = el.dataset.a;
     if (a === 'keluar') return logout();
-    if (a === 'masukAdmin') {
-      const k = ($('kodeAdmin').value || '').trim();
-      if (!k) return toast('Ketik kode admin dulu');
-      kode = k; store('cw_kode', k); mintaAdmin = true;
-      return reload(data.today);
-    }
     if (a === 'gps') return ambilLokasi(true);
     if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
     if (a === 'modeTidak') draft.tidak = true;
@@ -650,14 +643,6 @@
   };
 
   // anggota: "Keluar" (ganti akun NRP); admin: "Bukan saya" (pilih nama lain)
-  // NRP admin yang belum memasukkan kode: form untuk membuka Rekap
-  function adminBox() {
-    if (data.role !== 'anggota' || !data.bisaAdmin || data.bebasWaktu) return '';
-    return '<div class="step"><h3>Admin <small>buka menu Rekap</small></h3><div class="admin-row">' +
-      '<input class="note-in" id="kodeAdmin" type="password" autocomplete="off" placeholder="Kode admin">' +
-      '<button class="btn primary" data-a="masukAdmin">Buka Rekap</button></div></div>';
-  }
-
   function gantiBtn() { return '<button class="link muted-link" data-a="keluar">Keluar</button>'; }
 
   function logout() {
