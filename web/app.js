@@ -89,6 +89,7 @@
         throw new Error(d.error);
       }
       data = d;
+      if (d.now != null) jamSync = { now: d.now, at: Date.now() };
       // anggota (login NRP) hanya bisa Lapor Saya untuk dirinya sendiri
       $('mode').hidden = d.role === 'anggota';
       if (d.role === 'anggota') { mode = 'lapor'; me = String(d.me); }
@@ -97,7 +98,7 @@
       showNeed = false;
       render();
       const r = mode === 'lapor' && myRow();
-      if (r && !laporOf(r) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
+      if (r && ['datang', 'tunggu', 'selesai'].includes(fase(r)) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
     } catch (err) {
       toast('Gagal memuat: ' + err.message);
     } finally {
@@ -234,18 +235,23 @@
     '</div>';
   }
 
-  // keterangan laporan mandiri anggota (jam, jarak dari titik, peta, foto)
+  // keterangan laporan mandiri anggota: { datang, selesai, tidak, st } — tiap tahap {jam, dist, peta, foto}
   function laporOf(r) { return (data.lapor || {})[String(r.no)]; }
-  function jauh(l) { return l && l.dist != null && l.dist > radius(); }
-  function radius() { return data.radius || 300; }
+  function radius() { return data.radius || 100; }
+  function cekJarak(t) { return !t || t.dist == null ? ' <span class="badge k">jarak belum dicek</span>' : ''; }
+  function tautan(t) {
+    return (t.peta ? ' · <a href="' + esc(t.peta) + '" target="_blank" rel="noopener">peta</a>' : '') +
+      (t.foto ? ' · <a href="' + esc(t.foto) + '" target="_blank" rel="noopener">📷</a>' : '');
+  }
   function laporInfo(r) {
     const l = laporOf(r);
     if (!l) return '';
-    const badge = l.st !== 'H' ? '' : l.dist == null ? ''
-      : jauh(l) ? '<span class="badge far">⚠ ' + fmtJarak(l.dist) + '</span>' : '<span class="badge ok">✓ di lokasi</span>';
-    return '<div class="lapor-info">📍 lapor ' + esc(l.jam) + badge +
-      (l.peta ? ' · <a href="' + esc(l.peta) + '" target="_blank" rel="noopener">peta</a>' : '') +
-      (l.foto ? ' · <a href="' + esc(l.foto) + '" target="_blank" rel="noopener">📷 foto</a>' : '') + '</div>';
+    if (l.st && l.st !== 'H') return '<div class="lapor-info">📍 lapor ' + esc(l.tidak.jam) + '</div>';
+    const d = l.datang, s = l.selesai;
+    let html = d ? '📍 datang ' + esc(d.jam) + tautan(d) : '';
+    if (s) html += (html ? ' · ' : '📍 ') + 'selesai ' + esc(s.jam) + tautan(s) + ' <span class="badge ok">✓ lengkap</span>';
+    else if (d) html += ' <span class="badge far">⏳ belum Lapor Selesai</span>';
+    return '<div class="lapor-info">' + html + cekJarak(s || d) + '</div>';
   }
   function fmtJarak(m) { return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km'; }
 
@@ -285,11 +291,14 @@
       let tulis = 0;
       rows.forEach((r) => {
         const st = statusOf(r), k = kind(st), note = noteOf(r);
-        if (ringkas && k === 'H' && !note && !jauh(laporOf(r))) return;
-        const l = laporOf(r), far = k === 'H' && jauh(l);
-        const mark = far ? '⚠️' : k === 'H' ? '✅' : k === 'T' ? '❌' : '⚪';
-        const ket = k === 'T' ? ' : ' + labelOf(st) : k === 'K' ? ' : *belum lapor*' : '';
-        const waktu = k === 'H' && l ? ' (' + l.jam + (far ? ', ' + fmtJarak(l.dist) + ' dari titik' : '') + ')' : '';
+        if (ringkas && k === 'H' && !note) return;
+        const l = laporOf(r) || {};
+        const separuh = k === 'K' && l.datang;   // Lapor Datang tanpa Lapor Selesai: tidak dihitung
+        const mark = separuh ? '⏳' : k === 'H' ? '✅' : k === 'T' ? '❌' : '⚪';
+        const ket = k === 'T' ? ' : ' + labelOf(st)
+          : separuh ? ' : datang ' + l.datang.jam + ', *belum Lapor Selesai*'
+          : k === 'K' ? ' : *belum lapor*' : '';
+        const waktu = k === 'H' && l.datang && l.selesai ? ' (' + l.datang.jam + '–' + l.selesai.jam + ')' : '';
         L.push(mark + ' ' + r.no + '. ' + r.petugas + ' – ' + r.lokasi + waktu + ket + (note ? ' _(' + note + ')_' : ''));
         tulis++;
       });
@@ -343,7 +352,7 @@
 
   // ---------- Lapor Saya (anggota melapor sendiri) ----------
   function newDraft() {
-    return { lat: null, lng: null, acc: null, gpsMsg: '', foto: null, fotoKb: 0, note: '', tidak: false, alasan: '', ulang: false };
+    return { lat: null, lng: null, acc: null, gpsMsg: '', foto: null, fotoKb: 0, note: '', tidak: false, alasan: '' };
   }
   function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
 
@@ -354,6 +363,46 @@
     return 2 * R * Math.asin(Math.sqrt(h));
   }
 
+  // ---------- jam lapor: pakai jam server agar tidak bisa diakali dengan mengubah jam HP ----------
+  let jamSync = { now: null, at: 0 };
+  let lastFase = '';
+  function menitSekarang() {
+    if (jamSync.now == null) { const d = new Date(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
+    return jamSync.now + (Date.now() - jamSync.at) / 60000;
+  }
+  function jamTeks(m) { m = Math.floor(m); return String(Math.floor(m / 60)).padStart(2, '0') + '.' + String(m % 60).padStart(2, '0'); }
+  function J() { return data.jadwal || { buka: 360, batasDatang: 390, mulaiSelesai: 420, tutup: 435 }; }
+
+  // fase Lapor Saya: belumBuka → datang → tunggu → selesai → beres; telat/tutup bila waktunya lewat
+  function fase(r) {
+    const l = laporOf(r) || {}, m = menitSekarang(), j = J();
+    if (l.st) return 'beres';
+    if (m < j.buka) return 'belumBuka';
+    if (m > j.tutup) return 'tutup';
+    if (draft.tidak) return 'tidak';
+    if (!l.datang) return m <= j.batasDatang ? 'datang' : 'telat';
+    return m < j.mulaiSelesai ? 'tunggu' : 'selesai';
+  }
+
+  function okLokasi(r) { return draft.lat != null && (r.lat == null || jarakM(draft, r) <= radius()); }
+
+  function gpsHtml(r) {
+    if (draft.lat == null) return '<div class="gps"><b>' + esc(draft.gpsMsg || 'Mengambil lokasi…') + '</b></div>';
+    const peta = '<a href="https://maps.google.com/?q=' + draft.lat.toFixed(6) + ',' + draft.lng.toFixed(6) + '" target="_blank" rel="noopener">lihat peta</a>';
+    const akurasi = 'akurasi ±' + Math.round(draft.acc) + ' m · ' + peta;
+    if (r.lat == null) {
+      return '<div class="gps ok"><b>✓ Lokasi didapat</b>' + akurasi +
+        '<br><small>Koordinat titik ini belum diisi admin, jarak belum dicek.</small></div>';
+    }
+    const d = jarakM(draft, r);
+    return d <= radius()
+      ? '<div class="gps ok"><b>✓ Di dalam radius titik</b>' + fmtJarak(d) + ' dari titik (maks ' + radius() + ' m) · ' + akurasi + '</div>'
+      : '<div class="gps out"><b>✕ Di luar radius — belum bisa lapor</b>' + fmtJarak(d) + ' dari titik ' + esc(r.lokasi) +
+        ' (maks ' + radius() + ' m). Mendekatlah ke titik lalu ketuk Ambil ulang lokasi. · ' + akurasi + '</div>';
+  }
+
+  function info(judul, teks) { return '<div class="step"><div class="gps"><b>' + judul + '</b>' + teks + '</div></div>'; }
+
   function renderLapor() {
     const v = $('laporView');
     if (!data.today) {
@@ -363,51 +412,61 @@
     }
     const r = myRow();
     if (!r) return renderPilih('');
-    const l = laporOf(r);
-    if (l && !draft.ulang) return renderSelesai(r, l);
+    const l = laporOf(r) || {};
+    const f = lastFase = fase(r);
+    if (f === 'beres') return renderSelesai(r, l);
+    const j = J(), m = menitSekarang();
+    const jadwalTeks = 'Lapor Datang ' + jamTeks(j.buka) + '–' + jamTeks(j.batasDatang) +
+      ', Lapor Selesai ' + jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ', dalam radius ' + radius() + ' m dari titik.';
+    const tidakLink = '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>';
+    const gpsStep = '<div class="step"><h3>Lokasi <small>otomatis</small></h3><div id="gpsBox">' + gpsHtml(r) + '</div>' +
+      '<div class="mini"><button data-a="gps">⟳ Ambil ulang lokasi</button></div></div>';
+    const fotoStep = '<div class="step"><h3>Foto dokumentasi <small>opsional</small></h3><div class="photo-box">' +
+      (draft.foto ? '<img src="' + draft.foto + '" alt="Foto">' : '') +
+      '<label class="btn file-btn">' + (draft.foto ? 'Ganti foto' : '📷 Ambil foto') +
+        '<input type="file" id="foto" accept="image/*" capture="environment"></label>' +
+      (draft.foto ? '<span class="muted">' + draft.fotoKb + ' KB</span> <button class="link muted-link" data-a="hapusFoto">hapus</button>' : '') +
+      '</div></div>';
+    const noteStep = '<div class="step"><h3>Catatan <small>opsional</small></h3>' +
+      '<input class="note-in" id="laporNote" maxlength="300" placeholder="' +
+      (draft.tidak ? 'Mis. digantikan oleh …' : 'Mis. arus padat, ada kecelakaan kecil …') + '" value="' + esc(draft.note) + '"></div>';
+    const tombol = (aksi, label) => '<button class="btn big h" id="btnKirim" data-a="' + aksi + '"' +
+      (sending || !okLokasi(r) ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : label) + '</button>';
 
-    const punyaTitik = r.lat != null;
-    const d = draft.lat != null && punyaTitik ? jarakM(draft, r) : null;
-    let gps;
-    if (draft.lat == null) gps = '<div class="gps"><b>' + esc(draft.gpsMsg || 'Mengambil lokasi…') + '</b></div>';
-    else {
-      const peta = '<a href="https://maps.google.com/?q=' + draft.lat.toFixed(6) + ',' + draft.lng.toFixed(6) + '" target="_blank" rel="noopener">lihat peta</a>';
-      gps = d == null
-        ? '<div class="gps ok"><b>✓ Lokasi didapat</b>Akurasi ±' + Math.round(draft.acc) + ' m · ' + peta +
-          '<br><small>Koordinat titik ini belum diisi admin, jarak tidak dicek.</small></div>'
-        : '<div class="gps ' + (d <= radius() ? 'ok' : 'far') + '"><b>' +
-          (d <= radius() ? '✓ Anda di lokasi titik' : '⚠ Jauh dari titik plotting') + '</b>' +
-          'Jarak ' + fmtJarak(d) + ' · akurasi ±' + Math.round(draft.acc) + ' m · ' + peta + '</div>';
+    let body = '';
+    if (f === 'belumBuka') body = info('⏰ Lapor dibuka pukul ' + jamTeks(j.buka), jadwalTeks);
+    else if (f === 'tutup') {
+      body = info('Waktu lapor sudah berakhir (' + jamTeks(j.tutup) + ')', l.datang
+        ? 'Anda Lapor Datang pukul ' + esc(l.datang.jam) + ' tetapi tidak Lapor Selesai, sehingga kehadiran hari ini tidak dihitung.'
+        : 'Hari ini Anda belum lapor. Hubungi admin bila ada kendala.');
+    } else if (f === 'telat') {
+      body = info('Batas Lapor Datang ' + jamTeks(j.batasDatang) + ' sudah lewat',
+        'Kehadiran hari ini tidak bisa dilaporkan lewat aplikasi. Hubungi admin.') + tidakLink;
+    } else if (f === 'tunggu') {
+      body = info('✓ Lapor Datang tercatat pukul ' + esc(l.datang.jam),
+        'Tetap di lokasi. Lapor Selesai dibuka pukul ' + jamTeks(j.mulaiSelesai) + ' (' + Math.max(1, Math.ceil(j.mulaiSelesai - m)) +
+        ' menit lagi). Tanpa Lapor Selesai di lokasi, kehadiran tidak dihitung.') + gpsStep + tidakLink;
+    } else if (f === 'datang') {
+      body = info('Langkah 1 dari 2: Lapor Datang', 'Batas pukul ' + jamTeks(j.batasDatang) + '. Lapor Selesai pukul ' +
+        jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ' di titik yang sama.') +
+        gpsStep + fotoStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
+    } else if (f === 'selesai') {
+      body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang tercatat pukul ' + esc(l.datang.jam) + '. Batas Lapor Selesai pukul ' +
+        jamTeks(j.tutup) + '.') + gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
+    } else if (f === 'tidak') {
+      body = '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + reasons().map((c) =>
+          '<button data-a="alasan" data-v="' + esc(c.code) + '"' + (draft.alasan === c.code ? ' class="on"' : '') + '>' + esc(c.label) + '</button>').join('') +
+        '</div></div>' + noteStep +
+        '<button class="btn big t" data-a="kirimTidak"' + (sending ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : 'Kirim: Tidak Hadir') + '</button>' +
+        '<div class="switch"><button class="link muted-link" data-a="modeHadir">← Kembali</button></div>';
     }
-    const statusAdmin = r.status ? '<p class="sub" style="margin:8px 0 0">Status hari ini di rekap: <b>' + esc(labelOf(r.status)) + '</b></p>' : '';
 
     v.innerHTML =
       '<section class="card">' +
         '<div class="who"><div><b>' + esc(r.petugas) + '</b><div class="loc">' + esc(r.lokasi) + ' · ' + esc(r.wilayah) + '</div></div>' +
           gantiBtn() + '</div>' +
-        '<p class="sub" style="margin:8px 0 0">' + dateLabel() + '</p>' + statusAdmin +
-        (draft.tidak ? '' :
-          '<div class="step"><h3>1. Lokasi <small>otomatis</small></h3>' + gps +
-            '<div class="mini"><button data-a="gps">⟳ Ambil ulang lokasi</button></div></div>' +
-          '<div class="step"><h3>2. Foto dokumentasi <small>opsional</small></h3><div class="photo-box">' +
-            (draft.foto ? '<img src="' + draft.foto + '" alt="Foto">' : '') +
-            '<label class="btn file-btn">' + (draft.foto ? 'Ganti foto' : '📷 Ambil foto') +
-              '<input type="file" id="foto" accept="image/*" capture="environment"></label>' +
-            (draft.foto ? '<span class="muted">' + draft.fotoKb + ' KB</span> <button class="link muted-link" data-a="hapusFoto">hapus</button>' : '') +
-          '</div></div>') +
-        (draft.tidak
-          ? '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + reasons().map((c) =>
-              '<button data-a="alasan" data-v="' + esc(c.code) + '"' + (draft.alasan === c.code ? ' class="on"' : '') + '>' + esc(c.label) + '</button>').join('') + '</div></div>'
-          : '') +
-        '<div class="step"><h3>' + (draft.tidak ? 'Catatan' : '3. Catatan') + ' <small>opsional</small></h3>' +
-          '<input class="note-in" id="laporNote" maxlength="300" placeholder="' +
-            (draft.tidak ? 'Mis. digantikan oleh …' : 'Mis. arus padat, ada kecelakaan kecil …') + '" value="' + esc(draft.note) + '"></div>' +
-        (draft.tidak
-          ? '<button class="btn big t" data-a="kirimTidak"' + (sending ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : 'Kirim: Tidak Hadir') + '</button>' +
-            '<div class="switch"><button class="link muted-link" data-a="modeHadir">← Kembali ke Lapor Hadir</button></div>'
-          : '<button class="btn big h" data-a="kirimHadir"' + (sending ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : '✓ Kirim Laporan Hadir') + '</button>' +
-            '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>') +
-        (draft.ulang ? '<div class="switch"><button class="link muted-link" data-a="batalUlang">Batal</button></div>' : '') +
+        '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) + '</p>' +
+        body +
       '</section>';
   }
 
@@ -430,30 +489,48 @@
   function renderSelesai(r, l) {
     const hadir = l.st === 'H';
     const note = savedNote(r);
+    const d = l.datang, s = l.selesai, t = l.tidak;
     $('laporView').innerHTML =
       '<section class="card done' + (hadir ? '' : ' t') + '">' +
         '<div class="ic">' + (hadir ? '✓' : '✕') + '</div>' +
-        '<h2 class="t">' + (hadir ? 'Laporan hadir terkirim' : 'Laporan tidak hadir terkirim') + '</h2>' +
-        '<p class="sub">' + esc(r.petugas) + ' · ' + esc(r.lokasi) + '<br>pukul ' + esc(l.jam) + ' · ' + dateLabel() + '</p>' +
-        (hadir && l.dist != null ? (jauh(l) ? '<span class="badge far">⚠ ' + fmtJarak(l.dist) + ' dari titik</span>' : '<span class="badge ok">✓ di lokasi</span>') : '') +
-        (!hadir ? '<span class="badge th">' + esc(labelOf(l.st)) + '</span>' : '') +
+        '<h2 class="t">' + (hadir ? 'Kehadiran tercatat' : 'Laporan tidak hadir terkirim') + '</h2>' +
+        '<p class="sub">' + esc(r.petugas) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
+        (hadir
+          ? '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + (s ? esc(s.jam) : '–') + '</p>' +
+            '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
+          : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>') +
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
-        (l.foto ? '<p class="sub"><a href="' + esc(l.foto) + '" target="_blank" rel="noopener">📷 Lihat foto</a></p>' : '') +
-        '<div class="switch" style="margin-top:14px"><button class="link muted-link" data-a="ulang">Perbaiki laporan</button>' +
-          ' · ' + gantiBtn() + '</div>' +
+        '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
       '</section>';
   }
 
-  function ambilLokasi() {
-    draft.lat = null;
-    draft.gpsMsg = 'Mengambil lokasi…';
-    if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; return render(); }
+  // perbarui kotak lokasi & tombol kirim tanpa menggambar ulang form (isian catatan tidak hilang)
+  function updateGps() {
+    const r = myRow();
+    if (!r || !$('gpsBox')) return render();
+    $('gpsBox').innerHTML = gpsHtml(r);
+    if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r);
+  }
+
+  function ambilLokasi(manual) {
+    if (draft.lat == null || manual) draft.gpsMsg = 'Mengambil lokasi…';
+    if (manual && $('gpsBox')) $('gpsBox').innerHTML = '<div class="gps"><b>Mengambil lokasi…</b></div>';
+    if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; if (mode === 'lapor') updateGps(); return; }
     navigator.geolocation.getCurrentPosition((pos) => {
       draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
-      if (mode === 'lapor') render();
+      draft.gpsMsg = '';
+      if (mode !== 'lapor') return;
+      updateGps();
+      const r = myRow();
+      if (r && !okLokasi(r)) {
+        toast(fase(r) === 'tunggu'
+          ? 'Anda di luar radius ' + radius() + ' m! Kembali ke titik sebelum Lapor Selesai.'
+          : 'Anda di luar radius ' + radius() + ' m dari titik. Laporan belum bisa dikirim.');
+      }
     }, (err) => {
+      draft.lat = null;
       draft.gpsMsg = err.code === 1 ? 'Izin lokasi ditolak — izinkan akses lokasi untuk situs ini' : 'Lokasi belum didapat, ketuk Ambil ulang lokasi';
-      if (mode === 'lapor') render();
+      if (mode === 'lapor') updateGps();
     }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   }
 
@@ -474,26 +551,29 @@
     });
   }
 
-  async function kirimLapor(st) {
+  async function kirimLapor(tahap, st) {
     const r = myRow();
     sending = true;
     renderLapor();
     try {
-      const hadir = st === 'H';
+      const pakaiLokasi = tahap !== 'tidak';
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
-          pin, action: 'lapor', no: r.no, st,
-          lat: hadir ? draft.lat : null, lng: hadir ? draft.lng : null, acc: hadir ? draft.acc : null,
-          foto: hadir ? draft.foto : null, note: draft.note.trim()
+          pin, action: 'lapor', tahap, no: r.no, st,
+          lat: pakaiLokasi ? draft.lat : null, lng: pakaiLokasi ? draft.lng : null, acc: pakaiLokasi ? draft.acc : null,
+          foto: pakaiLokasi ? draft.foto : null, note: draft.note.trim()
         })
       });
       const out = await res.json();
       if (out.error) throw new Error(out.error);
       if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk fitur Lapor');
+      const lat = draft.lat, lng = draft.lng, acc = draft.acc;
       draft = newDraft();
-      toast('✓ Laporan terkirim pukul ' + out.jam);
+      if (tahap === 'datang') Object.assign(draft, { lat, lng, acc }); // lokasi tetap dipakai untuk pantauan
+      toast(tahap === 'datang' ? '✓ Lapor Datang tercatat pukul ' + out.jam
+        : tahap === 'selesai' ? '✓ Lapor Selesai pukul ' + out.jam + ' — kehadiran dihitung' : '✓ Laporan terkirim pukul ' + out.jam);
       sending = false;
       await reload(data.today);
       window.scrollTo(0, 0);
@@ -508,29 +588,37 @@
     const el = e.target.closest('[data-a]');
     if (!el || sending) return;
     const a = el.dataset.a;
-    if (a === 'pilih') { me = el.dataset.no; store('cw_me', me); draft = newDraft(); ambilLokasi(); return; }
+    if (a === 'pilih') { me = el.dataset.no; store('cw_me', me); draft = newDraft(); render(); return ambilLokasi(); }
     if (a === 'ganti') { me = ''; store('cw_me', ''); draft = newDraft(); }
     if (a === 'keluar') return logout();
-    if (a === 'gps') return ambilLokasi();
+    if (a === 'gps') return ambilLokasi(true);
     if (a === 'hapusFoto') { draft.foto = null; draft.fotoKb = 0; }
     if (a === 'modeTidak') draft.tidak = true;
     if (a === 'modeHadir') draft.tidak = false;
     if (a === 'alasan') draft.alasan = el.dataset.v;
-    if (a === 'ulang') { draft = newDraft(); draft.ulang = true; draft.note = savedNote(myRow()); return ambilLokasi(); }
-    if (a === 'batalUlang') draft = newDraft();
-    if (a === 'kirimHadir') {
+    if (a === 'kirimDatang' || a === 'kirimSelesai') {
       const r = myRow();
-      if (draft.lat == null && !confirm('Lokasi belum didapat. Kirim tanpa lokasi?')) return;
-      const d = draft.lat != null && r.lat != null ? jarakM(draft, r) : null;
-      if (d != null && d > radius() && !confirm('Anda ' + fmtJarak(d) + ' dari titik ' + r.lokasi + '. Tetap kirim? Laporan akan ditandai ⚠.')) return;
-      return kirimLapor('H');
+      if (!okLokasi(r)) return toast(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + radius() + ' m dari titik');
+      return kirimLapor(a === 'kirimDatang' ? 'datang' : 'selesai', 'H');
     }
     if (a === 'kirimTidak') {
       if (!draft.alasan) return toast('Ketuk salah satu alasan dulu');
-      return kirimLapor(draft.alasan);
+      return kirimLapor('tidak', draft.alasan);
     }
     renderLapor();
   });
+
+  // jam berjalan: ganti fase otomatis (mis. 07.00 → Lapor Selesai) dan segarkan lokasi tiap menit
+  let detak = 0;
+  setInterval(() => {
+    if (!data || mode !== 'lapor' || $('app').hidden || sending || document.hidden) return;
+    const r = myRow();
+    if (!r) return;
+    const f = fase(r);
+    const mengetik = document.activeElement && document.activeElement.id === 'laporNote';
+    if (f !== lastFase || (f === 'tunggu' && !mengetik)) renderLapor();
+    if (++detak % 3 === 0 && ['datang', 'tunggu', 'selesai'].includes(f)) ambilLokasi();
+  }, 20000);
   $('laporView').addEventListener('input', (e) => { if (e.target.id === 'laporNote') draft.note = e.target.value; });
   $('laporView').addEventListener('change', async (e) => {
     if (e.target.id !== 'foto' || !e.target.files[0]) return;
