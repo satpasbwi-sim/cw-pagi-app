@@ -62,8 +62,16 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
 - Di luar radius (bawaan **100 m**) tombol lapor terkunci dan muncul pemberitahuan merah.
 - Titik yang **belum punya koordinat** tetap bisa lapor, ditandai "jarak belum dicek".
 - **Tidak hadir** (Sakit/Izin/…) bisa dilaporkan 06.00–07.15 tanpa cek lokasi.
-- Foto dokumentasi **opsional**, otomatis dikecilkan (±50–150 KB) dan disimpan di
-  Google Drive folder **"CW Pagi - Foto Lapor"**.
+- Foto **wajib** untuk Lapor Datang dan Lapor Selesai, diambil **langsung dari kamera aplikasi**
+  (tidak bisa dari galeri). Foto diberi watermark: jenis lapor, nama titik, tanggal & **jam server**
+  (berjalan detik demi detik, tidak ikut jam HP), nama petugas, dan koordinat GPS. Foto lebih dari
+  10 menit ditolak. Disimpan di Google Drive folder **"CW Pagi - Foto Lapor"**.
+- **Deteksi fake GPS.** Laporan ditandai ⚠️ (kolom PERINGATAN di LOG LAPOR) bila: akurasi ≤ 1 m,
+  koordinat sama persis dengan titik di KOORDINAT, atau sama persis dengan laporan lain (hari lain,
+  Datang = Selesai, atau personil lain) dengan akurasi ≤ 20 m. Laporan bertanda ⚠️ **tidak dihitung
+  hadir**: ABSENSI diisi **N (Nihil)**, sehingga LAPORAN HARIAN ikut Nihil, dan alasannya ditulis di
+  sheet CATATAN. Anggota melihat "menunggu verifikasi admin". Bila ternyata asli, admin cukup
+  mengganti N menjadi H di ABSENSI.
 - Jam dan radius dicek di server, memakai jam server (tidak bisa diakali jam HP).
 
 ## 4. Pengoperasian harian (cukup di spreadsheet, tanpa push)

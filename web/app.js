@@ -115,6 +115,7 @@
       data = d;
       if (!day || day === d.today) simpanCache(d);
       if (d.now != null) jamSync = { now: d.now, at: Date.now() };
+      if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: semua (termasuk admin) hanya Lapor Saya untuk dirinya sendiri
       $('mode').hidden = false;
       mode = 'lapor';
@@ -290,6 +291,7 @@
     let html = d ? '📍 datang ' + esc(d.jam) + tautan(d) : '';
     if (s) html += (html ? ' · ' : '📍 ') + 'selesai ' + esc(s.jam) + tautan(s) + ' <span class="badge ok">✓ lengkap</span>';
     else if (d) html += ' <span class="badge far">⏳ belum Lapor Selesai</span>';
+    if (l.diperiksa) html += ' <span class="badge far">⚠️ lokasi diragukan, dicatat Nihil</span>';
     return '<div class="lapor-info">' + html + cekJarak(s || d) + '</div>';
   }
   function fmtJarak(m) { return m < 1000 ? Math.round(m) + ' m' : (m / 1000).toFixed(1).replace('.', ',') + ' km'; }
@@ -391,7 +393,8 @@
 
   // ---------- Lapor Saya (anggota melapor sendiri) ----------
   function newDraft() {
-    return { lat: null, lng: null, acc: null, gpsMsg: '', note: '', tidak: false, alasan: '' };
+    return { lat: null, lng: null, acc: null, gpsMsg: '', note: '', tidak: false, alasan: '',
+      foto: '', fotoMs: 0, kameraGagal: '' };
   }
   function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
 
@@ -404,6 +407,9 @@
 
   // ---------- jam lapor: pakai jam server agar tidak bisa diakali dengan mengubah jam HP ----------
   let jamSync = { now: null, at: 0 };
+  // jam server (ms) untuk watermark foto; performance.now() tidak ikut berubah bila jam HP diubah
+  let jamServer = null;
+  function serverNowMs() { return jamServer ? jamServer.ms + (performance.now() - jamServer.perf) : null; }
   let lastFase = '';
   function menitSekarang() {
     if (jamSync.now == null) { const d = new Date(); return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60; }
@@ -474,8 +480,9 @@
     const noteStep = '<div class="step"><h3>Catatan <small>opsional</small></h3>' +
       '<input class="note-in" id="laporNote" maxlength="300" placeholder="' +
       (draft.tidak ? 'Mis. digantikan oleh …' : 'Mis. arus padat, ada kecelakaan kecil …') + '" value="' + esc(draft.note) + '"></div>';
+    const fotoStep = '<div class="step"><h3>Foto <small>wajib, langsung dari kamera</small></h3><div id="fotoBox">' + fotoHtml() + '</div></div>';
     const tombol = (aksi, label) => '<button class="btn big h" id="btnKirim" data-a="' + aksi + '"' +
-      (sending || !okLokasi(r) ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : label) + '</button>';
+      (sending || !okLokasi(r) || !okFoto() ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : label) + '</button>';
 
     let body = '';
     if (f === 'belumBuka') body = info('⏰ Lapor dibuka pukul ' + jamTeks(j.buka), jadwalTeks);
@@ -494,11 +501,11 @@
       body = info('Langkah 1 dari 2: Lapor Datang', data.bebasWaktu ? 'Lapor Selesai sesudahnya di titik yang sama.'
         : 'Batas pukul ' + jamTeks(j.batasDatang) + '. Lapor Selesai pukul ' +
         jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ' di titik yang sama.') +
-        gpsStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
+        gpsStep + fotoStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
     } else if (f === 'selesai') {
       body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang tercatat pukul ' + esc(l.datang.jam) + '.' +
         (data.bebasWaktu ? '' : ' Batas Lapor Selesai pukul ' + jamTeks(j.tutup) + '.')) +
-        gpsStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
+        gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai');
     } else if (f === 'tidak') {
       body = '<div class="step"><h3>Alasan tidak hadir</h3><div class="chips">' + reasons().map((c) =>
           '<button data-a="alasan" data-v="' + esc(c.code) + '"' + (draft.alasan === c.code ? ' class="on"' : '') + '>' + esc(c.label) + '</button>').join('') +
@@ -521,6 +528,20 @@
     const hadir = l.st === 'H';
     const note = savedNote(r);
     const d = l.datang, s = l.selesai, t = l.tidak;
+    if (l.diperiksa && s) {
+      // lokasi dicurigai (fake GPS): server mencatat Nihil sampai admin memeriksa
+      $('laporView').innerHTML =
+        '<section class="card done w">' +
+          '<div class="ic">!</div>' +
+          '<h2 class="t">Laporan diterima, menunggu verifikasi admin</h2>' +
+          '<p class="sub">' + esc(r.petugas) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
+          '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + esc(s.jam) + '</p>' +
+          '<span class="badge far">⚠️ lokasi perlu dicek admin</span>' +
+          '<p class="sub" style="margin-top:8px">Kehadiran belum dihitung. Bila Anda memang di titik, hubungi admin.</p>' +
+          '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
+        '</section>';
+      return;
+    }
     $('laporView').innerHTML =
       '<section class="card done' + (hadir ? '' : ' t') + '">' +
         '<div class="ic">' + (hadir ? '✓' : '✕') + '</div>' +
@@ -541,7 +562,120 @@
     const r = myRow();
     if (!r || !$('gpsBox')) return render();
     $('gpsBox').innerHTML = gpsHtml(r);
-    if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r);
+    if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r) || !okFoto();
+  }
+
+  // ---------- Foto langsung dari kamera (bukan galeri), watermark jam server & nama titik ----------
+  const FOTO_MAKS_MENIT = 9;   // server menolak foto > 10 menit; beri sedikit kelonggaran
+  // masa uji coba: bila kamera tidak bisa dibuka, tetap boleh lapor tanpa foto
+  function okFoto() { return !!draft.foto || (data.bebasWaktu && !!draft.kameraGagal); }
+  function fotoHtml() {
+    if (draft.foto) {
+      return '<div class="foto-ok"><img src="' + draft.foto + '" alt="Foto lapor"></div>' +
+        '<div class="mini"><button data-a="kamera">📷 Ulangi foto</button></div>';
+    }
+    return (draft.kameraGagal
+      ? '<div class="gps out"><b>Kamera tidak bisa dibuka</b>' + esc(draft.kameraGagal) +
+        (data.bebasWaktu ? '<br><small>Uji coba: tetap bisa lapor tanpa foto.</small>' : '') + '</div>'
+      : '') +
+      '<button class="btn cam" data-a="kamera">📷 Buka kamera</button>';
+  }
+  function updateFoto() {
+    if (!data || mode !== 'lapor') return;
+    const r = myRow();
+    if (!r || !$('fotoBox')) return;
+    $('fotoBox').innerHTML = fotoHtml();
+    if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r) || !okFoto();
+  }
+
+  function zonaTeks(tz) { return { 'Asia/Jakarta': 'WIB', 'Asia/Makassar': 'WITA', 'Asia/Jayapura': 'WIT' }[tz] || tz; }
+  function watermark(ms) {
+    const r = myRow(), tz = data.tz || 'Asia/Jakarta', d = new Date(ms);
+    const tgl = new Intl.DateTimeFormat('id-ID', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+    const jam = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(d);
+    return [
+      'CW PAGI SATLANTAS POLRESTA BANYUWANGI · ' + (fase(r) === 'datang' ? 'LAPOR DATANG' : 'LAPOR SELESAI'),
+      '📍 ' + r.lokasi + ' (' + r.wilayah + ')',
+      '🕒 ' + tgl + ' · ' + jam + ' ' + zonaTeks(tz) + ' (jam server)',
+      r.petugas + (draft.lat != null
+        ? ' · ' + draft.lat.toFixed(6) + ', ' + draft.lng.toFixed(6) + ' ±' + Math.round(draft.acc) + ' m'
+        : ' · GPS belum didapat')
+    ];
+  }
+
+  async function bukaKamera() {
+    if (serverNowMs() == null) return toast('Jam server belum didapat. Ketuk Lapor Saya untuk memuat ulang.');
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      draft.kameraGagal = 'HP/browser tidak mendukung kamera';
+      return updateFoto();
+    }
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
+      });
+    } catch (err) {
+      draft.kameraGagal = err.name === 'NotAllowedError'
+        ? 'Izin kamera ditolak — izinkan akses kamera untuk situs ini, lalu coba lagi'
+        : 'Kamera tidak bisa dibuka (' + err.name + ')';
+      return updateFoto();
+    }
+    draft.kameraGagal = '';
+    const el = document.createElement('div');
+    el.className = 'kamera';
+    el.innerHTML = '<video playsinline autoplay muted></video><div class="wm"></div>' +
+      '<div class="kamera-bar"><button class="btn" data-k="batal">Batal</button>' +
+      '<button class="btn h" data-k="jepret">📷 Ambil Foto</button></div>';
+    document.body.appendChild(el);
+    const video = el.querySelector('video');
+    video.srcObject = stream;
+    const tulis = () => { el.querySelector('.wm').innerHTML = watermark(serverNowMs()).map(esc).join('<br>'); };
+    tulis();
+    const timer = setInterval(tulis, 500);
+    const tutup = () => { clearInterval(timer); stream.getTracks().forEach((t) => t.stop()); el.remove(); };
+    el.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-k]');
+      if (!b) return;
+      if (b.dataset.k === 'batal') return tutup();
+      if (!video.videoWidth) return toast('Kamera belum siap, tunggu sebentar');
+      const ms = serverNowMs();
+      draft.foto = jepret(video, watermark(ms));
+      draft.fotoMs = Math.round(ms);
+      tutup();
+      updateFoto();
+    });
+  }
+
+  // gambar frame kamera + pita watermark di bawah, dikecilkan (maks 1280 px, JPEG ±100–250 KB)
+  function jepret(video, lines) {
+    const s = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
+    const w = Math.round(video.videoWidth * s), h = Math.round(video.videoHeight * s);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const g = c.getContext('2d');
+    g.drawImage(video, 0, 0, w, h);
+    const fs = Math.max(13, Math.round(w / 42)), pad = Math.round(fs * 0.6), lh = Math.round(fs * 1.35);
+    const tinggi = pad * 2 + lh * lines.length;
+    g.fillStyle = 'rgba(0, 0, 0, .62)';
+    g.fillRect(0, h - tinggi, w, tinggi);
+    g.fillStyle = '#fff';
+    g.textBaseline = 'top';
+    lines.forEach((t, i) => {
+      g.font = (i === 0 ? 'bold ' : '') + fs + 'px sans-serif';
+      g.fillText(t, pad, h - tinggi + pad + i * lh, w - pad * 2);
+    });
+    return c.toDataURL('image/jpeg', 0.72);
+  }
+
+  // lokasi segar tepat sebelum kirim (tidak memakai posisi lama yang tersimpan)
+  function lokasiBaru() {
+    return new Promise((selesai) => {
+      if (!navigator.geolocation) return selesai();
+      navigator.geolocation.getCurrentPosition((pos) => {
+        draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
+        selesai();
+      }, () => selesai(), { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+    });
   }
 
   function ambilLokasi(manual) {
@@ -572,12 +706,17 @@
     renderLapor();
     try {
       const pakaiLokasi = tahap !== 'tidak';
+      if (pakaiLokasi) {
+        await lokasiBaru();
+        if (!okLokasi(r)) throw new Error(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + radius() + ' m dari titik');
+      }
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify({
           pin, kode, action: 'lapor', tahap, no: r.no, st,
           lat: pakaiLokasi ? draft.lat : null, lng: pakaiLokasi ? draft.lng : null, acc: pakaiLokasi ? draft.acc : null,
+          foto: pakaiLokasi ? draft.foto : '', fotoMs: pakaiLokasi ? draft.fotoMs : 0,
           note: draft.note.trim()
         })
       });
@@ -587,7 +726,8 @@
       const lat = draft.lat, lng = draft.lng, acc = draft.acc;
       draft = newDraft();
       if (tahap === 'datang') Object.assign(draft, { lat, lng, acc }); // lokasi tetap dipakai untuk pantauan
-      toast(tahap === 'datang' ? '✓ Lapor Datang tercatat pukul ' + out.jam
+      toast(out.diperiksa ? 'Laporan tercatat pukul ' + out.jam + ', menunggu verifikasi admin'
+        : tahap === 'datang' ? '✓ Lapor Datang tercatat pukul ' + out.jam
         : tahap === 'selesai' ? '✓ Lapor Selesai pukul ' + out.jam + ' — kehadiran dihitung' : '✓ Laporan terkirim pukul ' + out.jam);
       sending = false;
       await reload(data.today);
@@ -605,12 +745,19 @@
     const a = el.dataset.a;
     if (a === 'keluar') return logout();
     if (a === 'gps') return ambilLokasi(true);
+    if (a === 'kamera') return bukaKamera();
     if (a === 'modeTidak') draft.tidak = true;
     if (a === 'modeHadir') draft.tidak = false;
     if (a === 'alasan') draft.alasan = el.dataset.v;
     if (a === 'kirimDatang' || a === 'kirimSelesai') {
       const r = myRow();
       if (!okLokasi(r)) return toast(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + radius() + ' m dari titik');
+      if (draft.foto && serverNowMs() - draft.fotoMs > FOTO_MAKS_MENIT * 60000) {
+        draft.foto = '';
+        updateFoto();
+        return toast('Foto sudah terlalu lama, ambil ulang foto');
+      }
+      if (!okFoto()) return toast('Ambil foto dari kamera dulu');
       return kirimLapor(a === 'kirimDatang' ? 'datang' : 'selesai', 'H');
     }
     if (a === 'kirimTidak') {
