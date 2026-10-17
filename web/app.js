@@ -394,7 +394,7 @@
   // ---------- Lapor Saya (anggota melapor sendiri) ----------
   function newDraft() {
     return { lat: null, lng: null, acc: null, gpsMsg: '', note: '', tidak: false, alasan: '',
-      foto: '', fotoMs: 0, kameraGagal: '' };
+      foto: '', fotoMs: 0, kameraGagal: '', posAt: 0 };
   }
   function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
   // personel pos jaga melapor di baris "Pos 12.04 …": tampilkan nama aslinya (dari ANGGOTA)
@@ -670,38 +670,79 @@
     return c.toDataURL('image/jpeg', 0.72);
   }
 
-  // lokasi segar tepat sebelum kirim (tidak memakai posisi lama yang tersimpan)
+  // ---------- GPS: dipantau terus (watchPosition), bukan diminta ulang dari nol ----------
+  // Posisi pertama boleh dari cache HP (≤ 30 detik) agar kotak lokasi langsung terisi,
+  // lalu makin akurat dengan sendirinya. Saat kirim dipakai posisi pantauan terbaru (≤ 15 detik).
+  const GPS_SEGAR_MS = 15000;
+  let pantauGps = null;
+  let terakhirOk = null;   // status radius terakhir, agar peringatan "di luar radius" tidak berulang
+
+  function terimaPosisi(pos) {
+    draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
+    draft.posAt = pos.timestamp || Date.now();
+    draft.gpsMsg = '';
+    if (!data || mode !== 'lapor') return;
+    updateGps();
+    const r = myRow();
+    if (!r) return;
+    const ok = okLokasi(r);
+    if (!ok && terakhirOk !== false && ['datang', 'tunggu', 'selesai'].includes(fase(r))) {
+      toast(fase(r) === 'tunggu'
+        ? 'Anda di luar radius ' + radius() + ' m! Kembali ke titik sebelum Lapor Selesai.'
+        : 'Anda di luar radius ' + radius() + ' m dari titik. Laporan belum bisa dikirim.');
+    }
+    terakhirOk = ok;
+  }
+
+  function gagalPosisi(err) {
+    if (err.code === 1) {   // izin ditolak: berhenti memantau
+      draft.lat = null;
+      draft.gpsMsg = 'Izin lokasi ditolak — izinkan akses lokasi untuk situs ini';
+      hentikanGps();
+    } else if (draft.lat == null) {
+      draft.gpsMsg = 'Lokasi belum didapat, pastikan GPS aktif lalu ketuk Ambil ulang lokasi';
+    }
+    if (mode === 'lapor') updateGps();
+  }
+
+  function hentikanGps() {
+    if (pantauGps != null && navigator.geolocation) navigator.geolocation.clearWatch(pantauGps);
+    pantauGps = null;
+  }
+
+  function ambilLokasi(manual) {
+    if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; if (mode === 'lapor') updateGps(); return; }
+    if (manual) {
+      hentikanGps();
+      draft.gpsMsg = CARI_GPS;
+      if ($('gpsBox')) $('gpsBox').innerHTML = '<div class="gps"><b>📡 Mencari lokasi GPS…</b></div>';
+    } else if (pantauGps != null) {
+      return;   // sudah dipantau
+    } else if (draft.lat == null) {
+      draft.gpsMsg = CARI_GPS;
+    }
+    pantauGps = navigator.geolocation.watchPosition(terimaPosisi, gagalPosisi,
+      { enableHighAccuracy: true, maximumAge: manual ? 0 : 30000, timeout: 20000 });
+  }
+
+  // lokasi saat kirim: posisi pantauan bila masih segar; bila tidak, minta posisi baru (maks 10 detik)
   function lokasiBaru() {
     return new Promise((selesai) => {
+      if (draft.posAt && Date.now() - draft.posAt <= GPS_SEGAR_MS) return selesai();
       if (!navigator.geolocation) return selesai();
       navigator.geolocation.getCurrentPosition((pos) => {
         draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
+        draft.posAt = pos.timestamp || Date.now();
         selesai();
       }, () => selesai(), { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
     });
   }
 
-  function ambilLokasi(manual) {
-    if (draft.lat == null || manual) draft.gpsMsg = CARI_GPS;
-    if (manual && $('gpsBox')) $('gpsBox').innerHTML = '<div class="gps"><b>📡 Mencari lokasi GPS…</b></div>';
-    if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; if (mode === 'lapor') updateGps(); return; }
-    navigator.geolocation.getCurrentPosition((pos) => {
-      draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
-      draft.gpsMsg = '';
-      if (!data || mode !== 'lapor') return;
-      updateGps();
-      const r = myRow();
-      if (r && !okLokasi(r)) {
-        toast(fase(r) === 'tunggu'
-          ? 'Anda di luar radius ' + radius() + ' m! Kembali ke titik sebelum Lapor Selesai.'
-          : 'Anda di luar radius ' + radius() + ' m dari titik. Laporan belum bisa dikirim.');
-      }
-    }, (err) => {
-      draft.lat = null;
-      draft.gpsMsg = err.code === 1 ? 'Izin lokasi ditolak — izinkan akses lokasi untuk situs ini' : 'Lokasi belum didapat, ketuk Ambil ulang lokasi';
-      if (mode === 'lapor') updateGps();
-    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-  }
+  // aplikasi disembunyikan (layar mati / pindah aplikasi): hentikan pantauan, lanjutkan saat dibuka lagi
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) hentikanGps();
+    else if (data && mode === 'lapor' && myRow()) ambilLokasi();
+  });
 
   async function kirimLapor(tahap, st) {
     const r = myRow();
