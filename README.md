@@ -175,6 +175,18 @@ Catatan proyek Apps Script:
   tetap terikat jam & radius titik. Jika perlu, bisa ditambah kode kedua untuk anggota juga.
 - **Cadangkan** `apps-script/Code.gs` (mis. salin ke Google Drive), karena tidak ada di GitHub.
 
+## Tinggalkan Lokasi (tugas mendadak)
+
+Setelah **Lapor Datang** (kapan saja, meski baru 1 menit), anggota bisa mengetuk **🚨 Ada tugas mendadak?
+Tinggalkan lokasi**, memilih **jenis tugas** (Laka lantas · Pengawalan/Patwal · Perintah pimpinan · Kejadian
+darurat · Lainnya) dan mengisi **keterangan singkat**. Tanpa foto, tanpa cek radius, dan Lapor Selesai tidak
+diperlukan lagi.
+- ABSENSI tetap **H** (sudah hadir saat Lapor Datang), kecuali Lapor Datang bertanda ⚠️ (tetap N).
+- LOG LAPOR status **TINGGAL**, kolom CATATAN berisi "jenis: keterangan"; sheet CATATAN / LAPORAN HARIAN
+  berisi "Meninggalkan lokasi 06.42 – tugas mendadak (Laka lantas): …".
+- Poin hari itu **netral** (golongan "Tugas mendadak", tidak masuk rata-rata); REKAP POIN punya kolom
+  **TUGAS MENDADAK** untuk memantau frekuensinya.
+
 ## Durasi tugas & poin
 
 Setiap hari ±07.30 (pemicu `hitungDurasiPoin`, atau menu **📊 Hitung Durasi & Poin**) server menulis ulang:

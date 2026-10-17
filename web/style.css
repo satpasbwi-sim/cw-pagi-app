@@ -218,6 +218,8 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .big { width: 100%; margin-top: 14px; padding: 14px; font-size: 1rem; }
 .btn.big.h { background: var(--hadir); border-color: var(--hadir); color: #fff; }
 .btn.big.t { background: var(--th); border-color: var(--th); color: #fff; }
+.btn.big.w { background: #d97706; border-color: #d97706; color: #fff; }
+.btn.tinggal { width: 100%; margin-top: 4px; background: var(--warn-bg); border-color: #f0c674; color: var(--warn); font-size: .88rem; }
 .switch { text-align: center; margin-top: 10px; }
 .done { text-align: center; padding: 26px 16px; }
 .done .ic {
