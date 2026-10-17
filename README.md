@@ -177,6 +177,19 @@ Catatan proyek Apps Script:
 
 ## 10. Ganti bulan
 
+**Cek dulu:** spreadsheet → menu **🚀 CW PAGI APP → 🩺 Cek Kesiapan / Ganti Bulan** (hanya membaca).
+Menu ini memeriksa: bulan di PENGATURAN (dan mengingatkan 3 hari sebelum akhir bulan), struktur
+ABSENSI (baris 7–86 utuh), jadwal Piket BM tersedia ≥ 7 hari ke depan, jadwal Patwal hari ini,
+personel ANGGOTA yang tidak cocok dengan plotting/jadwal, ukuran LOG LAPOR (arsipkan bila ≥ 3000
+baris), pemicu hapus foto, dan mode uji coba. Jalankan juga sesudah mengubah plotting atau jadwal.
+
+Daftar periksa ganti bulan:
+1. PENGATURAN C4–C5 (bulan, tahun) → C7 ikut berubah.
+2. Kosongkan kolom tanggal ABSENSI (E7:AI86) dan isi CATATAN. **Jangan hapus baris.**
+3. Jadwal Piket BM: buat periode baru. Sheet Patwal: perbarui unit/personel bila ada mutasi.
+4. Arsipkan LOG LAPOR bulan lalu (salin ke spreadsheet arsip, sisakan baris judul).
+5. Jalankan 🩺 Cek Kesiapan sampai semua ✅ (kecuali mode uji coba bila memang masih uji coba).
+
 **Pilihan A – satu spreadsheet dipakai terus (paling mudah)**
 Kosongkan kolom tanggal di ABSENSI, ubah bulan/tahun/tanggal akhir di PENGATURAN (C4, C5, C7),
 sesuaikan plotting. URL tidak berubah; tidak perlu deploy atau push.
