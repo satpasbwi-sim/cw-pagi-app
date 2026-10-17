@@ -63,9 +63,9 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
 - Titik yang **belum punya koordinat** tetap bisa lapor, ditandai "jarak belum dicek".
 - **Tidak hadir** (Sakit/Izin/…) bisa dilaporkan 06.00–07.15 tanpa cek lokasi.
 - Foto **wajib** untuk Lapor Datang dan Lapor Selesai, diambil **langsung dari kamera aplikasi**
-  (tidak bisa dari galeri). Foto diberi watermark: jenis lapor, nama titik, tanggal & **jam server**
-  (berjalan detik demi detik, tidak ikut jam HP), nama petugas, dan koordinat GPS. Foto lebih dari
-  10 menit ditolak. Disimpan di Google Drive folder **"CW Pagi - Foto Lapor"**.
+  (tidak bisa dari galeri). Foto diberi watermark **nama petugas** dan **tanggal & jam server**
+  (berjalan detik demi detik, tidak ikut jam HP). Lokasi simpul dan koordinat tidak dicetak di foto,
+  tetapi tetap tercatat di LOG LAPOR. Foto lebih dari 10 menit ditolak. Disimpan di Google Drive folder **"CW Pagi - Foto Lapor"**.
 - **Deteksi fake GPS.** Laporan ditandai ⚠️ (kolom PERINGATAN di LOG LAPOR) bila: akurasi ≤ 1 m,
   koordinat sama persis dengan titik di KOORDINAT, atau sama persis dengan laporan lain (hari lain,
   Datang = Selesai, atau personil lain) dengan akurasi ≤ 20 m. Laporan bertanda ⚠️ **tidak dihitung

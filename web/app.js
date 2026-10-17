@@ -595,14 +595,8 @@
     const r = myRow(), tz = data.tz || 'Asia/Jakarta', d = new Date(ms);
     const tgl = new Intl.DateTimeFormat('id-ID', { timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
     const jam = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(d);
-    return [
-      'CW PAGI SATLANTAS POLRESTA BANYUWANGI · ' + (fase(r) === 'datang' ? 'LAPOR DATANG' : 'LAPOR SELESAI'),
-      '📍 ' + r.lokasi + ' (' + r.wilayah + ')',
-      '🕒 ' + tgl + ' · ' + jam + ' ' + zonaTeks(tz) + ' (jam server)',
-      namaSaya(r) + (draft.lat != null
-        ? ' · ' + draft.lat.toFixed(6) + ', ' + draft.lng.toFixed(6) + ' ±' + Math.round(draft.acc) + ' m'
-        : ' · GPS belum didapat')
-    ];
+    // cukup nama petugas dan tanggal (jam server); lokasi & koordinat tetap tercatat di LOG LAPOR
+    return [namaSaya(r), tgl + ' · ' + jam + ' ' + zonaTeks(tz)];
   }
 
   async function bukaKamera() {
