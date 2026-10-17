@@ -175,6 +175,17 @@ Catatan proyek Apps Script:
   tetap terikat jam & radius titik. Jika perlu, bisa ditambah kode kedua untuk anggota juga.
 - **Cadangkan** `apps-script/Code.gs` (mis. salin ke Google Drive), karena tidak ada di GitHub.
 
+## Durasi tugas & poin
+
+Setiap hari ±07.30 (pemicu `hitungDurasiPoin`, atau menu **📊 Hitung Durasi & Poin**) server menulis ulang:
+- **DURASI POIN**: per petugas per hari — jam datang, jam selesai, durasi, golongan, poin.
+- **REKAP POIN**: per petugas sebulan, urut poin tertinggi — Baik/Sedang/Kurang, total, rata-rata, predikat.
+
+Golongan bawaan: **Baik** ≥ 60 menit (3 poin) · **Sedang** 45–59 (2) · **Kurang** < 45 (1) · Tidak lengkap /
+Diragukan ⚠️ = 0 · Tidak hadir (S/I/LD/D/P) tidak dihitung. Ambang & poin diubah di sheet **JADWAL**
+(baris "Durasi Baik (menit)", "Durasi Sedang (menit)", "Poin Baik/Sedang/Kurang"). Pasangan Datang–Selesai
+dicocokkan per **nama petugas**, jadi dua orang di baris pos yang sama dihitung terpisah.
+
 ## 10. Ganti bulan
 
 **Cek dulu:** spreadsheet → menu **🚀 CW PAGI APP → 🩺 Cek Kesiapan / Ganti Bulan** (hanya membaca).
