@@ -233,7 +233,7 @@ otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dij
 - Hari ini baru dinilai setelah lapor ditutup. Unsur yang belum ada datanya tidak dihitung, dan bobot unsur
   lain disesuaikan.
 - Anggota yang tidak ada di plotting bulan itu: kehadiran tidak dinilai, ditulis di CATATAN.
-- **Masa uji coba:** isi `TGL_MULAI_INTEGRITAS` (mis. `'2026-11-01'`) agar hari-hari uji coba tidak ikut dinilai.
+- **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-11-01'`, jadi penilaian mulai 1 November 2026. Sebelum itu sheet menulis "belum ada hari yang dinilai".
 - Akun pemilik Apps Script harus punya akses **edit** ke spreadsheet Data Satpas. Saat pertama dijalankan,
   Google meminta izin.
 
