@@ -232,6 +232,11 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .foto-ok img { display: block; width: 100%; border-radius: 10px; border: 1px solid var(--line); }
 .kamera { position: fixed; inset: 0; z-index: 50; background: #000; display: flex; flex-direction: column; }
 .kamera video { flex: 1; min-height: 0; width: 100%; object-fit: contain; background: #000; }
+.foto-tip { margin: 0 0 8px; font-size: .8rem; color: var(--muted); }
+.kamera-tip {
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px; background: #000; color: #fff;
+  font-size: .85rem; font-weight: 600; text-align: center;
+}
 .kamera .wm {
   position: absolute; left: 0; right: 0; bottom: 76px; padding: 8px 12px;
   background: rgba(0, 0, 0, .62); color: #fff; font-size: .75rem; line-height: 1.4;

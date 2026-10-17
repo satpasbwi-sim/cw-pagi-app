@@ -567,16 +567,22 @@
     if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r) || !okFoto();
   }
 
-  // ---------- Foto langsung dari kamera (bukan galeri), watermark jam server & nama titik ----------
+  // ---------- Foto langsung dari kamera (bukan galeri), watermark nama petugas & jam server ----------
   const FOTO_MAKS_MENIT = 9;   // server menolak foto > 10 menit; beri sedikit kelonggaran
   // masa uji coba: bila kamera tidak bisa dibuka, tetap boleh lapor tanpa foto
   function okFoto() { return !!draft.foto || (data.bebasWaktu && !!draft.kameraGagal); }
+  // petunjuk isi foto: Datang = petugas di titik, Selesai = kondisi arus terakhir
+  function petunjukFoto() {
+    return fase(myRow()) === 'datang'
+      ? 'Foto Lapor Datang: tampilkan Anda sedang berada di titik pengaturan.'
+      : 'Foto Lapor Selesai: tampilkan kondisi arus lalu lintas terakhir di titik.';
+  }
   function fotoHtml() {
     if (draft.foto) {
       return '<div class="foto-ok"><img src="' + draft.foto + '" alt="Foto lapor"></div>' +
         '<div class="mini"><button data-a="kamera">📷 Ulangi foto</button></div>';
     }
-    return (draft.kameraGagal
+    return '<p class="foto-tip">' + esc(petunjukFoto()) + '</p>' + (draft.kameraGagal
       ? '<div class="gps out"><b>Kamera tidak bisa dibuka</b>' + esc(draft.kameraGagal) +
         (data.bebasWaktu ? '<br><small>Uji coba: tetap bisa lapor tanpa foto.</small>' : '') + '</div>'
       : '') +
@@ -619,7 +625,8 @@
     draft.kameraGagal = '';
     const el = document.createElement('div');
     el.className = 'kamera';
-    el.innerHTML = '<video playsinline autoplay muted></video><div class="wm"></div>' +
+    el.innerHTML = '<div class="kamera-tip">' + esc(petunjukFoto()) + '</div>' +
+      '<video playsinline autoplay muted></video><div class="wm"></div>' +
       '<div class="kamera-bar"><button class="btn" data-k="batal">Batal</button>' +
       '<button class="btn h" data-k="jepret">📷 Ambil Foto</button></div>';
     document.body.appendChild(el);
