@@ -188,6 +188,21 @@ diperlukan lagi.
 - Poin hari itu **netral** (golongan "Tugas mendadak", tidak masuk rata-rata); REKAP POIN punya kolom
   **TUGAS MENDADAK** untuk memantau frekuensinya.
 
+## Sinyal putus saat lapor (antrean di HP)
+
+Setiap laporan **disimpan di HP dulu**, baru dikirim. Bila sinyal putus, server tidak menjawab, atau aplikasi
+tertutup saat mengirim, laporan tetap tersimpan dan muncul kotak **⏳ Laporan tersimpan di HP, belum
+terkirim**. Anggota bisa lanjut ke langkah berikutnya (mis. Lapor Selesai), dan semuanya dikirim berurutan.
+- Terkirim **otomatis** saat aplikasi dibuka lagi, saat sinyal kembali, dan tiap 20 detik. Ada juga tombol
+  **⟳ Kirim sekarang**.
+- Server mencatat **jam lapor asli**, bukan jam terkirim, bila tertundanya paling lama **60 menit**
+  (`ANTRE_MAKS_MENIT` di Kode.gs). Lebih dari itu, atau sudah ganti hari, laporan ditolak dan anggota melihat
+  alasannya. Kolom CATATAN di LOG LAPOR diberi tanda `[terkirim 06.41, tertunda 12 mnt – sinyal putus]`.
+- Setiap laporan punya **ID kirim**. Bila laporan yang sama terkirim dua kali (jawaban server tidak sampai ke
+  HP), server mengembalikan hasil pertama dan **tidak mencatatnya dua kali**.
+- Antrean hilang bila data browser dihapus. Bila anggota menekan **Keluar**, laporannya baru terkirim setelah
+  ia masuk lagi dengan NRP yang sama (ada peringatan sebelum keluar).
+
 ## Durasi tugas & poin
 
 Setiap hari ±07.30 (pemicu `hitungDurasiPoin`, atau menu **📊 Hitung Durasi & Poin**) server menulis ulang:

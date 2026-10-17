@@ -36,6 +36,65 @@
     } catch (e) { return null; }
   }
 
+  // ---------- antrean kirim: laporan disimpan di HP SEBELUM dikirim, dihapus setelah server menjawab ----------
+  // Sinyal putus / aplikasi tertutup saat mengirim: laporan terkirim otomatis saat aplikasi dibuka lagi.
+  // Server memakai jam lapor asli (waktuMs) dan idKirim agar laporan yang sama tidak tercatat dua kali.
+  const ANTRE = 'cw_antre';
+  let mengirimAntre = false;
+  let pesanAntre = '';   // laporan tertunda yang ditolak server (mis. terlambat), ditampilkan sampai ditutup
+  function bacaAntre() { try { return JSON.parse(load(ANTRE) || '[]'); } catch (e) { return []; } }
+  function tulisAntre(q) {
+    try { if (q.length) localStorage.setItem(ANTRE, JSON.stringify(q)); else localStorage.removeItem(ANTRE); return true; }
+    catch (e) { return false; }   // memori browser penuh: laporan tetap dikirim, hanya tidak tersimpan
+  }
+  // antrean milik NRP ini untuk hari ini (laporan hari lain tidak bisa dikirim lagi)
+  function antreSaya() { return bacaAntre().filter((x) => x.pin === pin && x.tgl === tglLokal()); }
+  function buangAntre(id) { tulisAntre(bacaAntre().filter((x) => x.body.idKirim !== id)); }
+
+  // jawaban server yang berarti "coba lagi nanti", bukan laporan ditolak
+  function errSementara(msg) { return /sibuk|Service invoked too many times|timed out/i.test(msg); }
+
+  async function postLapor(body) {
+    let res, out;
+    try {
+      res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+      out = await res.json();
+    } catch (e) {
+      return { putus: true };   // tidak ada sinyal, atau server tidak menjawab dengan benar
+    }
+    if (out.error && errSementara(out.error)) return { putus: true, error: out.error };
+    return out;
+  }
+
+  // kirim laporan yang tertunda satu per satu, berurutan (Datang sebelum Selesai)
+  async function kirimAntre() {
+    if (mengirimAntre || sending || !pin || !navigator.onLine || !antreSaya().length) return;
+    mengirimAntre = true;
+    segarkanLapor();
+    let terkirim = 0, ditolak = 0;
+    try {
+      // dibaca ulang tiap putaran: laporan baru yang ditambahkan selama mengirim ikut terkirim
+      for (let x = antreSaya()[0]; x; x = antreSaya()[0]) {
+        const out = await postLapor(x.body);
+        if (out.putus) break;
+        buangAntre(x.body.idKirim);
+        if (out.error) { ditolak++; pesanAntre = 'Laporan ' + x.jam + ' yang tertunda ditolak server: ' + out.error; }
+        else terkirim++;
+      }
+    } finally {
+      mengirimAntre = false;
+    }
+    if (terkirim) toast('✓ Laporan tertunda sudah terkirim');
+    if (data && (terkirim || ditolak)) await reload(data.today);
+    else segarkanLapor();
+  }
+  // gambar ulang Lapor Saya, kecuali sedang mengetik catatan (agar keyboard tidak tertutup)
+  function segarkanLapor() {
+    const ketik = document.activeElement && document.activeElement.id === 'laporNote';
+    if (data && mode === 'lapor' && !sending && !ketik) renderLapor();
+  }
+  window.addEventListener('online', () => kirimAntre());
+
   function toast(msg) {
     const t = $('toast');
     t.textContent = msg;
@@ -276,7 +335,37 @@
   }
 
   // keterangan laporan mandiri anggota: { datang, selesai, tidak, st } — tiap tahap {jam, dist, peta, foto}
-  function laporOf(r) { return (data.lapor || {})[String(r.no)]; }
+  // baris saya: laporan yang masih di antrean HP dianggap sudah dilakukan (tanda antre), agar langkah berikutnya bisa lanjut
+  function laporOf(r) {
+    const l = (data.lapor || {})[String(r.no)];
+    if (String(r.no) !== String(me)) return l;
+    const q = antreSaya();
+    if (!q.length) return l;
+    const o = Object.assign({}, l);
+    q.forEach((x) => {
+      const item = { jam: x.jam, antre: true, dist: null };
+      if (x.tahap === 'datang') { if (!o.datang) o.datang = item; }
+      else if (x.tahap === 'selesai') { o.selesai = item; o.st = o.st || 'H'; }
+      else if (x.tahap === 'tinggal') { item.ket = x.body.jenis + ': ' + x.body.note; o.tinggal = item; o.st = o.st || 'H'; }
+      else if (!o.st) { o.tidak = item; o.st = x.body.st; }
+    });
+    o.antre = q.length;
+    return o;
+  }
+  function adaAntre() { return data && me && antreSaya().length > 0; }
+  function antreHtml() {
+    let h = '';
+    if (adaAntre()) {
+      h += '<div class="step"><div class="gps out"><b>⏳ Laporan tersimpan di HP, belum terkirim</b>' +
+        (mengirimAntre ? 'Sedang mengirim…' : 'Akan terkirim otomatis saat ada sinyal. Jangan hapus data browser.') +
+        '<div class="mini"><button data-a="kirimAntre"' + (mengirimAntre ? ' disabled' : '') + '>⟳ Kirim sekarang</button></div></div></div>';
+    }
+    if (pesanAntre) {
+      h += '<div class="step"><div class="gps out"><b>✕ ' + esc(pesanAntre) + '</b>Hubungi admin bila perlu.' +
+        '<div class="mini"><button data-a="tutupPesanAntre">Tutup</button></div></div></div>';
+    }
+    return h;
+  }
   function radius() { return data.radius || 100; }
   function cekJarak(t) { return !t || t.dist == null ? ' <span class="badge k">jarak belum dicek</span>' : ''; }
   function tautan(t) {
@@ -501,7 +590,7 @@
       body = info('Batas Lapor Datang ' + jamTeks(j.batasDatang) + ' sudah lewat',
         'Kehadiran hari ini tidak bisa dilaporkan lewat aplikasi. Hubungi admin.') + tidakLink;
     } else if (f === 'tunggu') {
-      body = info('✓ Lapor Datang tercatat pukul ' + esc(l.datang.jam),
+      body = info(l.datang.antre ? '⏳ Lapor Datang pukul ' + esc(l.datang.jam) + ' (belum terkirim)' : '✓ Lapor Datang tercatat pukul ' + esc(l.datang.jam),
         'Tetap di lokasi. Lapor Selesai dibuka pukul ' + jamTeks(j.mulaiSelesai) + ' (' + Math.max(1, Math.ceil(j.mulaiSelesai - m)) +
         ' menit lagi). Tanpa Lapor Selesai di lokasi, kehadiran tidak dihitung.') + gpsStep + tinggalLink;
     } else if (f === 'datang') {
@@ -510,12 +599,12 @@
         jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ' di titik yang sama.') +
         gpsStep + fotoStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
     } else if (f === 'selesai') {
-      body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang tercatat pukul ' + esc(l.datang.jam) + '.' +
+      body = info('Langkah 2 dari 2: Lapor Selesai', 'Datang ' + (l.datang.antre ? 'pukul ' + esc(l.datang.jam) + ' (belum terkirim)' : 'tercatat pukul ' + esc(l.datang.jam)) + '.' +
         (data.bebasWaktu ? '' : ' Batas Lapor Selesai pukul ' + jamTeks(j.tutup) + '.')) +
         gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai') + tinggalLink;
     } else if (f === 'tinggal') {
       const jenisList = data.tugasMendadak || ['Laka lantas', 'Pengawalan/Patwal', 'Perintah pimpinan', 'Kejadian darurat', 'Lainnya'];
-      body = info('🚨 Tinggalkan Lokasi – Tugas Mendadak', 'Datang tercatat pukul ' + esc(l.datang.jam) +
+      body = info('🚨 Tinggalkan Lokasi – Tugas Mendadak', 'Datang ' + (l.datang.antre ? 'pukul ' + esc(l.datang.jam) + ' (belum terkirim)' : 'tercatat pukul ' + esc(l.datang.jam)) +
           '. Kehadiran hari ini tetap tercatat (H). Setelah dikirim, Lapor Selesai tidak diperlukan.') +
         '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((j) =>
           '<button data-a="jenis" data-v="' + esc(j) + '"' + (draft.jenis === j ? ' class="on"' : '') + '>' + esc(j) + '</button>').join('') +
@@ -540,7 +629,7 @@
           gantiBtn() + '</div>' +
         '<p class="sub" style="margin:8px 0 0">' + dateLabel() + ' · pukul ' + jamTeks(m) +
           (memuat ? ' · <span class="muted">⟳ memperbarui…</span>' : '') + '</p>' +
-        body +
+        antreHtml() + body +
       '</section>';
   }
 
@@ -548,6 +637,20 @@
     const hadir = l.st === 'H';
     const note = savedNote(r);
     const d = l.datang, s = l.selesai || l.tinggal, t = l.tidak;
+    if (l.antre) {
+      // laporan terakhir masih di HP (sinyal putus): belum tercatat di server
+      $('laporView').innerHTML =
+        '<section class="card done w">' +
+          '<div class="ic">⏳</div>' +
+          '<h2 class="t">Laporan belum terkirim</h2>' +
+          '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
+          (t ? '<p class="sub">Tidak hadir (' + esc(labelOf(l.st)) + ') pukul ' + esc(t.jam) + '</p>'
+            : '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · ' + (l.tinggal ? 'Meninggalkan lokasi ' : 'Selesai ') + (s ? esc(s.jam) : '–') + '</p>') +
+          antreHtml() +
+          '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
+        '</section>';
+      return;
+    }
     if (l.tinggal && !l.diperiksa) {
       // meninggalkan lokasi karena tugas mendadak: tetap hadir, poin hari ini netral
       $('laporView').innerHTML =
@@ -773,7 +876,10 @@
   // aplikasi disembunyikan (layar mati / pindah aplikasi): hentikan pantauan, lanjutkan saat dibuka lagi
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) hentikanGps();
-    else if (data && mode === 'lapor' && myRow()) ambilLokasi();
+    else {
+      if (data && mode === 'lapor' && myRow()) ambilLokasi();
+      kirimAntre();
+    }
   });
 
   async function kirimLapor(tahap, st) {
@@ -788,23 +894,45 @@
         await lokasiBaru();
         if (!okLokasi(r)) throw new Error(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + radius() + ' m dari titik');
       }
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({
-          pin, kode, action: 'lapor', tahap, no: r.no, st,
-          lat: kirimGps ? draft.lat : null, lng: kirimGps ? draft.lng : null, acc: kirimGps ? draft.acc : null,
-          foto: pakaiLokasi ? draft.foto : '', fotoMs: pakaiLokasi ? draft.fotoMs : 0,
-          jenis: tahap === 'tinggal' ? draft.jenis : '',
-          note: draft.note.trim()
-        })
-      });
-      const out = await res.json();
+      const body = {
+        pin, kode, action: 'lapor', tahap, no: r.no, st,
+        lat: kirimGps ? draft.lat : null, lng: kirimGps ? draft.lng : null, acc: kirimGps ? draft.acc : null,
+        foto: pakaiLokasi ? draft.foto : '', fotoMs: pakaiLokasi ? draft.fotoMs : 0,
+        jenis: tahap === 'tinggal' ? draft.jenis : '',
+        note: draft.note.trim(),
+        idKirim: Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
+        waktuMs: Math.round(serverNowMs() || Date.now())   // jam lapor asli, dipakai server bila terkirim tertunda
+      };
+      // simpan di HP dulu: bila sinyal putus atau aplikasi tertutup, laporan tidak hilang
+      const sebelumnya = antreSaya().length;
+      const tersimpan = tulisAntre(bacaAntre().concat([{ pin, tgl: tglLokal(), tahap, jam: jamTeks(menitSekarang()), body }]));
+      const kosongkanDraft = () => {
+        const lat = draft.lat, lng = draft.lng, acc = draft.acc;
+        draft = newDraft();
+        if (tahap === 'datang') Object.assign(draft, { lat, lng, acc }); // lokasi tetap dipakai untuk pantauan
+      };
+      if (sebelumnya && tersimpan) {
+        // masih ada laporan tertunda: kirim berurutan (Datang dulu, baru Selesai)
+        kosongkanDraft();
+        sending = false;
+        toast('Laporan disimpan di HP, dikirim setelah laporan sebelumnya terkirim');
+        renderLapor();
+        return kirimAntre();
+      }
+      const out = await postLapor(body);
+      if (out.putus) {
+        if (!tersimpan) throw new Error('sinyal putus dan memori HP penuh, laporan belum tersimpan. Coba lagi.');
+        kosongkanDraft();
+        sending = false;
+        renderLapor();
+        window.scrollTo(0, 0);
+        toast('Sinyal putus — laporan disimpan di HP dan terkirim otomatis saat ada sinyal');
+        return;
+      }
+      buangAntre(body.idKirim);
       if (out.error) throw new Error(out.error);
       if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk fitur Lapor');
-      const lat = draft.lat, lng = draft.lng, acc = draft.acc;
-      draft = newDraft();
-      if (tahap === 'datang') Object.assign(draft, { lat, lng, acc }); // lokasi tetap dipakai untuk pantauan
+      kosongkanDraft();
       toast(out.diperiksa ? 'Laporan tercatat pukul ' + out.jam + ', menunggu verifikasi admin'
         : tahap === 'datang' ? '✓ Lapor Datang tercatat pukul ' + out.jam
         : tahap === 'selesai' ? '✓ Lapor Selesai pukul ' + out.jam + ' — kehadiran dihitung'
@@ -826,6 +954,8 @@
     const a = el.dataset.a;
     if (a === 'keluar') return logout();
     if (a === 'gps') return ambilLokasi(true);
+    if (a === 'kirimAntre') { if (!navigator.onLine) return toast('Belum ada sinyal internet'); kirimAntre(); return renderLapor(); }
+    if (a === 'tutupPesanAntre') pesanAntre = '';
     if (a === 'kamera') return bukaKamera();
     if (a === 'modeTidak') draft.tidak = true;
     if (a === 'modeTinggal') { draft.tinggal = true; window.scrollTo(0, 0); }
@@ -859,6 +989,7 @@
   let detak = 0;
   setInterval(() => {
     if (!data || mode !== 'lapor' || $('app').hidden || sending || document.hidden) return;
+    if (adaAntre()) kirimAntre();
     const r = myRow();
     if (!r) return;
     const f = fase(r);
@@ -885,6 +1016,7 @@
   function gantiBtn() { return '<button class="link muted-link" data-a="keluar">Keluar</button>'; }
 
   function logout() {
+    if (antreSaya().length && !confirm('Ada laporan yang belum terkirim. Bila keluar, laporan itu baru terkirim setelah Anda masuk lagi dengan NRP yang sama. Keluar?')) return;
     pin = '';
     store('cw_pin', '');
     kode = '';
@@ -1018,7 +1150,7 @@
       render();
     }
     ambilLokasi();
-    reload();
+    reload().then(() => kirimAntre());
   }
 
   if (pin) mulai(); else showLogin();
