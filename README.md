@@ -214,6 +214,29 @@ Diragukan ⚠️ = 0 · Tidak hadir (S/I/LD/D/P) tidak dihitung. Ambang & poin d
 (baris "Durasi Baik (menit)", "Durasi Sedang (menit)", "Poin Baik/Sedang/Kurang"). Pasangan Datang–Selesai
 dicocokkan per **nama petugas**, jadi dua orang di baris pos yang sama dihitung terpisah.
 
+## Penilaian integritas anggota Satpas
+
+Sheet **PENILAIAN INTEGRITAS** di spreadsheet **Data Satpas** (`SATPAS_SS_ID` di Kode.gs) ditulis ulang
+otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dijalankan langsung lewat fungsi
+`hitungIntegritasSatpas` di editor.
+- Anggota diambil dari sheet **Data** (PETUGAS, PANGKAT, NRP, POKJA) dan dicocokkan lewat **NRP** ke sheet
+  ANGGOTA CW Pagi. NRP yang sama dipakai untuk login di aplikasi.
+- **Skor 0–100** = Kehadiran **40%** + Kejujuran lokasi **25%** + Kelengkapan lapor **20%** + Durasi tugas
+  **15%** (`BOBOT_INTEGRITAS`).
+  - Kehadiran = hari H ÷ hari wajib, dari ABSENSI (termasuk koreksi admin). LD/D/S/I/P dan `-` (tidak
+    terjadwal) tidak dinilai.
+  - Kejujuran lokasi = hari lapor tanpa ⚠️ ÷ hari lapor.
+  - Kelengkapan = hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang.
+  - Durasi = rata-rata poin harian ÷ poin Baik. Hari ⚠️ dan tugas mendadak tidak masuk hitungan durasi.
+- Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan
+  (mis. "2× lokasi diragukan ⚠️").
+- Hari ini baru dinilai setelah lapor ditutup. Unsur yang belum ada datanya tidak dihitung, dan bobot unsur
+  lain disesuaikan.
+- Anggota yang tidak ada di plotting bulan itu: kehadiran tidak dinilai, ditulis di CATATAN.
+- **Masa uji coba:** isi `TGL_MULAI_INTEGRITAS` (mis. `'2026-11-01'`) agar hari-hari uji coba tidak ikut dinilai.
+- Akun pemilik Apps Script harus punya akses **edit** ke spreadsheet Data Satpas. Saat pertama dijalankan,
+  Google meminta izin.
+
 ## 10. Ganti bulan
 
 **Cek dulu:** spreadsheet → menu **🚀 CW PAGI APP → 🩺 Cek Kesiapan / Ganti Bulan** (hanya membaca).
