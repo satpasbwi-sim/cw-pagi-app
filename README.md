@@ -195,7 +195,7 @@ tertutup saat mengirim, laporan tetap tersimpan dan muncul kotak **⏳ Laporan t
 terkirim**. Anggota bisa lanjut ke langkah berikutnya (mis. Lapor Selesai), dan semuanya dikirim berurutan.
 - Terkirim **otomatis** saat aplikasi dibuka lagi, saat sinyal kembali, dan tiap 20 detik. Ada juga tombol
   **⟳ Kirim sekarang**.
-- Server mencatat **jam lapor asli**, bukan jam terkirim, bila tertundanya paling lama **60 menit**
+- Server mencatat **jam lapor asli**, bukan jam terkirim, bila tertundanya paling lama **20 menit**
   (`ANTRE_MAKS_MENIT` di Kode.gs). Lebih dari itu, atau sudah ganti hari, laporan ditolak dan anggota melihat
   alasannya. Kolom CATATAN di LOG LAPOR diberi tanda `[terkirim 06.41, tertunda 12 mnt – sinyal putus]`.
 - Setiap laporan punya **ID kirim**. Bila laporan yang sama terkirim dua kali (jawaban server tidak sampai ke
