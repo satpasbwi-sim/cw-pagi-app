@@ -80,8 +80,8 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
   koordinat sama persis dengan titik di KOORDINAT, atau sama persis dengan laporan lain (hari lain,
   Datang = Selesai, atau personil lain) dengan akurasi ≤ 20 m. Laporan bertanda ⚠️ **tidak dihitung
   hadir**: ABSENSI diisi **N (Nihil)**, sehingga LAPORAN HARIAN ikut Nihil, dan alasannya ditulis di
-  sheet CATATAN. Anggota melihat "menunggu verifikasi admin". Bila ternyata asli, admin cukup
-  mengganti N menjadi H di ABSENSI.
+  sheet CATATAN. Anggota melihat "menunggu verifikasi admin". Keputusannya di kolom **VERIFIKASI** LOG LAPOR
+  (lihat *Verifikasi ⚠️ semi-otomatis*); bila ASLI, ABSENSI otomatis berubah N → H.
 - Jam dan radius dicek di server, memakai jam server (tidak bisa diakali jam HP).
 
 ## 4. Pengoperasian harian (cukup di spreadsheet, tanpa push)
@@ -267,12 +267,18 @@ otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dij
   | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
   | Durasi tugas CW | 10% | rata-rata poin harian ÷ poin Baik |
 
-- **Verifikasi ⚠️:** laporan bertanda ⚠️ menunggu admin selama **2 hari** (`VERIFIKASI_HARI`) dan belum
-  dihitung.
-  - CW Pagi: admin mengganti **N → H** di ABSENSI bila asli.
-  - Ceklok: admin mengisi **ASLI** / **PALSU** di kolom VERIFIKASI LOG CEKLOK.
-  - Yang **asli** tidak dipotong. Yang **palsu**, atau tidak diverifikasi dalam 2 hari, dipotong 25 dan hari
-    itu bernilai 0.
+- **Verifikasi ⚠️ semi-otomatis** (file **Verifikasi.gs**, jalan otomatis di pemicu harian ±07.30, juga bisa
+  dijalankan manual: fungsi `verifikasiOtomatis`). Kolom **VERIFIKASI (ASLI / PALSU)** ada di LOG LAPOR dan LOG CEKLOK.
+  - **Bukti kuat → langsung PALSU otomatis:** akurasi ±0–1 m, koordinat sama persis dengan titik plotting / kantor,
+    atau sama persis dengan laporan/ceklok **orang lain**.
+  - **Bukti lemah** (sama persis dengan laporan/ceklok **dirinya sendiri**, mis. lokasi Wi-Fi yang berulang): menunggu
+    atasan **1 hari** (`VERIFIKASI_HARI`), yaitu sampai hitungan pagi berikutnya. Bila belum diisi →
+    **ASLI** (`LEMAH_TANPA_VERIFIKASI` di Verifikasi.gs; ganti ke `'PALSU'` bila ingin lebih ketat).
+  - Keputusan otomatis diberi catatan (segitiga kecil di sel). **Isian atasan tidak pernah ditimpa**; atasan boleh
+    mengubah keputusan otomatis kapan saja, skor ikut diperbaiki di hitungan berikutnya.
+  - CW Pagi: ASLI → ABSENSI **N → H** (bila Lapor Selesai / Tinggalkan Lokasi ada) dan dicatat di CATATAN; PALSU
+    setelah sempat H → kembali **N**. Cara lama (admin mengganti N → H di ABSENSI) tetap dianggap ASLI.
+  - Yang **ASLI** tidak dipotong dan poin durasinya dihitung normal. Yang **PALSU** dipotong 25 dan hari itu bernilai 0.
 - **Tinggalkan Lokasi** lebih dari 3× sebulan ditulis di CATATAN untuk dicek atasan (tidak mengurangi skor).
 - Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan.
 - Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 18.00). Unsur yang belum ada datanya tidak
