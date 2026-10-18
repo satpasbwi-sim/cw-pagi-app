@@ -280,6 +280,16 @@ otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dij
     setelah sempat H → kembali **N**. Cara lama (admin mengganti N → H di ABSENSI) tetap dianggap ASLI.
   - Yang **ASLI** tidak dipotong dan poin durasinya dihitung normal. Yang **PALSU** dipotong 25 dan hari itu bernilai 0.
 - **Tinggalkan Lokasi** lebih dari 3× sebulan ditulis di CATATAN untuk dicek atasan (tidak mengurangi skor).
+- **Periode:** PENILAIAN INTEGRITAS = akumulasi **bulan berjalan** (dari tanggal 1 / `TGL_MULAI_INTEGRITAS` s.d. hari terakhir
+  yang sudah ditutup), dihitung ulang tiap pagi.
+- **Penilaian mingguan** (file **IntegritasMingguan.gs**, rumus sama, periode Senin–Minggu):
+  - Sheet **INTEGRITAS MINGGUAN**: minggu yang memuat hari kemarin, ditulis ulang tiap pemicu ±07.30
+    (Selasa–Minggu = minggu berjalan; Senin pagi = nilai final minggu lalu).
+  - Sheet **RIWAYAT INTEGRITAS MINGGUAN**: nilai final tiap minggu disimpan otomatis setiap Senin pagi
+    (1 baris per anggota per minggu; minggu yang sama dihitung ulang = barisnya diganti).
+  - Menu **🖨️ REKAP CETAK → Integritas – Mingguan (pilih minggu)**: hitung minggu tertentu; minggu yang sudah lewat
+    ikut disimpan ke RIWAYAT.
+  - Minggu yang melewati pergantian bulan hanya menilai hari di bulan ABSENSI (tertulis di baris keterangan).
 - Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan.
 - Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 18.00). Unsur yang belum ada datanya tidak
   dihitung, dan bobot unsur lain disesuaikan.
