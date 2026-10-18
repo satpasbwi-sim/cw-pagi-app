@@ -40,6 +40,16 @@ GitHub Pages, Google Apps Script, Google Sheets, dan Google Drive milik satuan.
 
 Tidak ada lagi PIN bersama. NRP yang tidak terdaftar ditolak ("NRP tidak terdaftar").
 
+**Tab yang tampil setelah login** (otomatis dari sheet **Data** spreadsheet Satpas, tidak perlu daftar NRP di kode):
+
+| NRP | Tab |
+| --- | --- |
+| Anggota Polri Satpas (PANGKAT bukan PHL di sheet Data) | **Lapor CW** + **Ceklok Satpas** |
+| PHL Satpas (PANGKAT `PHL`, nomor pendek mis. 23) | **Ceklok Satpas** saja |
+| Selain itu (hanya di sheet ANGGOTA) | **Lapor CW** saja |
+
+Menambah/mengurangi anggota Satpas atau PHL cukup di sheet Data (berlaku ±10 menit kemudian).
+
 **Kode admin (pengaman kedua):** NRP admin saja hanya membuka Lapor CW. Untuk membuka
 Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di bawah Lapor CW.
 - Atur / ganti kode: buka spreadsheet → menu **🚀 CW PAGI APP → 🔐 Atur Kode Admin Aplikasi**
@@ -271,6 +281,23 @@ otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dij
   `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai.
 - Akun pemilik Apps Script harus punya akses **edit** ke spreadsheet Data Satpas. Saat pertama dijalankan,
   Google meminta izin.
+
+## Rekap cetak untuk pimpinan (kertas Legal)
+
+File **RekapCetak.gs** (salinan di `apps-script/`) menambah menu **🖨️ REKAP CETAK** di spreadsheet CW Pagi.
+Pasang sekali: tempel sebagai file baru di Apps Script → jalankan fungsi `pasangMenuRekap` → buka ulang spreadsheet.
+
+| Menu | Hasil |
+| --- | --- |
+| CW Pagi – Mingguan / Bulanan | sheet **CETAK REKAP CW**: per personil per tanggal (H/S/I/D/P/LD/N/BL), jumlah, % hadir, keterangan (alasan, catatan, nama pelapor pos jaga) |
+| Ceklok Satpas – Mingguan / Bulanan | sheet **CETAK REKAP CEKLOK** (spreadsheet Satpas): Polri & PHL, H/T/PC/TP/TG/TK/S/I/C/D/P, jumlah, % hadir, keterangan |
+| Rapikan tabel spreadsheet Satpas | format ulang Data, LIBUR SATPAS, LOG CEKLOK, PENILAIAN INTEGRITAS |
+
+- Mingguan = Senin s.d. Minggu; aplikasi menanyakan satu tanggal di minggu itu (kosong = minggu ini).
+- Setiap rekap juga disimpan sebagai **PDF Legal mendatar** di Drive folder **Rekap Cetak CW & Satpas**; tautannya muncul.
+- Kop, judul, ringkasan, legenda kode, dan tanda tangan (PENGATURAN C12–C15) ikut tercetak. Kepala tabel diulang di tiap halaman.
+- Rekap CW memakai sheet ABSENSI, jadi hanya bulan di PENGATURAN; minggu yang melewati pergantian bulan tampil abu-abu di tanggal bulan lain.
+- Rekap Ceklok tidak menghitung hari sebelum `TGL_MULAI_INTEGRITAS`.
 
 ## 10. Ganti bulan
 

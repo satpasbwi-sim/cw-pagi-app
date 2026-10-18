@@ -178,7 +178,7 @@
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
-      mode = d.ceklok && (mode === 'ceklok' || !d.me) ? 'ceklok' : 'lapor';
+      mode = d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
       mintaAdmin = false;
       edits = {};
@@ -249,6 +249,8 @@
 
   function render() {
     if (mode === 'ceklok' && !data.ceklok) mode = 'lapor';
+    if (mode === 'lapor' && hanyaCeklok(data)) mode = 'ceklok';
+    if ($('btnModeLapor')) $('btnModeLapor').hidden = hanyaCeklok(data);
     [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
     $('btnModeCeklok').hidden = !data.ceklok;
     $('laporView').hidden = mode !== 'lapor';
@@ -502,6 +504,9 @@
     return { lat: null, lng: null, acc: null, gpsMsg: '', note: '', tidak: false, alasan: '',
       foto: '', fotoMs: 0, kameraGagal: '', posAt: 0, tinggal: false, jenis: '' };
   }
+  // PHL Satpas (PANGKAT "PHL" di sheet Data spreadsheet Satpas) tidak ikut CW Pagi: hanya tab Ceklok Satpas.
+  // Anggota Polri Satpas melihat Lapor CW + Ceklok Satpas, anggota lain hanya Lapor CW.
+  function hanyaCeklok(d) { return !!(d && d.ceklok && /^PHL$/i.test(String(d.ceklok.pangkat || '').trim())); }
   function myRow() { return me && data.rows.find((r) => String(r.no) === String(me)); }
   // personel pos jaga melapor di baris "Pos 12.04 …": tampilkan nama aslinya (dari ANGGOTA)
   function namaSaya(r) { return data.nama || (r && r.petugas) || (data.ceklok && data.ceklok.nama) || ''; }
