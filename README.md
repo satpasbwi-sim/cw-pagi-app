@@ -230,6 +230,9 @@ Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsu
   tidak diperlukan, dan hari itu dihitung **lengkap**. Bila atasan mengisi **PALSU** di kolom VERIFIKASI baris
   KELUAR, hari itu dihitung **pulang cepat**. Lebih dari 3× sebulan ditulis di CATATAN penilaian.
 - Sinyal putus: ceklok tersimpan di HP dan terkirim otomatis, sama seperti Lapor.
+- **Masa uji coba (`UJI_COBA = true`): bisa diulang.** Setelah Lapor CW atau Ceklok Satpas selesai, muncul tombol
+  **🔁 Ulangi (uji coba)** untuk mencoba lagi dari awal di hari yang sama. Semua putaran tetap tercatat di LOG
+  LAPOR / LOG CEKLOK; aplikasi dan penilaian memakai **putaran terakhir**. Tombol hilang otomatis saat `UJI_COBA = false`.
 - Data di spreadsheet Satpas:
   - **LOG CEKLOK**: riwayat ceklok. Kolom **VERIFIKASI** diisi admin (`ASLI` / `PALSU`) untuk baris bertanda ⚠️.
   - **LIBUR SATPAS**: isi tanggal libur nasional / cuti bersama. Hari itu ceklok tidak wajib.

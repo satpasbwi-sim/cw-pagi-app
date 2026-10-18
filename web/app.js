@@ -346,8 +346,9 @@
   // keterangan laporan mandiri anggota: { datang, selesai, tidak, st } — tiap tahap {jam, dist, peta, foto}
   // baris saya: laporan yang masih di antrean HP dianggap sudah dilakukan (tanda antre), agar langkah berikutnya bisa lanjut
   function laporOf(r) {
-    const l = (data.lapor || {})[String(r.no)];
+    let l = (data.lapor || {})[String(r.no)];
     if (String(r.no) !== String(me)) return l;
+    if (ulangCW && l && l.st) l = undefined;   // uji coba: mulai putaran lapor baru
     const q = antreSaya().filter((x) => x.jenis !== 'ceklok');
     if (!q.length) return l;
     const o = Object.assign({}, l);
@@ -360,6 +361,11 @@
     });
     o.antre = q.length;
     return o;
+  }
+  // masa uji coba: laporan / ceklok yang sudah selesai boleh diulang
+  let ulangCW = false, ulangCk = false;
+  function ulangBtn() {
+    return data && data.bebasWaktu ? '<div class="switch" style="margin-top:14px"><button class="btn" data-a="ulangi">🔁 Ulangi (uji coba)</button></div>' : '';
   }
   function adaAntre() { return data && me && antreSaya().length > 0; }
   function antreHtml() {
@@ -657,7 +663,7 @@
           (t ? '<p class="sub">Tidak hadir (' + esc(labelOf(l.st)) + ') pukul ' + esc(t.jam) + '</p>'
             : '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · ' + (l.tinggal ? 'Meninggalkan lokasi ' : 'Selesai ') + (s ? esc(s.jam) : '–') + '</p>') +
           antreHtml() +
-          '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
+          ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
         '</section>';
       return;
     }
@@ -671,7 +677,7 @@
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Meninggalkan lokasi ' + esc(l.tinggal.jam) + '</p>' +
           (l.tinggal.ket ? '<p class="sub">' + esc(l.tinggal.ket) + '</p>' : '') +
           '<span class="badge ok">✓ kehadiran tercatat</span>' +
-          '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
+          ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
         '</section>';
       return;
     }
@@ -685,7 +691,7 @@
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + esc(s.jam) + '</p>' +
           '<span class="badge far">⚠️ lokasi perlu dicek admin</span>' +
           '<p class="sub" style="margin-top:8px">Kehadiran belum dihitung. Bila Anda memang di titik, hubungi admin.</p>' +
-          '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
+          ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
         '</section>';
       return;
     }
@@ -699,7 +705,7 @@
             '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
           : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>') +
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
-        '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
+        ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
       '</section>';
   }
 
@@ -955,6 +961,7 @@
       if (out.error) throw new Error(out.error);
       if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk fitur Lapor');
       kosongkanDraft();
+      if (tahap === 'datang' || tahap === 'tidak') ulangCW = false;
       toast(out.diperiksa ? 'Laporan tercatat pukul ' + out.jam + ', menunggu verifikasi admin'
         : tahap === 'datang' ? '✓ Lapor Datang tercatat pukul ' + out.jam
         : tahap === 'selesai' ? '✓ Lapor Selesai pukul ' + out.jam + ' — kehadiran dihitung'
@@ -975,7 +982,8 @@
   let lastCkFase = '';
   // ceklok hari ini dari server + yang masih di antrean HP
   function ckHari() {
-    const h = Object.assign({}, data.ceklok.hariIni || {});
+    const dasar = data.ceklok.hariIni || {};
+    const h = Object.assign({}, ulangCk && (dasar.pulang || dasar.keluar || dasar.tidak) ? {} : dasar);
     antreSaya().filter((x) => x.jenis === 'ceklok').forEach((x) => {
       const item = { jam: x.jam, antre: true };
       if (x.tahap === 'masuk' && !h.masuk) h.masuk = item;
@@ -1032,7 +1040,7 @@
     const kartuSelesai = (kelas, ic, judul, isi) => {
       v.innerHTML = '<section class="card done' + kelas + '"><div class="ic">' + ic + '</div><h2 class="t">' + judul + '</h2>' +
         '<p class="sub">' + esc(c.nama) + ' · Kantor Satpas<br>' + dateLabel() + '</p>' + isi + antreHtml() +
-        '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div></section>';
+        ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div></section>';
     };
     if (f === 'beres' && h.keluar) {
       return kartuSelesai(' w', '🚨', 'Meninggalkan kantor – tugas mendadak',
@@ -1150,6 +1158,7 @@
       if (out.error) throw new Error(out.error);
       if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk Ceklok Satpas');
       kosongkan();
+      if (tahap === 'masuk' || tahap === 'tidak') ulangCk = false;
       toast(out.diperiksa ? 'Ceklok tercatat pukul ' + out.jam + ', lokasi perlu diverifikasi admin'
         : tahap === 'masuk' ? '✓ Ceklok Masuk pukul ' + out.jam + (out.selisih ? ' — terlambat ' + out.selisih + ' menit' : '')
         : tahap === 'pulang' ? '✓ Ceklok Pulang pukul ' + out.jam + (out.selisih ? ' — pulang cepat ' + out.selisih + ' menit' : '')
@@ -1174,6 +1183,7 @@
     if (a === 'kamera') return bukaKamera();
     if (a === 'kirimAntre') { if (!navigator.onLine) return toast('Belum ada sinyal internet'); kirimAntre(); return renderCeklok(); }
     if (a === 'tutupPesanAntre') pesanAntre = '';
+    if (a === 'ulangi') { ulangCk = true; draft.foto = ''; Object.assign(ck, { tidak: false, keluar: false }); ambilLokasi(); }
     if (a === 'ckModeTidak') ck.tidak = true;
     if (a === 'ckModeHadir') ck.tidak = false;
     if (a === 'ckModeKeluar') { ck.keluar = true; window.scrollTo(0, 0); }
@@ -1213,6 +1223,7 @@
     if (a === 'kirimAntre') { if (!navigator.onLine) return toast('Belum ada sinyal internet'); kirimAntre(); return renderLapor(); }
     if (a === 'tutupPesanAntre') pesanAntre = '';
     if (a === 'kamera') return bukaKamera();
+    if (a === 'ulangi') { ulangCW = true; draft.foto = ''; draft.tidak = false; draft.tinggal = false; ambilLokasi(); }
     if (a === 'modeTidak') draft.tidak = true;
     if (a === 'modeTinggal') { draft.tinggal = true; window.scrollTo(0, 0); }
     if (a === 'modeHadir') { draft.tidak = false; draft.tinggal = false; }
@@ -1290,6 +1301,7 @@
     data = null;
     draft = newDraft();
     Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
+    ulangCW = false; ulangCk = false;
     $('pin').value = '';
     showLogin('');
   }
