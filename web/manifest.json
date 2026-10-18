@@ -1,6 +1,6 @@
 {
-  "name": "Laporan CW Pagi",
-  "short_name": "CW Pagi",
+  "name": "Laporan Integritas",
+  "short_name": "Integritas",
   "description": "Laporan Integritas Satlantas Polresta Banyuwangi",
   "start_url": ".",
   "scope": ".",
