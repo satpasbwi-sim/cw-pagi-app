@@ -214,26 +214,53 @@ Diragukan ⚠️ = 0 · Tidak hadir (S/I/LD/D/P) tidak dihitung. Ambang & poin d
 (baris "Durasi Baik (menit)", "Durasi Sedang (menit)", "Poin Baik/Sedang/Kurang"). Pasangan Datang–Selesai
 dicocokkan per **nama petugas**, jadi dua orang di baris pos yang sama dihitung terpisah.
 
+## Ceklok Satpas (absen dinas kantor)
+
+Anggota Satpas (NRP ada di sheet **Data** spreadsheet Satpas) melihat tab **Ceklok Satpas** di aplikasi. Anggota
+Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsung diarahkan ke tab ini.
+- **Ceklok Masuk** dibuka pukul **07.00**. Lewat jam masuk (**08.00**) tercatat **terlambat** (menit).
+- **Ceklok Pulang** bisa setelah Masuk, paling lambat **18.00**. Sebelum jam pulang tercatat **pulang cepat**.
+  Jam pulang **13.00** (Senin–Kamis) dan **12.00** (Jumat–Sabtu). Hari Minggu libur.
+- Wajib dalam radius **100 m** dari titik kantor (-8.239257, 114.345514) dan foto langsung dari kamera.
+  Deteksi lokasi palsu sama dengan Lapor CW Pagi.
+- **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas luar dan isi keterangan. Hari itu tidak dinilai.
+- Sinyal putus: ceklok tersimpan di HP dan terkirim otomatis, sama seperti Lapor.
+- Data di spreadsheet Satpas:
+  - **LOG CEKLOK**: riwayat ceklok. Kolom **VERIFIKASI** diisi admin (`ASLI` / `PALSU`) untuk baris bertanda ⚠️.
+  - **LIBUR SATPAS**: isi tanggal libur nasional / cuti bersama. Hari itu ceklok tidak wajib.
+- Jam, radius, dan titik kantor diubah di `CEKLOK` dan `JAM_SATPAS` (Kode.gs). Selama `UJI_COBA = true`, jam,
+  hari libur, radius, dan foto belum diwajibkan.
+
 ## Penilaian integritas anggota Satpas
 
 Sheet **PENILAIAN INTEGRITAS** di spreadsheet **Data Satpas** (`SATPAS_SS_ID` di Kode.gs) ditulis ulang
 otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dijalankan langsung lewat fungsi
 `hitungIntegritasSatpas` di editor.
-- Anggota diambil dari sheet **Data** (PETUGAS, PANGKAT, NRP, POKJA) dan dicocokkan lewat **NRP** ke sheet
-  ANGGOTA CW Pagi. NRP yang sama dipakai untuk login di aplikasi.
-- **Skor 0–100** = Kehadiran **40%** + Kejujuran lokasi **25%** + Kelengkapan lapor **20%** + Durasi tugas
-  **15%** (`BOBOT_INTEGRITAS`).
-  - Kehadiran = hari H ÷ hari wajib, dari ABSENSI (termasuk koreksi admin). LD/D/S/I/P dan `-` (tidak
-    terjadwal) tidak dinilai.
-  - Kejujuran lokasi = hari lapor tanpa ⚠️ ÷ hari lapor.
-  - Kelengkapan = hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang.
-  - Durasi = rata-rata poin harian ÷ poin Baik. Hari ⚠️ dan tugas mendadak tidak masuk hitungan durasi.
-- Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan
-  (mis. "2× lokasi diragukan ⚠️").
-- Hari ini baru dinilai setelah lapor ditutup. Unsur yang belum ada datanya tidak dihitung, dan bobot unsur
-  lain disesuaikan.
-- Anggota yang tidak ada di plotting bulan itu: kehadiran tidak dinilai, ditulis di CATATAN.
-- **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-18'` (penilaian uji coba mulai 18 Oktober 2026). Ganti ke `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai.
+- Anggota diambil dari sheet **Data** (PETUGAS, PANGKAT, NRP, POKJA). Pencocokan dengan CW Pagi lewat **NRP**
+  (sheet ANGGOTA), dan dengan LOG CEKLOK juga lewat NRP.
+- **Skor 0–100** (`BOBOT_INTEGRITAS`):
+
+  | Unsur | Bobot | Cara hitung |
+  | --- | --- | --- |
+  | Kehadiran CW | 25% | hari H ÷ hari wajib di ABSENSI (LD/D/S/I/P dan `-` tidak dinilai) |
+  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap 100 · pulang cepat 70 · tanpa Ceklok Pulang 50 · tidak ceklok 0 (hari izin tidak dinilai) |
+  | Kejujuran lokasi | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`) |
+  | Ketepatan waktu | 10% | Lapor Datang ≤ 06.15 dan Ceklok Masuk ≤ 08.00 = 100, lalu −2 per menit (`BATAS_AMAN_CW`, `POTONG_PER_MENIT`) |
+  | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
+  | Durasi tugas CW | 10% | rata-rata poin harian ÷ poin Baik |
+
+- **Verifikasi ⚠️:** laporan bertanda ⚠️ menunggu admin selama **2 hari** (`VERIFIKASI_HARI`) dan belum
+  dihitung.
+  - CW Pagi: admin mengganti **N → H** di ABSENSI bila asli.
+  - Ceklok: admin mengisi **ASLI** / **PALSU** di kolom VERIFIKASI LOG CEKLOK.
+  - Yang **asli** tidak dipotong. Yang **palsu**, atau tidak diverifikasi dalam 2 hari, dipotong 25 dan hari
+    itu bernilai 0.
+- **Tinggalkan Lokasi** lebih dari 3× sebulan ditulis di CATATAN untuk dicek atasan (tidak mengurangi skor).
+- Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan.
+- Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 18.00). Unsur yang belum ada datanya tidak
+  dihitung, dan bobot unsur lain disesuaikan.
+- **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-18'` (penilaian uji coba mulai 18 Oktober 2026). Ganti ke
+  `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai.
 - Akun pemilik Apps Script harus punya akses **edit** ke spreadsheet Data Satpas. Saat pertama dijalankan,
   Google meminta izin.
 
