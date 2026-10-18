@@ -1,6 +1,6 @@
 # Laporan CW Pagi – Satlantas Polresta Banyuwangi
 
-Aplikasi web (bisa dipasang di HP) untuk laporan **Pengaturan Pagi (CW Pagi)**:
+Aplikasi web **Laporan Integritas** (bisa dipasang di HP): tab **Lapor CW** untuk Pengaturan Pagi (CW Pagi) dan tab **Ceklok Satpas** untuk absen dinas kantor Satpas. Untuk CW Pagi:
 anggota melapor sendiri dengan **NRP**, lokasi **GPS**, dan foto; admin melihat
 **Rekap** per simpul dan mengirim teks laporan ke grup WhatsApp.
 
@@ -35,13 +35,13 @@ GitHub Pages, Google Apps Script, Google Sheets, dan Google Drive milik satuan.
 
 | Login dengan | Menu | Bisa melakukan |
 | --- | --- | --- |
-| NRP anggota (sheet **ANGGOTA**) | **Lapor Saya** | Lapor Datang, Lapor Selesai, atau lapor Tidak Hadir **untuk dirinya sendiri** |
-| NRP admin (daftar `ADMIN_NRP` di Kode.gs) **+ kode admin** | **Lapor Saya** + **Rekap** | Semua di atas + lihat/ubah status semua personil, catatan, kirim teks WhatsApp |
+| NRP anggota (sheet **ANGGOTA**) | **Lapor CW** | Lapor Datang, Lapor Selesai, atau lapor Tidak Hadir **untuk dirinya sendiri** |
+| NRP admin (daftar `ADMIN_NRP` di Kode.gs) **+ kode admin** | **Lapor CW** + **Rekap** | Semua di atas + lihat/ubah status semua personil, catatan, kirim teks WhatsApp |
 
 Tidak ada lagi PIN bersama. NRP yang tidak terdaftar ditolak ("NRP tidak terdaftar").
 
-**Kode admin (pengaman kedua):** NRP admin saja hanya membuka Lapor Saya. Untuk membuka
-Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di bawah Lapor Saya.
+**Kode admin (pengaman kedua):** NRP admin saja hanya membuka Lapor CW. Untuk membuka
+Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di bawah Lapor CW.
 - Atur / ganti kode: buka spreadsheet → menu **🚀 CW PAGI APP → 🔐 Atur Kode Admin Aplikasi**
   (minimal 6 karakter). Yang disimpan hanya sidik (hash) kode di *Script Properties*, bukan kodenya.
 - Salah 5 kali → kotak admin terkunci 15 menit.
@@ -223,7 +223,12 @@ Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsu
   Jam pulang **13.00** (Senin–Kamis) dan **12.00** (Jumat–Sabtu). Hari Minggu libur.
 - Wajib dalam radius **100 m** dari titik kantor (-8.239257, 114.345514) dan foto langsung dari kamera.
   Deteksi lokasi palsu sama dengan Lapor CW Pagi.
-- **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas luar dan isi keterangan. Hari itu tidak dinilai.
+- **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas / Pelayanan dan isi keterangan. Hari itu tidak dinilai.
+- **Tugas mendadak setelah Ceklok Masuk?** Ketuk **🚨 Tinggalkan kantor**, pilih jenis tugas (Perintah pimpinan,
+  Pengawalan/Patwal, Laka lantas, Kejadian darurat, Rapat/dinas luar, Lainnya) dan isi keterangan. Tanpa foto dan
+  radius, lokasi terakhir tetap dicatat. Ceklok hari itu **selesai** (status KELUAR di LOG CEKLOK), Ceklok Pulang
+  tidak diperlukan, dan hari itu dihitung **lengkap**. Bila atasan mengisi **PALSU** di kolom VERIFIKASI baris
+  KELUAR, hari itu dihitung **pulang cepat**. Lebih dari 3× sebulan ditulis di CATATAN penilaian.
 - Sinyal putus: ceklok tersimpan di HP dan terkirim otomatis, sama seperti Lapor.
 - Data di spreadsheet Satpas:
   - **LOG CEKLOK**: riwayat ceklok. Kolom **VERIFIKASI** diisi admin (`ASLI` / `PALSU`) untuk baris bertanda ⚠️.
@@ -243,7 +248,7 @@ otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dij
   | Unsur | Bobot | Cara hitung |
   | --- | --- | --- |
   | Kehadiran CW | 25% | hari H ÷ hari wajib di ABSENSI (LD/D/S/I/P dan `-` tidak dinilai) |
-  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap 100 · pulang cepat 70 · tanpa Ceklok Pulang 50 · tidak ceklok 0 (hari izin tidak dinilai) |
+  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap / tugas mendadak 100 · pulang cepat 70 · tanpa Ceklok Pulang 50 · tidak ceklok 0 (hari izin tidak dinilai) |
   | Kejujuran lokasi | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`) |
   | Ketepatan waktu | 10% | Lapor Datang ≤ 06.15 dan Ceklok Masuk ≤ 08.00 = 100, lalu −2 per menit (`BATAS_AMAN_CW`, `POTONG_PER_MENIT`) |
   | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
@@ -291,7 +296,7 @@ Sheet LOG LAPOR boleh dibiarkan (data dipisah per bulan otomatis) atau dipindah 
 3. Ubah `API_URL` di `web/config.js` menjadi URL baru → commit & push (bagian 7).
 4. Kosongkan sheet LOG LAPOR di salinan (sisakan baris judul).
 
-Selama spreadsheet bukan untuk bulan berjalan (C7 di PENGATURAN), menu Lapor Saya
+Selama spreadsheet bukan untuk bulan berjalan (C7 di PENGATURAN), menu Lapor CW
 menampilkan "Lapor belum dibuka".
 
 ## 11. Masalah yang sering terjadi

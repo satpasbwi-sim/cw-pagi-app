@@ -187,7 +187,7 @@ textarea {
 .mode button.on { background: var(--navy); color: #fff; }
 @media (prefers-color-scheme: dark) { .mode button.on { background: #26508a; } }
 
-/* ---------- Lapor Saya ---------- */
+/* ---------- Lapor CW ---------- */
 h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .sub { margin: 0 0 12px; color: var(--muted); font-size: .85rem; }
 .search { width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }

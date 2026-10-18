@@ -18,7 +18,7 @@
   let showNeed = false;     // tandai merah baris "Tidak" tanpa alasan setelah Simpan ditekan
   let mode = load('cw_mode') || 'lapor';   // 'lapor' (anggota) atau 'rekap' (admin)
   let me = '';                             // no plotting milik NRP yang login (dari server)
-  let draft = newDraft();                  // isian form Lapor Saya yang belum dikirim
+  let draft = newDraft();                  // isian form Lapor CW yang belum dikirim
   let sending = false;
   let memuat = false;                      // sedang mengambil data terbaru dari server
   const CARI_GPS = 'Mencari lokasi GPS…';
@@ -26,7 +26,7 @@
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
 
-  // data terakhir disimpan di HP agar Lapor Saya langsung tampil saat dibuka, lalu diperbarui dari server
+  // data terakhir disimpan di HP agar Lapor CW langsung tampil saat dibuka, lalu diperbarui dari server
   function tglLokal() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
   function simpanCache(d) { store('cw_data', JSON.stringify({ pin, tgl: tglLokal(), d })); }
   function bacaCache() {
@@ -88,7 +88,7 @@
     if (data && (terkirim || ditolak)) await reload(data.today);
     else segarkanLapor();
   }
-  // gambar ulang Lapor Saya, kecuali sedang mengetik catatan (agar keyboard tidak tertutup)
+  // gambar ulang Lapor CW, kecuali sedang mengetik catatan (agar keyboard tidak tertutup)
   function segarkanLapor() {
     const ketik = document.activeElement && ['laporNote', 'ckNote'].includes(document.activeElement.id);
     if (!data || sending || ketik) return;
@@ -176,7 +176,7 @@
       if (!day || day === d.today) simpanCache(d);
       if (d.now != null) jamSync = { now: d.now, at: Date.now() };
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
-      // tombol Rekap dihapus: Lapor Saya (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
+      // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
       mode = d.ceklok && (mode === 'ceklok' || !d.me) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
@@ -193,7 +193,7 @@
       toast('Gagal memuat: ' + err.message);
       if (data && mode === 'lapor' && !sending) renderLapor();
       else if (!data) $('laporView').innerHTML = '<section class="card"><div class="gps out"><b>Gagal memuat data</b>' +
-        'Periksa sinyal internet lalu ketuk Lapor Saya untuk mencoba lagi.</div></section>';
+        'Periksa sinyal internet lalu ketuk tab di atas untuk mencoba lagi.</div></section>';
     } finally {
       memuat = false;
       $('btnReload').disabled = false;
@@ -260,7 +260,7 @@
     }
     if (mode === 'lapor') {
       $('saveBar').hidden = true;
-      // Lapor Saya selalu untuk hari ini
+      // Lapor CW selalu untuk hari ini
       if (data.today && data.day !== data.today) return reload(data.today);
       return renderLapor();
     }
@@ -491,7 +491,7 @@
     renderWa();
   });
 
-  // ---------- Lapor Saya (anggota melapor sendiri) ----------
+  // ---------- Lapor CW (anggota melapor sendiri) ----------
   function newDraft() {
     return { lat: null, lng: null, acc: null, gpsMsg: '', note: '', tidak: false, alasan: '',
       foto: '', fotoMs: 0, kameraGagal: '', posAt: 0, tinggal: false, jenis: '' };
@@ -520,7 +520,7 @@
   function jamTeks(m) { m = Math.floor(m); return String(Math.floor(m / 60)).padStart(2, '0') + '.' + String(m % 60).padStart(2, '0'); }
   function J() { return data.jadwal || { buka: 360, batasDatang: 390, mulaiSelesai: 420, tutup: 435 }; }
 
-  // fase Lapor Saya: belumBuka → datang → tunggu → selesai → beres; telat/tutup bila waktunya lewat
+  // fase Lapor CW: belumBuka → datang → tunggu → selesai → beres; telat/tutup bila waktunya lewat
   // masa uji coba (data.bebasWaktu): tanpa batas jam, datang → selesai → beres
   function fase(r) {
     const l = laporOf(r) || {}, m = menitSekarang(), j = J();
@@ -569,7 +569,7 @@
     const r = myRow();
     if (!r) {
       v.innerHTML = '<section class="card"><h2 class="t">Nama Anda tidak ada di plotting bulan ini</h2>' +
-        '<p class="sub">Lapor Saya hanya untuk personil yang terjadwal.' +
+        '<p class="sub">Lapor CW hanya untuk personil yang terjadwal di plotting CW Pagi.' +
         (data.ceklok ? ' Untuk absen dinas kantor, buka tab <b>Ceklok Satpas</b>.' : '') + ' ' + gantiBtn() + '</p></section>';
       return;
     }
@@ -760,7 +760,7 @@
   }
 
   async function bukaKamera() {
-    if (serverNowMs() == null) return toast('Jam server belum didapat. Ketuk Lapor Saya untuk memuat ulang.');
+    if (serverNowMs() == null) return toast('Jam server belum didapat. Ketuk tab di atas untuk memuat ulang.');
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       draft.kameraGagal = 'HP/browser tidak mendukung kamera';
       return updateFoto();
@@ -971,7 +971,7 @@
   }
 
   // ---------- Ceklok Satpas: absen masuk & pulang dinas di kantor Satpas ----------
-  const ck = { tidak: false, alasan: '', note: '' };   // isian Ceklok yang belum dikirim
+  const ck = { tidak: false, alasan: '', note: '', keluar: false, jenis: '' };   // isian Ceklok yang belum dikirim
   let lastCkFase = '';
   // ceklok hari ini dari server + yang masih di antrean HP
   function ckHari() {
@@ -980,6 +980,7 @@
       const item = { jam: x.jam, antre: true };
       if (x.tahap === 'masuk' && !h.masuk) h.masuk = item;
       else if (x.tahap === 'pulang' && !h.pulang) h.pulang = item;
+      else if (x.tahap === 'keluar' && !h.keluar) h.keluar = Object.assign(item, { ket: x.body.jenis + ': ' + x.body.note });
       else if (x.tahap === 'tidak' && !h.tidak) h.tidak = Object.assign(item, { kode: x.body.st });
     });
     return h;
@@ -988,9 +989,9 @@
   function ckFase() {
     const c = data.ceklok, h = ckHari(), m = menitSekarang(), bebas = data.bebasWaktu;
     if (h.tidak) return 'izin';
-    if (h.pulang) return 'beres';
+    if (h.pulang || h.keluar) return 'beres';
     if (!c.kerja && !bebas) return 'libur';
-    if (h.masuk) return !bebas && m > c.tutup ? 'tutupPulang' : 'pulang';
+    if (h.masuk) return !bebas && m > c.tutup ? 'tutupPulang' : ck.keluar ? 'keluar' : 'pulang';
     if (ck.tidak) return 'tidak';
     if (!bebas && m < c.buka) return 'belumBuka';
     if (!bebas && m > c.tutup) return 'tutup';
@@ -1033,6 +1034,11 @@
         '<p class="sub">' + esc(c.nama) + ' · Kantor Satpas<br>' + dateLabel() + '</p>' + isi + antreHtml() +
         '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div></section>';
     };
+    if (f === 'beres' && h.keluar) {
+      return kartuSelesai(' w', '🚨', 'Meninggalkan kantor – tugas mendadak',
+        '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + ' · Keluar ' + esc(h.keluar.jam) + tunda(h.keluar) + '</p>' +
+        (h.keluar.ket ? '<p class="sub">' + esc(h.keluar.ket) + '</p>' : '') + '<span class="badge ok">✓ ceklok hari ini selesai</span>');
+    }
     if (f === 'beres') {
       const ragu = (h.masuk && h.masuk.peringatan) || (h.pulang && h.pulang.peringatan);
       const telat = h.masuk.selisih > 0 ? ' <span class="badge far">terlambat ' + h.masuk.selisih + ' mnt</span>' : '';
@@ -1072,7 +1078,19 @@
       body = info('✓ Masuk pukul ' + esc(h.masuk.jam) + (h.masuk.antre ? ' (belum terkirim)' : ''),
         c.pulang != null && cepat > 0 ? 'Jam pulang ' + jamTeks(c.pulang) + '. Ceklok Pulang sekarang tercatat <b>pulang cepat ' + cepat + ' menit</b>.'
           : 'Silakan Ceklok Pulang sebelum pukul ' + jamTeks(c.tutup) + '.') +
-        gpsStep + fotoStep + noteStep(false) + tombol('ckPulang', '🏠 Ceklok Pulang', cepat > 0 ? 'w' : 'h');
+        gpsStep + fotoStep + noteStep(false) + tombol('ckPulang', '🏠 Ceklok Pulang', cepat > 0 ? 'w' : 'h') +
+        '<div class="switch"><button class="btn tinggal" data-a="ckModeKeluar">🚨 Ada tugas mendadak? Tinggalkan kantor</button></div>';
+    } else if (f === 'keluar') {
+      const jenisList = c.tugasMendadak || ['Perintah pimpinan', 'Pengawalan/Patwal', 'Laka lantas', 'Kejadian darurat', 'Rapat/dinas luar', 'Lainnya'];
+      body = info('🚨 Tinggalkan Kantor – Tugas Mendadak', 'Masuk tercatat pukul ' + esc(h.masuk.jam) +
+          '. Ceklok hari ini selesai dan dihitung lengkap (tidak dihitung pulang cepat). Ceklok Pulang tidak diperlukan lagi.') +
+        '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((x) =>
+          '<button data-a="ckJenis" data-v="' + esc(x) + '"' + (ck.jenis === x ? ' class="on"' : '') + '>' + esc(x) + '</button>').join('') +
+        '</div></div>' +
+        '<div class="step"><h3>Keterangan singkat <small>wajib</small></h3>' +
+        '<input class="note-in" id="ckNote" maxlength="300" placeholder="Mis. perintah Kasat, pengawalan ke Pendopo" value="' + esc(ck.note) + '"></div>' +
+        '<button class="btn big w" data-a="ckKirimKeluar"' + (sending ? ' disabled' : '') + '>' + (sending ? 'Mengirim…' : '🚨 Kirim: Tinggalkan Kantor') + '</button>' +
+        '<div class="switch"><button class="link muted-link" data-a="ckModeKembali">← Kembali</button></div>';
     } else if (f === 'tidak') {
       body = '<div class="step"><h3>Alasan tidak masuk</h3><div class="chips">' + (c.izin || []).map((x) =>
           '<button data-a="ckAlasan" data-v="' + esc(x.code) + '"' + (ck.alasan === x.code ? ' class="on"' : '') + '>' + esc(x.label) + '</button>').join('') +
@@ -1088,14 +1106,15 @@
     sending = true;
     renderCeklok();
     try {
-      const pakaiLokasi = tahap !== 'tidak';
+      const pakaiLokasi = tahap === 'masuk' || tahap === 'pulang';
+      const kirimGps = pakaiLokasi || tahap === 'keluar';
       if (pakaiLokasi) {
         await lokasiBaru();
         if (!okLokasiCk()) throw new Error(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + c.radius + ' m dari kantor Satpas');
       }
       const body = {
-        pin, kode, action: 'ceklok', tahap, st: st || '',
-        lat: pakaiLokasi ? draft.lat : null, lng: pakaiLokasi ? draft.lng : null, acc: pakaiLokasi ? draft.acc : null,
+        pin, kode, action: 'ceklok', tahap, st: st || '', jenis: tahap === 'keluar' ? ck.jenis : '',
+        lat: kirimGps ? draft.lat : null, lng: kirimGps ? draft.lng : null, acc: kirimGps ? draft.acc : null,
         foto: pakaiLokasi ? draft.foto : '', fotoMs: pakaiLokasi ? draft.fotoMs : 0,
         note: ck.note.trim(),
         idKirim: Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
@@ -1108,7 +1127,7 @@
         const lat = draft.lat, lng = draft.lng, acc = draft.acc;
         draft = newDraft();
         Object.assign(draft, { lat, lng, acc });
-        Object.assign(ck, { tidak: false, alasan: '', note: '' });
+        Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
       };
       if (sebelumnya && tersimpan) {
         kosongkan();
@@ -1134,6 +1153,7 @@
       toast(out.diperiksa ? 'Ceklok tercatat pukul ' + out.jam + ', lokasi perlu diverifikasi admin'
         : tahap === 'masuk' ? '✓ Ceklok Masuk pukul ' + out.jam + (out.selisih ? ' — terlambat ' + out.selisih + ' menit' : '')
         : tahap === 'pulang' ? '✓ Ceklok Pulang pukul ' + out.jam + (out.selisih ? ' — pulang cepat ' + out.selisih + ' menit' : '')
+        : tahap === 'keluar' ? '✓ Tercatat meninggalkan kantor pukul ' + out.jam + ' — ceklok hari ini selesai'
         : '✓ Laporan tidak masuk terkirim');
       sending = false;
       await reload(data.today);
@@ -1156,6 +1176,14 @@
     if (a === 'tutupPesanAntre') pesanAntre = '';
     if (a === 'ckModeTidak') ck.tidak = true;
     if (a === 'ckModeHadir') ck.tidak = false;
+    if (a === 'ckModeKeluar') { ck.keluar = true; window.scrollTo(0, 0); }
+    if (a === 'ckModeKembali') ck.keluar = false;
+    if (a === 'ckJenis') ck.jenis = el.dataset.v;
+    if (a === 'ckKirimKeluar') {
+      if (!ck.jenis) return toast('Pilih jenis tugas dulu');
+      if (ck.note.trim().length < 3) return toast('Isi keterangan singkat tugas mendadak');
+      return kirimCeklok('keluar');
+    }
     if (a === 'ckAlasan') ck.alasan = el.dataset.v;
     if (a === 'ckMasuk' || a === 'ckPulang') {
       if (!okLokasiCk()) return toast(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + data.ceklok.radius + ' m dari kantor Satpas');
@@ -1237,7 +1265,7 @@
   $('mode').onclick = (e) => {
     const b = e.target.closest('button');
     if (!b || memuat || sending) return;
-    // ketuk Lapor Saya saat sudah terbuka (atau gagal memuat): ambil data terbaru dari server
+    // ketuk Lapor CW saat sudah terbuka (atau gagal memuat): ambil data terbaru dari server
     if (!data || b.dataset.m === mode) return reload(data && data.today);
     if (b.dataset.m === 'lapor' && dirtyCount() && data.day !== data.today &&
       !confirm('Perubahan rekap yang belum disimpan akan hilang. Lanjut?')) return;
@@ -1261,7 +1289,7 @@
     store('cw_data', '');
     data = null;
     draft = newDraft();
-    Object.assign(ck, { tidak: false, alasan: '', note: '' });
+    Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
     $('pin').value = '';
     showLogin('');
   }

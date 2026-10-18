@@ -1,7 +1,7 @@
 {
   "name": "Laporan CW Pagi",
   "short_name": "CW Pagi",
-  "description": "Laporan Pengaturan Pagi Satlantas Polresta Banyuwangi",
+  "description": "Laporan Integritas Satlantas Polresta Banyuwangi",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
