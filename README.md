@@ -315,6 +315,24 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
 - Akun pemilik Apps Script harus punya akses **edit** ke spreadsheet Data Satpas. Saat pertama dijalankan,
   Google meminta izin.
 
+## Penilaian personel CW Pagi (sheet PENILAIAN CW)
+
+File **PenilaianCw.gs** (salinan di `apps-script/`) menulis sheet **PENILAIAN CW** di spreadsheet CW Pagi: indikator
+penilaian **semua personel CW Pagi** (baris ABSENSI + yang lapor lewat jadwal Piket BM / Patwal / Laka), bukan hanya
+anggota Satpas. Ditulis ulang otomatis di hitungan pagi (±07.30) dan sore (±15.15), atau lewat menu
+**🖨️ REKAP CETAK → Integritas – Hitung sekarang**. Bisa juga dijalankan langsung: fungsi `hitungPenilaianCw`.
+
+| Unsur | Bobot (`BOBOT_CW`) | Cara hitung |
+| --- | --- | --- |
+| Kehadiran | 35% | hari H ÷ hari wajib di ABSENSI (LD/D/S/I/P dan `-` tidak dinilai) |
+| Kejujuran lokasi & foto | 25% | 100 − 25 per ⚠️ PALSU, dikurangi CEK FOTO atasan |
+| Ketepatan waktu | 15% | Lapor Datang ≤ 15 menit setelah buka = 100, lalu −2 per menit |
+| Kelengkapan lapor | 15% | hari Datang + Selesai (atau Tinggalkan Lokasi) ÷ hari lapor |
+| Durasi tugas | 10% | rata-rata poin harian ÷ poin Baik |
+
+- Predikat dan pengunci ⚠️ PALSU sama dengan PENILAIAN INTEGRITAS; peringkat yang terkunci di bawah yang bersih.
+- Periode sama dengan PENILAIAN INTEGRITAS (bulan ABSENSI, mulai `TGL_MULAI_INTEGRITAS`).
+
 ## Rekap cetak untuk pimpinan (kertas Legal)
 
 File **RekapCetak.gs** (salinan di `apps-script/`) menambah menu **🖨️ REKAP CETAK** di spreadsheet CW Pagi.
