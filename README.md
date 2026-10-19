@@ -263,7 +263,7 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   | --- | --- | --- |
   | Kehadiran CW | 25% | hari H ÷ hari wajib di ABSENSI (LD/D/S/I/P dan `-` tidak dinilai) |
   | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap / tugas mendadak 100 · pulang cepat 70 · tanpa Ceklok Pulang 50 · tidak ceklok 0 (hari izin tidak dinilai) |
-  | Kejujuran lokasi | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`) |
+  | Kejujuran lokasi & foto | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`), lalu dipotong lagi per CEK FOTO atasan (lihat **Bukti foto** di bawah) |
   | Ketepatan waktu | 10% | Lapor Datang ≤ 06.15 dan Ceklok Masuk ≤ 08.00 = 100, lalu −2 per menit (`BATAS_AMAN_CW`, `POTONG_PER_MENIT`) |
   | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
   | Durasi tugas CW | 10% | rata-rata poin harian ÷ poin Baik |
@@ -281,6 +281,19 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
     setelah sempat H → kembali **N**. Cara lama (admin mengganti N → H di ABSENSI) tetap dianggap ASLI.
   - Yang **ASLI** tidak dipotong dan poin durasinya dihitung normal. Yang **PALSU** dipotong 25 dan hari itu bernilai 0.
 - **Tinggalkan Lokasi** lebih dari 3× sebulan ditulis di CATATAN untuk dicek atasan (tidak mengurangi skor).
+- **Bukti foto (wajah, seragam, foto asli)**:
+  - Sheet **JADWAL SERAGAM** (spreadsheet CW Pagi): isi seragam per hari (Senin … Minggu, mis. PDH / PDL / Gampol).
+    Tanggal khusus (dd/MM/yyyy) di baris bawah mengalahkan hari. Seragam hari itu tampil di layar kamera.
+  - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas (bisa pakai 🔄 kamera depan),
+    seragam hari ini, dan ambil langsung di lokasi (bukan memotret layar HP / foto lain). Foto Lapor Selesai
+    (arus lalu lintas) hanya diingatkan soal lokasi.
+  - Kolom **N "CEK FOTO (atasan)"** di LOG LAPOR dan LOG CEKLOK diisi atasan dengan buka tautan FOTO:
+    `SESUAI` (tidak dipotong) · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
+    (`CEK_FOTO` di Kode.gs). Kosong = tidak dipotong. Tidak perlu memeriksa semua foto; cukup acak / yang mencurigakan.
+  - Potongan masuk unsur Kejujuran lokasi & foto, jenis dan jumlahnya ditulis di CATATAN.
+  - Foto CW dihapus otomatis setelah 3 hari (`FOTO_SIMPAN_HARI`), jadi periksa dalam 3 hari. Foto yang dinilai
+    selain `SESUAI` tetap disimpan sebagai bukti.
+  - Pasang sekali: jalankan `siapkanBuktiFoto` (membuat sheet JADWAL SERAGAM dan kolom CEK FOTO).
 - **Periode:** PENILAIAN INTEGRITAS = akumulasi **bulan berjalan** (dari tanggal 1 / `TGL_MULAI_INTEGRITAS` s.d. hari terakhir
   yang sudah ditutup), dihitung ulang tiap pagi.
 - **Penilaian mingguan** (file **IntegritasMingguan.gs**, rumus sama, periode Senin–Minggu):

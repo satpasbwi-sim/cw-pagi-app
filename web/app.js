@@ -736,6 +736,17 @@
       ? 'Foto Lapor Datang: tampilkan Anda sedang berada di titik pengaturan.'
       : 'Foto Lapor Selesai: tampilkan kondisi arus lalu lintas terakhir di titik.';
   }
+  // pengingat di layar kamera: foto dinilai atasan (kolom CEK FOTO) dan ikut unsur Kejujuran Lokasi & Foto
+  function cekFotoHtml() {
+    const wajah = mode === 'ceklok' || fase(myRow()) === 'datang';   // Lapor Selesai = foto arus lalu lintas
+    const baris = [];
+    if (wajah) {
+      baris.push('😀 Wajah terlihat jelas' + (arahKamera === 'user' ? '' : ' — ketuk 🔄 untuk kamera depan'));
+      baris.push(data.seragam ? '👮 Seragam hari ini: <b>' + esc(data.seragam) + '</b>' : '👮 Seragam & atribut lengkap sesuai jadwal');
+    }
+    baris.push('📍 Ambil langsung di lokasi, jangan memotret layar HP / foto lain');
+    return '<ul class="cek-foto">' + baris.map((b) => '<li>' + b + '</li>').join('') + '</ul>';
+  }
   function fotoHtml() {
     if (draft.foto) {
       return '<div class="foto-ok"><img src="' + draft.foto + '" alt="Foto lapor"></div>' +
@@ -797,14 +808,18 @@
     draft.kameraGagal = '';
     const el = document.createElement('div');
     el.className = 'kamera';
-    el.innerHTML = '<div class="kamera-tip">' + esc(petunjukFoto()) + '</div>' +
+    el.innerHTML = '<div class="kamera-tip">' + esc(petunjukFoto()) + '<div class="cek-isi"></div></div>' +
       '<video playsinline autoplay muted></video><div class="wm"></div>' +
       '<div class="kamera-bar"><button class="btn" data-k="batal">Batal</button>' +
       '<button class="btn putar" data-k="putar" aria-label="Ganti kamera depan / belakang" hidden>🔄</button>' +
       '<button class="btn h" data-k="jepret">📷 Ambil Foto</button></div>';
     document.body.appendChild(el);
     const video = el.querySelector('video');
-    const pasang = () => { video.srcObject = stream; el.classList.toggle('depan', arahKamera === 'user'); };
+    const pasang = () => {
+      video.srcObject = stream;
+      el.classList.toggle('depan', arahKamera === 'user');
+      el.querySelector('.cek-isi').innerHTML = cekFotoHtml();
+    };
     pasang();
     // tombol ganti kamera hanya bila HP punya lebih dari satu kamera
     navigator.mediaDevices.enumerateDevices().then((d) => {
