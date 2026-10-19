@@ -266,7 +266,7 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   | Kejujuran lokasi & foto | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`), lalu dipotong lagi per CEK FOTO atasan (lihat **Bukti foto** di bawah) |
   | Ketepatan waktu | 10% | Lapor Datang ≤ 06.15 dan Ceklok Masuk ≤ 08.00 = 100, lalu −2 per menit (`BATAS_AMAN_CW`, `POTONG_PER_MENIT`) |
   | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
-  | Durasi tugas CW | 10% | rata-rata poin harian ÷ poin Baik |
+  | Durasi tugas (CW + Satpas) | 10% | rata-rata dua nilai: CW = poin harian ÷ poin Baik; Satpas = jam efektif Masuk–Pulang yang berada di dalam jam dinas ÷ jam dinas (mis. 08.00–11.30 dari 08.00–13.00 = 70). Tinggalkan Kantor dan hari tanpa Ceklok Pulang tidak dihitung di sini. Hanya punya satu data = nilai itu saja |
 
 - **Verifikasi ⚠️ semi-otomatis** (file **Verifikasi.gs**, jalan otomatis di pemicu harian ±07.30, juga bisa
   dijalankan manual: fungsi `verifikasiOtomatis`). Kolom **VERIFIKASI (ASLI / PALSU)** ada di LOG LAPOR dan LOG CEKLOK.
@@ -305,6 +305,9 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
     ikut disimpan ke RIWAYAT.
   - Minggu yang melewati pergantian bulan hanya menilai hari di bulan ABSENSI (tertulis di baris keterangan).
 - Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan.
+- **Pengunci predikat (gatekeeper):** anggota dengan **TERBUKTI ⚠️ PALSU ≥ 1** dalam periode itu paling tinggi mendapat
+  predikat **Cukup** (`PREDIKAT_MAKS_PALSU`), walaupun skornya ≥ 80. Skor angka tetap apa adanya, CATATAN menulis
+  "predikat dikunci …", dan peringkatnya diletakkan di bawah semua anggota yang bersih. Berlaku juga di penilaian mingguan.
 - Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 15.00): hitungan sore ±15.15 sudah memuat hari ini. Unsur yang belum ada datanya tidak
   dihitung, dan bobot unsur lain disesuaikan.
 - **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-18'` (penilaian uji coba mulai 18 Oktober 2026). Ganti ke
