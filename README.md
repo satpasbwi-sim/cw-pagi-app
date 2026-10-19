@@ -310,8 +310,9 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   "predikat dikunci …", dan peringkatnya diletakkan di bawah semua anggota yang bersih. Berlaku juga di penilaian mingguan.
 - Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 15.00): hitungan sore ±15.15 sudah memuat hari ini. Unsur yang belum ada datanya tidak
   dihitung, dan bobot unsur lain disesuaikan.
-- **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-18'` (penilaian uji coba mulai 18 Oktober 2026). Ganti ke
-  `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai.
+- **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-19'` (penilaian uji coba mulai 19 Oktober 2026). Ganti ke
+  `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai. Selama uji coba, data dihapus tiap
+  ±16.00 WIB (lihat **Reset data uji coba**), jadi penilaian hanya memuat input sesudah reset terakhir.
 - Akun pemilik Apps Script harus punya akses **edit** ke spreadsheet Data Satpas. Saat pertama dijalankan,
   Google meminta izin.
 
@@ -354,13 +355,40 @@ Pasang sekali: tempel sebagai file baru di Apps Script → jalankan fungsi `pasa
 | CW Pagi – Mingguan / Bulanan | sheet **CETAK REKAP CW**: per personil per tanggal (H/S/I/D/P/LD/N/BL), jumlah, % hadir, keterangan (alasan, catatan, nama pelapor pos jaga) |
 | Ceklok Satpas – Mingguan / Bulanan | sheet **CETAK REKAP CEKLOK** (spreadsheet Satpas): Polri & PHL, H/T/PC/TP/TG/TK/S/I/C/D/P, jumlah, % hadir, keterangan |
 | Rapikan tabel spreadsheet Satpas | format ulang Data, LIBUR SATPAS, LOG CEKLOK, PENILAIAN INTEGRITAS |
-| Integritas – Cetak Mingguan / Bulanan (PDF) | sheet **CETAK INTEGRITAS** (spreadsheet Satpas): nilai per anggota (6 unsur, skor, predikat, peringkat, keterangan) urut peringkat, baris rata-rata satuan, sebaran predikat, keterangan bobot, tanda tangan; PDF Legal mendatar |
+| Integritas – Cetak Mingguan / Bulanan (PDF) | sheet **CETAK INTEGRITAS** (spreadsheet Satpas): nilai per anggota (6 unsur, skor, predikat, peringkat, keterangan) urut peringkat, baris rata-rata satuan, sebaran predikat, keterangan bobot; PDF Legal mendatar |
 
 - Mingguan = Senin s.d. Minggu; aplikasi menanyakan satu tanggal di minggu itu (kosong = minggu ini).
 - Setiap rekap juga disimpan sebagai **PDF Legal mendatar** di Drive folder **Rekap Cetak CW & Satpas**; tautannya muncul.
-- Kop, judul, ringkasan, legenda kode, dan tanda tangan (PENGATURAN C12–C15) ikut tercetak. Kepala tabel diulang di tiap halaman.
+- Yang tercetak: judul, ringkasan, tabel, dan legenda kode (tanpa kop surat, garis kop, dan tanda tangan). Kepala tabel diulang di tiap halaman.
 - Rekap CW memakai sheet ABSENSI, jadi hanya bulan di PENGATURAN; minggu yang melewati pergantian bulan tampil abu-abu di tanggal bulan lain.
 - Rekap Ceklok tidak menghitung hari sebelum `TGL_MULAI_INTEGRITAS`.
+
+## Reset data uji coba (setiap hari ±16.00 WIB)
+
+File **ResetUjiCoba.gs** (salinan di `apps-script/`). Selama `UJI_COBA = true`, setiap hari antara **16.00 dan 16.30 WIB**
+semua input dari aplikasi (login NRP) mulai `TGL_MULAI_INTEGRITAS` (19 Oktober 2026) s.d. hari ini dihapus, jadi
+spreadsheet kosong lagi untuk uji coba berikutnya:
+
+| Spreadsheet | Yang dihapus |
+| --- | --- |
+| CW Pagi | baris **LOG LAPOR**; kode di **ABSENSI** dari laporan itu, serta H / N lain di tanggal tersebut; isian **CATATAN** nomor plotting yang lapor hari itu |
+| Data Satpas | baris **LOG CEKLOK** |
+
+- Sesudahnya DURASI POIN, REKAP POIN, PENILAIAN INTEGRITAS, PENILAIAN CW, dan INTEGRITAS MINGGUAN dihitung ulang (jadi kosong).
+  Hari Senin hanya penilaian yang dihitung ulang, agar RIWAYAT mingguan yang disimpan pagi tidak ditimpa kosong.
+- **Hari yang sudah di-reset tidak dinilai.** Tanggal reset disimpan di *Script Properties* (`RESET_UJI_COBA_TERAKHIR`), dan
+  penilaian baru menghitung mulai hari sesudahnya (`tglMulaiNilai_` di Code.gs). Jadi sesudah reset sheet penilaian bertuliskan
+  "belum ada hari yang dinilai", bukan "tidak lapor / tidak ceklok". Hitungan sore ±15.15 masih memuat hasil uji coba hari itu.
+  Reset manual sebelum 16.00 hanya menandai kemarin, sehingga input sesudah reset hari itu tetap dinilai.
+  Aturan ini mati sendiri saat `UJI_COBA = false`.
+- **Tidak** disentuh: kode ABSENSI lain yang diisi admin (LD, S, I, D, P, `-`) dan bukan dari laporan aplikasi, plotting,
+  ANGGOTA, KOORDINAT, JADWAL, sheet Data / LIBUR SATPAS. Foto di Drive ikut terhapus oleh `hapusFotoLama` setelah 3 hari.
+- Input sesudah 16.00 tetap tersimpan sampai reset hari berikutnya.
+- Reset manual kapan saja: menu **🖨️ REKAP CETAK → Uji coba – Reset data sekarang** (ada konfirmasi).
+- Pasang sekali: tempel sebagai file baru di Apps Script → jalankan `pasangPemicuResetUjiCoba`. Untuk menu, tempel juga
+  **RekapCetak.gs** versi terbaru.
+- Berhenti sendiri saat `UJI_COBA = false`. Pemicunya boleh dihapus sesudah itu (Apps Script → Pemicu).
+- Data yang terhapus tidak bisa dikembalikan dari aplikasi; bila perlu, pakai *File → Histori versi* spreadsheet.
 
 ## Notifikasi gangguan (email ke operator)
 
