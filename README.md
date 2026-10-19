@@ -316,6 +316,25 @@ Pasang sekali: tempel sebagai file baru di Apps Script → jalankan fungsi `pasa
 - Rekap CW memakai sheet ABSENSI, jadi hanya bulan di PENGATURAN; minggu yang melewati pergantian bulan tampil abu-abu di tanggal bulan lain.
 - Rekap Ceklok tidak menghitung hari sebelum `TGL_MULAI_INTEGRITAS`.
 
+## Notifikasi gangguan (email ke operator)
+
+File **Notifikasi.gs** (salinan di `apps-script/`) mengirim email ke operator bila ada yang bermasalah.
+Email dikirim ke pemilik spreadsheet CW Pagi (sekarang **satpasbwi@gmail.com**). Alamat lain bisa diisi di
+`EMAIL_OPERATOR` (beberapa alamat dipisah koma).
+- **Error di pemicu harian**: verifikasi otomatis, PENILAIAN INTEGRITAS, dan INTEGRITAS MINGGUAN yang gagal
+  langsung dikirim lewat email beserta isi errornya (`laporGagal_`).
+- **Cek kesehatan tiap jam** (pemicu `cekKesehatan`):
+  - aplikasi GitHub Pages bisa dibuka;
+  - Web App `/exec` menjawab (aplikasi bisa login / lapor);
+  - deploy GitHub Actions terakhir tidak gagal;
+  - pemicu `hitungDurasiPoin` (±07.30) dan `hitungIntegritasSore` (±15.15) masih terpasang dan berhasil dalam 26 jam terakhir.
+- Pesan yang sama dikirim paling sering sekali per **3 jam** (`NOTIF_JEDA_MENIT`), jadi kotak masuk tidak kebanjiran.
+- Pasang sekali: jalankan `pasangPemicuKesehatan` dari editor. Uji: jalankan `ujiNotifikasi`.
+- Saat pertama dijalankan Google meminta izin. Centang **Pilih semua**, termasuk **"Mengirim email atas nama Anda"**.
+  Bila izin ini tidak dicentang, email tidak terkirim (log: *Anda tidak memiliki izin untuk memanggil MailApp.sendEmail*).
+- Deploy GitHub yang gagal juga dikirim GitHub sendiri ke email akun yang melakukan push, bila notifikasi
+  Actions di github.com → Settings → Notifications aktif.
+
 ## 10. Ganti bulan
 
 **Cek dulu:** spreadsheet → menu **🚀 CW PAGI APP → 🩺 Cek Kesiapan / Ganti Bulan** (hanya membaca).
