@@ -229,7 +229,7 @@ dicocokkan per **nama petugas**, jadi dua orang di baris pos yang sama dihitung 
 Anggota Satpas (NRP ada di sheet **Data** spreadsheet Satpas) melihat tab **Ceklok Satpas** di aplikasi. Anggota
 Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsung diarahkan ke tab ini.
 - **Ceklok Masuk** dibuka pukul **07.00**. Lewat jam masuk (**08.00**) tercatat **terlambat** (menit).
-- **Ceklok Pulang** bisa setelah Masuk, paling lambat **18.00**. Sebelum jam pulang tercatat **pulang cepat**.
+- **Ceklok Pulang** bisa setelah Masuk, paling lambat **15.00**. Sebelum jam pulang tercatat **pulang cepat**.
   Jam pulang **13.00** (Senin–Kamis) dan **12.00** (Jumat–Sabtu). Hari Minggu libur.
 - Wajib dalam radius **100 m** dari titik kantor (-8.239257, 114.345514) dan foto langsung dari kamera.
   Deteksi lokasi palsu sama dengan Lapor CW Pagi.
@@ -252,8 +252,9 @@ Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsu
 ## Penilaian integritas anggota Satpas
 
 Sheet **PENILAIAN INTEGRITAS** di spreadsheet **Data Satpas** (`SATPAS_SS_ID` di Kode.gs) ditulis ulang
-otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dijalankan langsung lewat fungsi
-`hitungIntegritasSatpas` di editor.
+otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30) dan **sore ±15.15** setelah ceklok ditutup
+(pemicu `hitungIntegritasSore`, pasang sekali dengan fungsi `pasangPemicuIntegritasSore`). Bisa juga dijalankan
+kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**.
 - Anggota diambil dari sheet **Data** (PETUGAS, PANGKAT, NRP, POKJA). Pencocokan dengan CW Pagi lewat **NRP**
   (sheet ANGGOTA), dan dengan LOG CEKLOK juga lewat NRP.
 - **Skor 0–100** (`BOBOT_INTEGRITAS`):
@@ -291,7 +292,7 @@ otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30). Bisa juga dij
     ikut disimpan ke RIWAYAT.
   - Minggu yang melewati pergantian bulan hanya menilai hari di bulan ABSENSI (tertulis di baris keterangan).
 - Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan.
-- Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 18.00). Unsur yang belum ada datanya tidak
+- Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 15.00): hitungan sore ±15.15 sudah memuat hari ini. Unsur yang belum ada datanya tidak
   dihitung, dan bobot unsur lain disesuaikan.
 - **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-18'` (penilaian uji coba mulai 18 Oktober 2026). Ganti ke
   `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai.
