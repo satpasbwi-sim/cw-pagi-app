@@ -333,6 +333,17 @@ anggota Satpas. Ditulis ulang otomatis di hitungan pagi (±07.30) dan sore (±15
 - Predikat dan pengunci ⚠️ PALSU sama dengan PENILAIAN INTEGRITAS; peringkat yang terkunci di bawah yang bersih.
 - Periode sama dengan PENILAIAN INTEGRITAS (bulan ABSENSI, mulai `TGL_MULAI_INTEGRITAS`).
 
+## Rekapitulasi nilai
+
+File **Rekapitulasi.gs** (salinan di `apps-script/`):
+- Di bawah tabel **PENILAIAN INTEGRITAS**, **INTEGRITAS MINGGUAN**, dan **PENILAIAN CW** ada blok **REKAPITULASI**
+  (ditulis ulang bersama tabelnya): sebaran predikat (jumlah & %), rata-rata skor dan tiap unsur, pelanggaran
+  (⚠️ PALSU, predikat dikunci), 3 skor tertinggi, dan 3 skor terendah (perlu pembinaan).
+- Sheet **RIWAYAT REKAP MINGGUAN** (spreadsheet Satpas): 1 baris per minggu yang selesai (rata-rata skor, jumlah per
+  predikat, rata-rata unsur, PALSU, dikunci), disimpan bersamaan dengan RIWAYAT INTEGRITAS MINGGUAN setiap Senin pagi
+  atau lewat menu Integritas – Mingguan (pilih minggu yang sudah lewat). Untuk melihat tren antar minggu.
+- Cetak: menu **🖨️ REKAP CETAK → Integritas – Cetak Mingguan / Bulanan (PDF)** (lihat tabel di bawah).
+
 ## Rekap cetak untuk pimpinan (kertas Legal)
 
 File **RekapCetak.gs** (salinan di `apps-script/`) menambah menu **🖨️ REKAP CETAK** di spreadsheet CW Pagi.
@@ -343,6 +354,7 @@ Pasang sekali: tempel sebagai file baru di Apps Script → jalankan fungsi `pasa
 | CW Pagi – Mingguan / Bulanan | sheet **CETAK REKAP CW**: per personil per tanggal (H/S/I/D/P/LD/N/BL), jumlah, % hadir, keterangan (alasan, catatan, nama pelapor pos jaga) |
 | Ceklok Satpas – Mingguan / Bulanan | sheet **CETAK REKAP CEKLOK** (spreadsheet Satpas): Polri & PHL, H/T/PC/TP/TG/TK/S/I/C/D/P, jumlah, % hadir, keterangan |
 | Rapikan tabel spreadsheet Satpas | format ulang Data, LIBUR SATPAS, LOG CEKLOK, PENILAIAN INTEGRITAS |
+| Integritas – Cetak Mingguan / Bulanan (PDF) | sheet **CETAK INTEGRITAS** (spreadsheet Satpas): nilai per anggota (6 unsur, skor, predikat, peringkat, keterangan) urut peringkat, baris rata-rata satuan, sebaran predikat, keterangan bobot, tanda tangan; PDF Legal mendatar |
 
 - Mingguan = Senin s.d. Minggu; aplikasi menanyakan satu tanggal di minggu itu (kosong = minggu ini).
 - Setiap rekap juga disimpan sebagai **PDF Legal mendatar** di Drive folder **Rekap Cetak CW & Satpas**; tautannya muncul.
