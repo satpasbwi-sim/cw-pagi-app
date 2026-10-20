@@ -167,10 +167,10 @@ Pengaturan penting di Kode.gs:
 - `JADWAL`, `RADIUS_M` – nilai **bawaan** (dipakai jika sheet JADWAL kosong/salah).
 
 Catatan proyek Apps Script:
-- Menu **🔐 Atur Kode Admin Aplikasi** ditambahkan di fungsi `onOpen` file **AutoDeploy.gs**.
-- File **AutoDeploy.gs** (menu "🚀 CW PAGI APP" di spreadsheet) fungsi `doGet/doPost`-nya
-  sudah diganti nama menjadi `doGet_AutoDeploy/doPost_AutoDeploy` agar tidak bentrok dengan
-  API di Kode.gs. **Jangan dikembalikan**, karena aplikasi akan berhenti bekerja.
+- Menu **🚀 CW PAGI APP** ada di file **MenuAplikasi.gs** (`onOpen`): 📱 Buka Aplikasi & QR Code, 🩺 Cek & Perbaiki,
+  📅 Ganti Bulan, 📆 Jadwal Piket BM, 🔐 Atur Kode Admin, 📊 Hitung Durasi & Poin. File lama **AutoDeploy.gs**
+  (Auto-Deploy 1-Klik ke repo terpisah, QR ke URL API) sudah dibuang (21 Okt 2026); aplikasi di-publish dari repo ini.
+  Hanya boleh ada satu `doGet`/`doPost`, yaitu API di Kode.gs.
 - `appsscript.json` memuat `oauthScopes` (Spreadsheet, Drive, menu, akses internet).
   Jika menambah layanan Google baru di kode, tambahkan juga cakupannya di sini.
 - Ada fungsi `izinkanAkses` untuk dijalankan sekali bila izin Drive perlu diberikan ulang.
@@ -420,20 +420,41 @@ Email dikirim ke pemilik spreadsheet CW Pagi (sekarang **satpasbwi@gmail.com**).
 
 ## 10. Ganti bulan
 
-**Cek dulu:** spreadsheet → menu **🚀 CW PAGI APP → 🩺 Cek Kesiapan / Ganti Bulan** (hanya membaca).
-Menu ini memeriksa: bulan di PENGATURAN (dan mengingatkan 3 hari sebelum akhir bulan), struktur
-ABSENSI (baris 7–86 utuh), jadwal Piket BM tersedia ≥ 7 hari ke depan, jadwal Patwal hari ini,
-personel ANGGOTA yang tidak cocok dengan plotting/jadwal, ukuran LOG LAPOR (arsipkan bila ≥ 3000
-baris), pemicu hapus foto, dan mode uji coba. Jalankan juga sesudah mengubah plotting atau jadwal.
+**🩺 Cek & Perbaiki** (menu 🚀 CW PAGI APP; file **CekPerbaiki.gs**) memeriksa: bulan di PENGATURAN (mengingatkan
+3 hari sebelum akhir bulan), struktur ABSENSI (baris 7–86 utuh), jadwal Piket BM, jadwal Patwal & Piket Laka hari ini,
+personel ANGGOTA yang tidak cocok dengan plotting/jadwal, ukuran LOG LAPOR, 7 pemicu otomatis, dan mode uji coba.
+Masalah yang aman diperbaiki otomatis punya tombol (selalu dengan konfirmasi):
 
-Daftar periksa ganti bulan:
-1. PENGATURAN C4–C5 (bulan, tahun) → C7 ikut berubah.
-2. Kosongkan kolom tanggal ABSENSI (E7:AI86) dan isi CATATAN. **Jangan hapus baris.**
-3. Jadwal Piket BM: buat periode baru. Sheet Patwal: perbarui unit/personel bila ada mutasi.
-4. Arsipkan LOG LAPOR bulan lalu (salin ke spreadsheet arsip, sisakan baris judul).
-5. Jalankan 🩺 Cek Kesiapan sampai semua ✅ (kecuali mode uji coba bila memang masih uji coba).
+| Masalah | Tombol |
+|---|---|
+| Pemicu otomatis hilang | **Pasang pemicu** (pasang ulang yang hilang saja) |
+| Bulan PENGATURAN sudah lewat | **Ganti bulan** (lihat di bawah) |
+| LOG LAPOR ≥ 3000 baris | **Arsipkan** (baris bulan-bulan sebelumnya → spreadsheet "Arsip LOG LAPOR CW Pagi") |
+| Jadwal Piket BM hari ini tidak ada | **Buat periode** (lihat Jadwal Piket BM otomatis) |
 
-**Pilihan A – satu spreadsheet dipakai terus (paling mudah)**
+Yang tidak bisa diperbaiki otomatis hanya diberi saran: jadwal Patwal/Laka belum dibuat, struktur ABSENSI berubah,
+nama ANGGOTA, mode uji coba (perlu ubah kode + deploy), dan error di kode (dikirim lewat email, Notifikasi.gs).
+
+**📅 Ganti Bulan (1 klik)** – file **GantiBulan.gs**. Jalankan tanggal 1, sebelum lapor dibuka 06.15 (pemicu ±00.30
+mengirim email pengingat bila belum). Hanya bisa bila bulan PENGATURAN sudah lewat. Urutannya:
+1. Hitung final bulan lama (DURASI POIN, PENILAIAN INTEGRITAS, PENILAIAN CW, INTEGRITAS HARIAN/MINGGUAN). Minggu
+   yang terpotong akhir bulan disimpan ke RIWAYAT INTEGRITAS MINGGUAN sebagai "… – <akhir bulan>"; Senin berikutnya
+   bagian bulan baru minggu itu tersimpan sebagai baris sendiri.
+2. Spreadsheet baru **"Arsip CW Pagi <Bulan Tahun>"** di folder yang sama (nilai saja): ABSENSI, CATATAN,
+   LAPORAN HARIAN, REKAP BULANAN, DURASI POIN, REKAP POIN, PENILAIAN CW, PENILAIAN INTEGRITAS; baris LOG LAPOR &
+   LOG CEKLOK bulan lama dipindah ke arsip (foto di Drive tetap).
+3. PENGATURAN C4–C5 = bulan berjalan; isian tanggal ABSENSI (E7:AI86) dan CATATAN dikosongkan. Rumus, plotting,
+   KETERANGAN TUGAS, dan JAM tidak diubah. Sesudahnya periksa plotting bila ada mutasi, lalu 🩺 Cek & Perbaiki.
+
+**📆 Jadwal Piket BM otomatis** – file **JadwalPiket.gs**, spreadsheet "Piket BM". Satu periode = 4 minggu; tanggal
+semua blok mengikuti D3 (Tanggal Mulai). Pemicu ±00.30 sesudah periode selesai (hari > D4): D3 = hari berikutnya dan
+nama personel diisi menurut pola rotasi jadwal ini: **minggu ke-n = minggu ke-(n−3) dengan kolom Karangente ↔ Ketapang
+ditukar** (tiap orang bergantian pos tiap minggu, regu berputar 1 → 2 → 3, siklus penuh 6 minggu). Kode S/M/LD per regu
+tetap. Bila pola di jadwal lama tidak cocok (diubah manual dengan pola lain), jadwal tidak ditulis dan operator
+dikabari lewat email. Menu 📆 menampilkan periode berjalan dan susunan minggu pertama periode berikutnya. Sheet Patwal
+tetap diperbarui manual bila ada mutasi.
+
+**Pilihan A – satu spreadsheet dipakai terus (paling mudah, dipakai 📅 Ganti Bulan)**
 Kosongkan kolom tanggal di ABSENSI, ubah bulan/tahun/tanggal akhir di PENGATURAN (C4, C5, C7),
 sesuaikan plotting. URL tidak berubah; tidak perlu deploy atau push.
 Sheet LOG LAPOR boleh dibiarkan (data dipisah per bulan otomatis) atau dipindah ke arsip.
