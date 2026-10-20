@@ -4,9 +4,9 @@ Aplikasi web **Laporan Integritas** (bisa dipasang di HP): tab **Lapor CW** untu
 anggota melapor sendiri dengan **NRP**, lokasi **GPS**, dan foto; admin melihat
 **Rekap** per simpul dan mengirim teks laporan ke grup WhatsApp.
 
-- Aplikasi: **https://satpasbwi-sim.github.io/cw-pagi-app/**
+- Aplikasi: **https://satpasbwi-sim.github.io/integritas-satuan-app/**
 - Data: spreadsheet **"CW Pagi Okt'26"** di Google Drive (sekaligus database)
-- Kode tampilan: repo GitHub **satpasbwi-sim/cw-pagi-app** (folder `web/`)
+- Kode tampilan: repo GitHub **satpasbwi-sim/integritas-satuan-app** (dulu `cw-pagi-app`) (folder `web/`)
 - Kode server: Apps Script di spreadsheet tersebut (file **Kode.gs**)
 
 Aplikasi tidak bergantung pada Claude atau layanan berbayar: semuanya berjalan di
@@ -19,8 +19,8 @@ GitHub Pages, Google Apps Script, Google Sheets, dan Google Drive milik satuan.
 ```
  HP anggota / admin                 Google (akun satuan)                    GitHub
 ┌───────────────────┐  JSON   ┌──────────────────────────┐          ┌──────────────────┐
-│ Aplikasi web      │ ──────▶ │ Apps Script (Kode.gs)    │          │ Repo cw-pagi-app │
-│ (folder web/)     │ ◀────── │ = API, cek NRP/jam/GPS   │          │ folder web/      │
+│ Aplikasi web      │ ──────▶ │ Apps Script (Kode.gs)    │          │ Repo integritas- │
+│ (folder web/)     │ ◀────── │ = API, cek NRP/jam/GPS   │          │ satuan-app, web/ │
 └───────────────────┘         └────────────┬─────────────┘          └────────┬─────────┘
         ▲                                  │ baca/tulis                      │ otomatis
         │                                  ▼                                 ▼
@@ -148,7 +148,7 @@ git push
 ```
 
 **Cara C – lewat browser**: github.com → repo → masuk folder `web` → *Add file →
-Upload files* → **pastikan jalurnya `cw-pagi-app / web /`** → Commit changes.
+Upload files* → **pastikan jalurnya `integritas-satuan-app / web /`** → Commit changes.
 
 Setelah push, tab **Actions** di GitHub menjalankan "Deploy ke GitHub Pages" (±1 menit).
 Jika hijau, situs sudah memakai versi baru. Di HP: tutup lalu buka ulang aplikasi.
@@ -304,6 +304,15 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   - Menu **🖨️ REKAP CETAK → Integritas – Mingguan (pilih minggu)**: hitung minggu tertentu; minggu yang sudah lewat
     ikut disimpan ke RIWAYAT.
   - Minggu yang melewati pergantian bulan hanya menilai hari di bulan ABSENSI (tertulis di baris keterangan).
+  - Selama uji coba sheet ini kosong ("belum ada hari yang dinilai") kecuali antara hitungan sore ±15.15 dan reset
+    ±16.00, karena data tiap hari dihapus. Terisi penuh setelah `UJI_COBA = false`.
+- **Integritas harian** (file **IntegritasHarian.gs**, sheet **INTEGRITAS HARIAN**): satu hari, ringkas & berwarna.
+  Baris ringkasan (hadir CW, ceklok masuk, terlambat, tidak ceklok, lokasi/foto, rata-rata skor, predikat), lalu
+  per anggota: jam CW Datang–Selesai, Ceklok Masuk/Pulang (telat / pulang cepat), lokasi & foto, skor hari itu, predikat.
+  Hijau = sesuai · kuning = perlu perhatian · merah = pelanggaran · abu-abu = tidak wajib / libur / izin.
+  - Ditulis ulang ±07.30 (kemarin) dan ±15.15 (hari ini). Masa uji coba: hari yang sudah di-reset tidak ditimpa,
+    jadi hasil hitungan sore tetap terlihat sampai sore berikutnya.
+  - Menu **🖨️ REKAP CETAK → Integritas – Harian (pilih tanggal)** untuk tanggal tertentu.
 - Predikat: **≥ 90 Sangat Baik · ≥ 80 Baik · ≥ 70 Cukup · < 70 Kurang**, lengkap dengan peringkat dan catatan.
 - **Pengunci predikat (gatekeeper):** anggota dengan **TERBUKTI ⚠️ PALSU ≥ 1** dalam periode itu paling tinggi mendapat
   predikat **Cukup** (`PREDIKAT_MAKS_PALSU`), walaupun skornya ≥ 80. Skor angka tetap apa adanya, CATATAN menulis
