@@ -411,6 +411,20 @@ Semua sama = peringkat sama. **★ TELADAN** = skor 100, tanpa ⚠️ PALSU, min
 (`★ TELADAN…`, `urutan: …`); di aplikasi tampil sebagai lencana ★ Teladan dan bagian **Konsistensi** (Nilai Saya, Rekap
 Integritas). Nilai Saya juga menampilkan berapa orang yang sama-sama bernilai 100.
 
+## Di luar radius setelah lapor / ceklok (LuarRadius.gs)
+
+Setelah **Lapor Datang** (sampai Lapor Selesai / Tinggalkan Lokasi) dan setelah **Ceklok Masuk** (sampai Ceklok Pulang /
+Tinggalkan Kantor), aplikasi memantau GPS selama terbuka. Tanda merah "di luar radius" yang tampil **terus-menerus
+lebih dari 5 menit** = 1 kejadian: dikirim ke server (disimpan di HP dulu bila sinyal putus) dan dicatat di sheet
+**LUAR RADIUS** (spreadsheet CW Pagi: waktu, NRP, nama, CW/CEKLOK, mulai, durasi, jarak maks, akurasi, peta).
+
+- Penilaian: **−10 per kejadian** dari unsur Kejujuran lokasi & foto, catatan "N× di luar radius > 5 menit…", dan hari
+  itu bukan hari sempurna. Berlaku di masa uji coba maupun resmi.
+- Hitungan mulai dari nol bila kembali ke dalam radius, GPS tidak segar (> 2 menit), atau aplikasi ditutup /
+  disembunyikan. Ceklok khusus tanpa radius (SIM keliling) tidak dipantau.
+- Kejadian keliru (GPS melenceng): hapus barisnya di sheet LUAR RADIUS, nilai pulih di hitungan berikutnya.
+- Konstanta: `LUAR_RADIUS_MENIT = 5`, `POTONG_LUAR_RADIUS = 10` (LuarRadius.gs); POST `action=luarRadius`.
+
 ## Rekapitulasi nilai
 
 File **Rekapitulasi.gs** (salinan di `apps-script/`):
@@ -441,6 +455,9 @@ Pasang sekali: tempel sebagai file baru di Apps Script → jalankan fungsi `pasa
 - Rekap Ceklok tidak menghitung hari sebelum `TGL_MULAI_INTEGRITAS`.
 
 ## Reset data uji coba (setiap hari ±19.00 WIB)
+
+Pemicu `resetUjiCoba` memasang ulang dirinya sendiri bila jamnya belum sesuai `RESET_UJI_COBA_JAM` (Script Property
+`RESET_UJI_COBA_PEMICU_JAM`), jadi mengubah jam reset cukup mengganti konstanta itu.
 
 File **ResetUjiCoba.gs** (salinan di `apps-script/`). Selama `UJI_COBA = true`, setiap hari antara **19.00 dan 19.30 WIB**
 semua input dari aplikasi (login NRP) mulai `TGL_MULAI_INTEGRITAS` (19 Oktober 2026) s.d. hari ini dihapus, jadi

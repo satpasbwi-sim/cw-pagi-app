@@ -900,7 +900,7 @@
     if (!data || mode !== 'lapor') return;   // GPS bisa selesai sebelum data dari server tiba
     const r = myRow();
     if (!r || !$('gpsBox')) return render();
-    $('gpsBox').innerHTML = gpsHtml(r);
+    $('gpsBox').innerHTML = gpsHtml(r) + luarHtml();
     if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r) || !okFoto();
   }
 
@@ -1094,6 +1094,7 @@
     draft.lat = pos.coords.latitude; draft.lng = pos.coords.longitude; draft.acc = pos.coords.accuracy;
     draft.posAt = pos.timestamp || Date.now();
     draft.gpsMsg = '';
+    pantauLuar();
     if (data && mode === 'ceklok') return updateCkGps();
     if (!data || mode !== 'lapor') return;
     updateGps();
@@ -1124,6 +1125,64 @@
     if (pantauGps != null && navigator.geolocation) navigator.geolocation.clearWatch(pantauGps);
     pantauGps = null;
   }
+
+  // ---------- di luar radius SETELAH Lapor Datang / Ceklok Masuk (server LuarRadius.gs) ----------
+  // Tanda merah terus-menerus > 5 menit selama aplikasi terbuka = 1 kejadian, dikirim ke server (disimpan di HP dulu).
+  // Kembali ke dalam radius, GPS tidak segar, atau aplikasi ditutup = hitungan mulai dari nol.
+  const LUAR_MS = 5 * 60000;
+  const LUAR_KIRIM = 'cw_luar';
+  let luar = null;   // {jenis, mulai, jarak, tercatat}
+  function statusLuar() {
+    if (!data || draft.lat == null || !draft.posAt || Date.now() - draft.posAt > 120000) return null;
+    if (mode === 'lapor') {
+      const r = myRow();
+      if (!r || r.lat == null || !['tunggu', 'selesai', 'tinggal'].includes(fase(r))) return null;
+      return { jenis: 'cw', d: jarakM(draft, r), maks: radius() };
+    }
+    if (mode === 'ceklok' && data.ceklok && !data.ceklok.bebasLokasi && ['pulang', 'keluar'].includes(ckFase())) {
+      return { jenis: 'ceklok', d: jarakM(draft, data.ceklok), maks: data.ceklok.radius };
+    }
+    return null;
+  }
+  function pantauLuar() {
+    const s = statusLuar();
+    if (!s || s.d <= s.maks) { luar = null; return; }
+    const now = Date.now();
+    if (!luar || luar.jenis !== s.jenis) {
+      luar = { jenis: s.jenis, mulai: now, jarak: s.d };
+      if (s.jenis === 'ceklok') toast('Anda di luar kantor Satpas. Kembali sebelum 5 menit agar tidak tercatat.');
+    }
+    luar.jarak = Math.max(luar.jarak, s.d);
+    if (luar.tercatat || now - luar.mulai < LUAR_MS) return;
+    luar.tercatat = true;
+    toast('⚠️ Di luar radius lebih dari 5 menit — tercatat untuk diperiksa');
+    const body = {
+      pin, kode, action: 'luarRadius', jenis: luar.jenis,
+      mulaiMs: Math.round((serverNowMs() || now) - (now - luar.mulai)), durasiMnt: Math.floor((now - luar.mulai) / 60000),
+      jarak: Math.round(luar.jarak), acc: Math.round(draft.acc || 0), lat: draft.lat, lng: draft.lng,
+      idKirim: now.toString(36) + Math.random().toString(36).slice(2, 10)
+    };
+    try { localStorage.setItem(LUAR_KIRIM, JSON.stringify(bacaLuar().concat([body]))); kirimLuar(); }
+    catch (e) { postLapor(body); }
+  }
+  function bacaLuar() { try { return JSON.parse(load(LUAR_KIRIM) || '[]'); } catch (e) { return []; } }
+  async function kirimLuar() {
+    for (const b of bacaLuar()) {
+      const out = await postLapor(b);
+      if (out.putus) return;
+      try { localStorage.setItem(LUAR_KIRIM, JSON.stringify(bacaLuar().filter((x) => x.idKirim !== b.idKirim))); } catch (e) { return; }
+    }
+  }
+  // keterangan di kotak lokasi selama hitungan berjalan
+  function luarHtml() {
+    if (!luar) return '';
+    const mnt = Math.floor((Date.now() - luar.mulai) / 60000);
+    return '<div class="gps out"><b>' + (luar.tercatat ? '⚠️ Di luar radius lebih dari 5 menit — sudah tercatat'
+      : '⏱️ Di luar radius ' + mnt + ' menit') + '</b>' + (luar.tercatat ? 'Kembali ke ' + (luar.jenis === 'ceklok' ? 'kantor Satpas.' : 'titik plotting.')
+      : 'Kembali ke ' + (luar.jenis === 'ceklok' ? 'kantor Satpas' : 'titik plotting') + ' sebelum 5 menit agar tidak tercatat.') + '</div>';
+  }
+  setInterval(() => { pantauLuar(); if (luar) segarkanGps(); }, 30000);
+  window.addEventListener('online', () => kirimLuar());
 
   function ambilLokasi(manual) {
     if (!navigator.geolocation) { draft.gpsMsg = 'HP/browser tidak mendukung GPS'; segarkanGps(); return; }
@@ -1156,8 +1215,9 @@
 
   // aplikasi disembunyikan (layar mati / pindah aplikasi): hentikan pantauan, lanjutkan saat dibuka lagi
   document.addEventListener('visibilitychange', () => {
-    if (document.hidden) hentikanGps();
+    if (document.hidden) { hentikanGps(); luar = null; }
     else {
+      kirimLuar();
       if (data && (mode === 'lapor' && myRow() || mode === 'ceklok' && data.ceklok)) ambilLokasi();
       kirimAntre();
     }
@@ -1287,7 +1347,7 @@
   }
   function updateCkGps() {
     if (!data || mode !== 'ceklok' || !data.ceklok || !$('ckGpsBox')) return;
-    $('ckGpsBox').innerHTML = gpsCkHtml();
+    $('ckGpsBox').innerHTML = gpsCkHtml() + luarHtml();
     if ($('ckKirim')) $('ckKirim').disabled = sending || !okLokasiCk() || !okFoto();
   }
 
