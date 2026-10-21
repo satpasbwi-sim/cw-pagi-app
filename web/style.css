@@ -249,6 +249,11 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .kamera-bar .btn.putar { flex: 0 0 auto; padding-left: 16px; padding-right: 16px; font-size: 20px; }
 /* kamera depan: pratinjau dicerminkan seperti kaca; foto yang disimpan tidak dicerminkan */
 .kamera.depan video { transform: scaleX(-1); }
+/* pratinjau disembunyikan sampai ukuran kamera stabil (lihat bukaKamera di app.js) */
+.kamera video { opacity: 0; transition: opacity .15s; }
+.kamera.siap video { opacity: 1; }
+.kamera .siapkan { position: absolute; left: 0; right: 0; top: 45%; text-align: center; color: #fff; font-size: .9rem; pointer-events: none; }
+.kamera.siap .siapkan { display: none; }
 /* daftar cek foto di atas layar kamera */
 .cek-foto { list-style: none; margin: 8px auto 0; padding: 8px 10px; max-width: 420px; text-align: left; font-weight: 500;
   background: rgba(255, 200, 0, .16); border: 1px solid rgba(255, 200, 0, .55); border-radius: 8px; }

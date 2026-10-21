@@ -809,17 +809,31 @@
     const el = document.createElement('div');
     el.className = 'kamera';
     el.innerHTML = '<div class="kamera-tip">' + esc(petunjukFoto()) + '<div class="cek-isi"></div></div>' +
-      '<video playsinline autoplay muted></video><div class="wm"></div>' +
+      '<video playsinline autoplay muted></video><div class="siapkan">Menyiapkan kamera…</div><div class="wm"></div>' +
       '<div class="kamera-bar"><button class="btn" data-k="batal">Batal</button>' +
       '<button class="btn putar" data-k="putar" aria-label="Ganti kamera depan / belakang" hidden>🔄</button>' +
       '<button class="btn h" data-k="jepret">📷 Ambil Foto</button></div>';
     document.body.appendChild(el);
     const video = el.querySelector('video');
+    // Kamera (terutama depan) di HP sering mulai dengan resolusi/arah sementara lalu menyesuaikan 1–3 kali
+    // (ukuran berganti mendatar ↔ tegak). Pratinjau baru ditampilkan setelah ukurannya stabil ±0,5 detik,
+    // agar tidak terlihat berputar-putar; tombol Ambil Foto menunggu sampai siap.
+    let tungguStabil = null;
+    const belumStabil = () => {
+      el.classList.remove('siap');
+      clearTimeout(tungguStabil);
+      tungguStabil = setTimeout(() => { if (video.videoWidth) el.classList.add('siap'); }, 500);
+    };
+    video.addEventListener('loadedmetadata', belumStabil);
+    video.addEventListener('resize', belumStabil);
     const pasang = () => {
+      el.classList.remove('siap');
       video.srcObject = stream;
       el.classList.toggle('depan', arahKamera === 'user');
       el.querySelector('.cek-isi').innerHTML = cekFotoHtml();
     };
+    // aplikasi terpasang (layar penuh): kunci tegak selama kamera terbuka agar layar tidak ikut berputar saat HP dimiringkan
+    try { screen.orientation.lock('portrait').catch(() => {}); } catch (e) { /* tidak didukung */ }
     pasang();
     // tombol ganti kamera hanya bila HP punya lebih dari satu kamera
     navigator.mediaDevices.enumerateDevices().then((d) => {
@@ -848,13 +862,17 @@
     const tulis = () => { el.querySelector('.wm').innerHTML = watermark(serverNowMs()).map(esc).join('<br>'); };
     tulis();
     const timer = setInterval(tulis, 500);
-    const tutup = () => { clearInterval(timer); stream.getTracks().forEach((t) => t.stop()); el.remove(); };
+    const tutup = () => {
+      clearInterval(timer); clearTimeout(tungguStabil);
+      stream.getTracks().forEach((t) => t.stop()); el.remove();
+      try { screen.orientation.unlock(); } catch (e) { /* tidak didukung */ }
+    };
     el.addEventListener('click', (e) => {
       const b = e.target.closest('[data-k]');
       if (!b) return;
       if (b.dataset.k === 'batal') return tutup();
       if (b.dataset.k === 'putar') return putarKamera();
-      if (!video.videoWidth) return toast('Kamera belum siap, tunggu sebentar');
+      if (!video.videoWidth || !el.classList.contains('siap')) return toast('Kamera belum siap, tunggu sebentar');
       const ms = serverNowMs();
       draft.foto = jepret(video, watermark(ms));
       draft.fotoMs = Math.round(ms);
