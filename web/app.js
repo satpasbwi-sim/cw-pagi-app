@@ -25,6 +25,12 @@
 
   function load(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function store(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* abaikan */ } }
+  // ID acak HP ini (server Perangkat.gs): satu NRP hanya bisa dipakai di satu HP
+  const HP_ID = load('cw_hp') || (function () {
+    const id = 'hp-' + (window.crypto && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+    store('cw_hp', id);
+    return id;
+  })();
 
   // data terakhir disimpan di HP agar Lapor CW langsung tampil saat dibuka, lalu diperbarui dari server
   function tglLokal() { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
@@ -57,7 +63,7 @@
   async function postLapor(body) {
     let res, out;
     try {
-      res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) });
+      res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ hp: HP_ID }, body)) });
       out = await res.json();
     } catch (e) {
       return { putus: true };   // tidak ada sinyal, atau server tidak menjawab dengan benar
@@ -118,7 +124,7 @@
     nilaiMuat = true;
     if (mode === 'nilai') renderNilai();
     try {
-      const res = await fetch(API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=nilai');
+      const res = await fetch(API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=nilai');
       nilai = await res.json();
     } catch (err) {
       nilai = { error: 'Gagal memuat nilai. Periksa sinyal internet lalu ketuk Muat ulang.' };
@@ -199,7 +205,7 @@
     rekapMuat = true;
     if (mode === 'rekapInt') renderRekapInt();
     try {
-      const res = await fetch(API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=rekap');
+      const res = await fetch(API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=rekap');
       rekap = await res.json();
     } catch (err) {
       rekap = { error: 'Gagal memuat rekap. Periksa sinyal internet lalu ketuk Muat ulang.' };
@@ -268,7 +274,7 @@
   }
 
   async function fetchData(day) {
-    const url = API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') +
+    const url = API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') +
       (day ? '&day=' + day : '');
     const res = await fetch(url);
     return res.json();
@@ -299,7 +305,7 @@
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ pin, kode, day: data.day, updates, notes })
+        body: JSON.stringify({ hp: HP_ID, pin, kode, day: data.day, updates, notes })
       });
       const out = await res.json();
       if (out.error) throw new Error(out.error);
@@ -862,7 +868,7 @@
           '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Meninggalkan lokasi ' + esc(l.tinggal.jam) + '</p>' +
           (l.tinggal.ket ? '<p class="sub">' + esc(l.tinggal.ket) + '</p>' : '') +
-          '<span class="badge ok">✓ kehadiran tercatat</span>' +
+          '<span class="badge ok">✓ laporan tercatat</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>' +
           ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
         '</section>';
       return;
@@ -889,7 +895,7 @@
         (hadir
           ? '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + (s ? esc(s.jam) : '–') + '</p>' +
             '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
-          : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>') +
+          : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>') +
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
         ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
       '</section>';
@@ -915,11 +921,11 @@
     }
     return fase(myRow()) === 'datang'
       ? 'Foto Lapor Datang: tampilkan Anda sedang berada di titik pengaturan.'
-      : 'Foto Lapor Selesai: tampilkan kondisi arus lalu lintas terakhir di titik.';
+      : 'Foto Lapor Selesai: wajah Anda dengan kondisi arus lalu lintas terakhir di titik sebagai latar.';
   }
   // pengingat di layar kamera: foto dinilai atasan (kolom CEK FOTO) dan ikut unsur Kejujuran Lokasi & Foto
   function cekFotoHtml() {
-    const wajah = mode === 'ceklok' || fase(myRow()) === 'datang';   // Lapor Selesai = foto arus lalu lintas
+    const wajah = true;   // semua foto (termasuk Lapor Selesai) wajib menampilkan wajah pelapor
     const baris = [];
     if (wajah) {
       baris.push('😀 Wajah terlihat jelas' + (arahKamera === 'user' ? '' : ' — ketuk 🔄 untuk kamera depan'));
@@ -1368,7 +1374,7 @@
     if (f === 'beres' && h.keluar) {
       return kartuSelesai(' w', '🚨', 'Meninggalkan kantor – tugas mendadak',
         '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + ' · Keluar ' + esc(h.keluar.jam) + tunda(h.keluar) + '</p>' +
-        (h.keluar.ket ? '<p class="sub">' + esc(h.keluar.ket) + '</p>' : '') + '<span class="badge ok">✓ ceklok hari ini selesai</span>');
+        (h.keluar.ket ? '<p class="sub">' + esc(h.keluar.ket) + '</p>' : '') + '<span class="badge ok">✓ ceklok hari ini selesai</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>');
     }
     if (f === 'beres') {
       const ragu = (h.masuk && h.masuk.peringatan) || (h.pulang && h.pulang.peringatan);
@@ -1381,7 +1387,7 @@
         (ragu ? '<span class="badge far">⚠️ lokasi diragukan</span>' : '<span class="badge ok">✓ lengkap</span>'));
     }
     if (f === 'izin') {
-      return kartuSelesai(' t', '✕', 'Tidak masuk: ' + esc(labelIzin(h.tidak.kode)), '<p class="sub">dilaporkan pukul ' + esc(h.tidak.jam) + tunda(h.tidak) + '</p>');
+      return kartuSelesai(' t', '✕', 'Tidak masuk: ' + esc(labelIzin(h.tidak.kode)), '<p class="sub">dilaporkan pukul ' + esc(h.tidak.jam) + tunda(h.tidak) + '</p>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>');
     }
 
     const gpsStep = '<div class="step"><h3>Lokasi <small>otomatis</small></h3><div id="ckGpsBox">' + gpsCkHtml() + '</div>' +
