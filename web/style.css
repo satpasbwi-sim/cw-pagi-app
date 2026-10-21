@@ -320,6 +320,7 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .badge.far { background: var(--warn-bg); color: var(--warn); }
 .badge.th { background: var(--th-bg); color: var(--th); }
 .badge.k { background: var(--bg); color: var(--muted); }
+.badge.teladan { background: #fff3c4; color: #8a6100; border: 1px solid #f0c94a; }
 .lapor-info { font-size: .75rem; color: var(--muted); margin-top: 2px; }
 .lapor-info a { color: var(--text); font-weight: 600; }
 

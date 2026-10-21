@@ -127,6 +127,16 @@
     if (mode === 'nilai') renderNilai();
   }
   function warnaNilai(v) { return v >= 90 ? 'sb' : v >= 80 ? 'b' : v >= 70 ? 'c' : 'k'; }
+  // penentu urutan bila skor sama (server Urutan.gs): hari sempurna, beruntun, menit lebih awal, lembur
+  function teladanHtml(n) { return n.detail && n.detail.urut && n.detail.urut.teladan ? ' <span class="badge teladan">★ Teladan</span>' : ''; }
+  function urutHtml(u, harian) {
+    if (!u || !u.hari) return '';
+    const isi = (harian ? [] : [['Hari sempurna', u.h100 + ' dari ' + u.hari, u.h100 === u.hari ? 'ok' : 'warn'],
+      ['Beruntun', u.beruntun + ' hari', u.beruntun ? 'ok' : 'na']])
+      .concat([['Lebih awal', u.awal ? '± ' + u.awal + ' mnt' : '–', u.awal ? 'ok' : 'na']])
+      .concat(u.lembur ? [['Lembur', Math.floor(u.lembur / 60) ? Math.floor(u.lembur / 60) + ' j ' + (u.lembur % 60) + ' m' : u.lembur + ' m', 'ok']] : []);
+    return '<div class="chips-hari">' + isi.map((x) => '<span class="lv ' + x[2] + '"><small>' + x[0] + '</small>' + esc(x[1]) + '</span>').join('') + '</div>';
+  }
   function tglPendek(s) {
     const p = String(s || '').split('-');
     return p.length === 3 ? Number(p[2]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][Number(p[1]) - 1] : s;
@@ -162,11 +172,14 @@
           : '<p class="sub ok-nilai">✓ Tidak ada catatan. Pertahankan!</p>';
         isi = '<div class="skor-box"><div class="ring ' + w + '" style="--p:' + Math.max(0, Math.min(100, n.skor)) + '"><b>' +
           String(n.skor).replace('.', ',') + '</b><small>dari 100</small></div><div class="skor-ket">' +
-          '<span class="pred ' + w + '">' + esc(n.predikat) + '</span>' +
+          '<span class="pred ' + w + '">' + esc(n.predikat) + '</span>' + teladanHtml(n) +
           (n.peringkat ? '<div class="rank">Peringkat <b>' + n.peringkat + '</b> dari ' + n.jumlah + '</div>' : '') +
+          (n.skor >= 100 && n.jumlah100 > 1 ? '<div class="sub">' + n.jumlah100 + ' orang bernilai 100 · urutan dari konsistensi</div>' : '') +
           '<div class="sub">' + esc(n.periode) + (n.sementara ? ' <span class="badge far">sementara</span>' : '') + '</div></div></div>' +
           '<p class="motivasi">' + esc(PESAN_NILAI[n.predikat] || '') + '</p>' +
-          jamHari + '<h3>Rincian</h3>' + unsur + catatan +
+          jamHari + (urutHtml(dh.urut, nilaiJenis === 'harian') ? '<h3>Konsistensi</h3>' + urutHtml(dh.urut, nilaiJenis === 'harian') +
+            '<p class="foot-nilai">Bila skor sama, peringkat ditentukan oleh ' + (nilaiJenis === 'harian' ? '' : 'jumlah hari sempurna, hari beruntun, lalu ') +
+            'kedatangan lebih awal dari batas.</p>' : '') + '<h3>Rincian</h3>' + unsur + catatan +
           '<p class="foot-nilai">' + (n.sementara ? 'Nilai hari ini masih sementara; final setelah verifikasi esok pagi. ' : '') +
           'Dinilai s.d. ' + tglPendek(n.sampai) + ' · diperbarui ' + esc(n.diperbarui) + '</p>';
       }
@@ -202,13 +215,13 @@
       const w = warnaNilai(r.skor), k = rekapGrup + '|' + r.nrp + '|' + r.nama, d = r.detail || {};
       const chips = rekapJenis === 'harian' ? [['CW', d.cw], ['Masuk', d.masuk], ['Pulang', d.pulang]].filter((x) => x[1])
         .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(x[1][0]) + '</span>').join('') : '';
-      const buka = rekapBuka[k] ? '<div class="rk-isi">' + r.unsur.map((u) => u.v == null ? '' :
+      const buka = rekapBuka[k] ? '<div class="rk-isi">' + urutHtml(d.urut, rekapJenis === 'harian') + r.unsur.map((u) => u.v == null ? '' :
         '<div class="unsur-bar"><span>' + esc(u.n) + '</span><b>' + u.v + '</b><i><em class="' + warnaNilai(u.v) + '" style="width:' +
         Math.max(2, Math.min(100, u.v)) + '%"></em></i></div>').join('') +
         (r.catatan.length ? '<ul class="cat-nilai">' + r.catatan.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>'
           : '<p class="sub ok-nilai">✓ Tidak ada catatan</p>') + '</div>' : '';
       return '<div class="rk-row' + (rekapBuka[k] ? ' buka' : '') + '" data-k="' + esc(k) + '"><div class="rk-top">' +
-        '<span class="rk-no">' + (r.peringkat || '–') + '</span><div class="rk-nama"><b>' + esc(r.nama) + '</b>' +
+        '<span class="rk-no">' + (r.peringkat || '–') + '</span><div class="rk-nama"><b>' + (d.urut && d.urut.teladan ? '★ ' : '') + esc(r.nama) + '</b>' +
         (d.ket ? '<small>' + esc(d.ket) + '</small>' : '') + '</div><span class="rk-skor ' + w + '">' + String(r.skor).replace('.', ',') +
         '<small>' + esc(r.predikat) + '</small></span></div>' + (chips ? '<div class="chips-hari">' + chips + '</div>' : '') + buka + '</div>';
     }).join('');
@@ -244,7 +257,8 @@
         '<div class="sub">' + esc(G.periode) + (G.sementara ? ' <span class="badge far">sementara</span>' : '') + '</div>' +
         '<div class="sub">' + G.baris.length + ' dinilai · diperbarui ' + esc(G.diperbarui) + '</div></div></div>' + sebaran +
         '<input class="note-in rk-cari" id="rekapCari" placeholder="Cari nama…" value="' + esc(rekapCari) + '">' +
-        '<p class="foot-nilai">Urut peringkat. Ketuk nama untuk melihat rincian unsur dan catatan.</p>' +
+        '<p class="foot-nilai">Urut peringkat; skor sama diurutkan dari hari sempurna, hari beruntun, lalu kedatangan lebih awal. ★ = Teladan. ' +
+        'Ketuk nama untuk melihat rincian.</p>' +
         '<div id="rkList">' + rekapListHtml(G) + '</div>';
       if (ada.length < 3) isi += '<p class="foot-nilai">Rekap mingguan dan bulanan muncul setelah final ' +
         '(mingguan: Senin pagi sesudah minggu berakhir; bulanan: sesudah akhir bulan).</p>';

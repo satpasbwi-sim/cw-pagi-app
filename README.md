@@ -395,6 +395,22 @@ pulang** (belum dinilai). Pemicu dipasang dengan `pasangPemicuRekapBerkala` (dip
 **Beri nomor PHL** (nomor PHL terbesar + 1, fungsi `beriNomorPhl`). Perubahan nama/pokja di sheet Data terbaca
 otomatis paling lambat 10 menit (cache).
 
+## Penentu urutan & TELADAN (Urutan.gs)
+
+Skor tetap maksimal 100. Bila skor sama (mis. banyak yang 100), peringkat diurutkan berturut-turut oleh:
+
+| Urutan | Penentu | Keterangan |
+| --- | --- | --- |
+| 1 | Hari sempurna | Jumlah hari yang semua kewajibannya penuh: CW (H, Datang ≤ 06.15, lengkap, durasi ≥ Baik, tanpa ⚠️/foto bermasalah) dan Ceklok (masuk ≤ jam masuk, pulang ≥ jam pulang atau tugas mendadak sah) |
+| 2 | Beruntun | Hari sempurna berturut-turut terpanjang; hari izin / libur / tidak terjadwal dilewati, tidak memutus |
+| 3 | Lebih awal | Rata-rata menit sebelum batas (Lapor Datang 06.15, Ceklok Masuk jam masuk), maks 30 mnt per kejadian |
+| 4 | Lembur | Total menit lembur Satpas (beralasan) |
+
+Semua sama = peringkat sama. **★ TELADAN** = skor 100, tanpa ⚠️ PALSU, minimal 5 hari dinilai dan semuanya sempurna
+(praktisnya mingguan / bulanan). Di sheet PENILAIAN INTEGRITAS / PENILAIAN CW tercatat di kolom CATATAN
+(`★ TELADAN…`, `urutan: …`); di aplikasi tampil sebagai lencana ★ Teladan dan bagian **Konsistensi** (Nilai Saya, Rekap
+Integritas). Nilai Saya juga menampilkan berapa orang yang sama-sama bernilai 100.
+
 ## Rekapitulasi nilai
 
 File **Rekapitulasi.gs** (salinan di `apps-script/`):
