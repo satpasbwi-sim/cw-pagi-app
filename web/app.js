@@ -104,6 +104,69 @@
     toast.timer = setTimeout(() => { t.hidden = true; }, 2800);
   }
 
+  // ---------- Nilai Saya: nilai ringkas milik anggota yang login (harian · mingguan · bulanan) ----------
+  let nilai = null, nilaiMuat = false;
+  let nilaiJenis = load('cw_nilai') || 'harian';
+  const JENIS_NILAI = { harian: 'Harian', mingguan: 'Mingguan', bulanan: 'Bulanan' };
+  const PESAN_NILAI = {
+    'Sangat Baik': 'Luar biasa! Pertahankan disiplin dan integritas Anda.',
+    'Baik': 'Bagus. Sedikit lagi menuju Sangat Baik.',
+    'Cukup': 'Cukup. Perhatikan catatan di bawah agar nilai naik.',
+    'Kurang': 'Perlu perbaikan. Ikuti catatan di bawah, Anda pasti bisa.'
+  };
+  async function muatNilai() {
+    nilaiMuat = true;
+    if (mode === 'nilai') renderNilai();
+    try {
+      const res = await fetch(API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=nilai');
+      nilai = await res.json();
+    } catch (err) {
+      nilai = { error: 'Gagal memuat nilai. Periksa sinyal internet lalu ketuk Muat ulang.' };
+    }
+    nilaiMuat = false;
+    if (mode === 'nilai') renderNilai();
+  }
+  function warnaNilai(v) { return v >= 90 ? 'sb' : v >= 80 ? 'b' : v >= 70 ? 'c' : 'k'; }
+  function tglPendek(s) {
+    const p = String(s || '').split('-');
+    return p.length === 3 ? Number(p[2]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][Number(p[1]) - 1] : s;
+  }
+  function renderNilai() {
+    const v = $('nilaiView');
+    const seg = '<div class="seg">' + Object.keys(JENIS_NILAI).map((j) =>
+      '<button data-j="' + j + '"' + (j === nilaiJenis ? ' class="on"' : '') + '>' + JENIS_NILAI[j] + '</button>').join('') + '</div>';
+    const muatUlang = '<div class="switch"><button class="link muted-link" data-a="muatNilai">⟳ Muat ulang</button> · ' + gantiBtn() + '</div>';
+    let isi;
+    if (!nilai) isi = '<p class="sub">' + (nilaiMuat ? 'Memuat nilai…' : 'Ketuk Muat ulang untuk melihat nilai.') + '</p>';
+    else if (nilai.error) isi = '<div class="gps out"><b>' + esc(nilai.error) + '</b></div>';
+    else {
+      const n = nilai[nilaiJenis];
+      if (!n) {
+        isi = '<p class="sub">Belum ada nilai ' + JENIS_NILAI[nilaiJenis].toLowerCase() + ' untuk Anda. Nilai dihitung setiap pagi ±07.30 ' +
+          'dan sore ±15.15 setelah lapor/ceklok ditutup.</p>';
+      } else {
+        const w = warnaNilai(n.skor);
+        const unsur = n.unsur.map((u) => u.v == null ? '' :
+          '<div class="unsur-bar"><span>' + esc(u.n) + '</span><b>' + u.v + '</b><i><em class="' + warnaNilai(u.v) + '" style="width:' +
+          Math.max(2, Math.min(100, u.v)) + '%"></em></i></div>').join('');
+        const catatan = n.catatan.length
+          ? '<h3>Perlu diperhatikan</h3><ul class="cat-nilai">' + n.catatan.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>'
+          : '<p class="sub ok-nilai">✓ Tidak ada catatan. Pertahankan!</p>';
+        isi = '<div class="skor-box"><div class="ring ' + w + '" style="--p:' + Math.max(0, Math.min(100, n.skor)) + '"><b>' +
+          String(n.skor).replace('.', ',') + '</b><small>dari 100</small></div><div class="skor-ket">' +
+          '<span class="pred ' + w + '">' + esc(n.predikat) + '</span>' +
+          (n.peringkat ? '<div class="rank">Peringkat <b>' + n.peringkat + '</b> dari ' + n.jumlah + '</div>' : '') +
+          '<div class="sub">' + esc(n.periode) + (n.sementara ? ' <span class="badge far">sementara</span>' : '') + '</div></div></div>' +
+          '<p class="motivasi">' + esc(PESAN_NILAI[n.predikat] || '') + '</p>' +
+          '<h3>Rincian</h3>' + unsur + catatan +
+          '<p class="foot-nilai">' + (n.sementara ? 'Nilai hari ini masih sementara; final setelah verifikasi esok pagi. ' : '') +
+          'Dinilai s.d. ' + tglPendek(n.sampai) + ' · diperbarui ' + esc(n.diperbarui) + '</p>';
+      }
+    }
+    v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Nilai Saya</b><div class="loc">' +
+      esc((nilai && nilai.nama) || data.nama || '') + '</div></div></div>' + seg + isi + muatUlang + '</section>';
+  }
+
   async function fetchData(day) {
     const url = API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') +
       (day ? '&day=' + day : '');
@@ -178,7 +241,7 @@
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
-      mode = d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
+      mode = mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
       mintaAdmin = false;
       edits = {};
@@ -256,6 +319,11 @@
     $('laporView').hidden = mode !== 'lapor';
     $('rekapView').hidden = mode !== 'rekap';
     $('ceklokView').hidden = mode !== 'ceklok';
+    $('nilaiView').hidden = mode !== 'nilai';
+    if (mode === 'nilai') {
+      $('saveBar').hidden = true;
+      return renderNilai();
+    }
     if (mode === 'ceklok') {
       $('saveBar').hidden = true;
       return renderCeklok();
@@ -1304,6 +1372,13 @@
     }
     renderCeklok();
   });
+  $('nilaiView').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-j],[data-a]');
+    if (!b) return;
+    if (b.dataset.j) { nilaiJenis = b.dataset.j; store('cw_nilai', nilaiJenis); return renderNilai(); }
+    if (b.dataset.a === 'muatNilai') return muatNilai();
+    if (b.dataset.a === 'keluar') return logout();
+  });
   $('ceklokView').addEventListener('input', (e) => {
     if (e.target.id === 'ckNote') ck.note = e.target.value;
     if (e.target.id === 'ckLembur') ck.lembur = e.target.value;
@@ -1371,6 +1446,13 @@
   $('mode').onclick = (e) => {
     const b = e.target.closest('button');
     if (!b || memuat || sending) return;
+    // Nilai Saya: tidak memakai GPS / kamera, cukup ambil nilai dari server
+    if (b.dataset.m === 'nilai' && data) {
+      mode = 'nilai';
+      render();
+      window.scrollTo(0, 0);
+      return muatNilai();
+    }
     // ketuk Lapor CW saat sudah terbuka (atau gagal memuat): ambil data terbaru dari server
     if (!data || b.dataset.m === mode) return reload(data && data.today);
     if (b.dataset.m === 'lapor' && dirtyCount() && data.day !== data.today &&

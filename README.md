@@ -354,6 +354,21 @@ anggota Satpas. Ditulis ulang otomatis di hitungan pagi (±07.30) dan sore (±15
 - Predikat dan pengunci ⚠️ PALSU sama dengan PENILAIAN INTEGRITAS; peringkat yang terkunci di bawah yang bersih.
 - Periode sama dengan PENILAIAN INTEGRITAS (bulan ABSENSI, mulai `TGL_MULAI_INTEGRITAS`).
 
+## Nilai Saya (tab di aplikasi)
+
+Setiap anggota bisa melihat **nilainya sendiri** di tab **Nilai Saya**: pilihan **Harian · Mingguan · Bulanan**, skor 0–100
+dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), rincian tiap unsur (batang), daftar
+"Perlu diperhatikan" dari CATATAN penilaian, dan kalimat penyemangat sesuai predikat. Tujuannya memotivasi anggota.
+- Anggota Satpas memakai PENILAIAN INTEGRITAS (6 unsur); personel CW Pagi lain memakai PENILAIAN CW (5 unsur).
+- File **NilaiAplikasi.gs**: setiap kali penilaian dihitung (pagi ±07.30, sore ±15.15, menu Hitung sekarang), hasil
+  ringkas disimpan di sheet tersembunyi **NILAI APLIKASI** (spreadsheet CW Pagi), satu baris per orang per periode.
+  Nilai harian & mingguan personel CW dihitung lewat `hitungPenilaianCw({dari, sampai, tanpaTulis})`.
+- Aplikasi meminta `GET ?action=nilai`; server hanya mengirim nilai milik NRP yang login.
+- Nilai hari ini muncul setelah hitungan sore dengan tanda **sementara**, final setelah hitungan pagi berikutnya.
+- Menu untuk tanggal / minggu lama tidak mengubah nilai yang dilihat anggota (hanya periode yang sama atau lebih baru
+  yang menimpa); perhitungan tanpa hari dinilai (mis. sesudah reset uji coba) juga tidak menimpa.
+- Catatan teknis ("skor dari unsur yang ada datanya saja", dll.) tidak ditampilkan ke anggota.
+
 ## Rekapitulasi nilai
 
 File **Rekapitulasi.gs** (salinan di `apps-script/`):

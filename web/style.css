@@ -249,6 +249,35 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .kamera-bar .btn.putar { flex: 0 0 auto; padding-left: 16px; padding-right: 16px; font-size: 20px; }
 /* kamera depan: pratinjau dicerminkan seperti kaca; foto yang disimpan tidak dicerminkan */
 .kamera.depan video { transform: scaleX(-1); }
+/* ---------- Nilai Saya ---------- */
+.nilai h3 { margin: 16px 0 8px; font-size: .9rem; }
+.seg { display: flex; gap: 4px; margin: 12px 0 14px; padding: 4px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; }
+.seg button { flex: 1; border: 0; background: transparent; padding: 8px 4px; border-radius: 8px; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg button.on { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+.skor-box { display: flex; align-items: center; gap: 16px; }
+.ring { --c: var(--navy); flex: 0 0 auto; width: 112px; height: 112px; border-radius: 50%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; position: relative;
+  background: conic-gradient(var(--c) calc(var(--p) * 1%), var(--line) 0); }
+.ring::before { content: ''; position: absolute; inset: 10px; border-radius: 50%; background: var(--card); }
+.ring b, .ring small { position: relative; }
+.ring b { font-size: 1.7rem; line-height: 1; color: var(--c); }
+.ring small { font-size: .7rem; color: var(--muted); margin-top: 2px; }
+.ring.sb { --c: #1f9d55; } .ring.b { --c: #5aa832; } .ring.c { --c: #d49a12; } .ring.k { --c: #dc3545; }
+.skor-ket { min-width: 0; }
+.pred { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: .95rem; }
+.pred.sb { background: #c8ecd4; color: #14532d; } .pred.b { background: #e3f4d7; color: #2f5d16; }
+.pred.c { background: #fdf0c4; color: #7a5a00; } .pred.k { background: #f8d3d0; color: #8b1e14; }
+.rank { margin: 8px 0 4px; font-size: .95rem; }
+.rank b { font-size: 1.15rem; color: var(--text); }
+.motivasi { margin: 14px 0 0; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; font-weight: 600; }
+.unsur-bar { display: grid; grid-template-columns: 1fr auto; gap: 3px 8px; margin: 10px 0; font-size: .85rem; }
+.unsur-bar b { text-align: right; }
+.unsur-bar i { grid-column: 1 / -1; display: block; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.unsur-bar em { display: block; height: 100%; border-radius: 99px; }
+.unsur-bar em.sb { background: #1f9d55; } .unsur-bar em.b { background: #5aa832; } .unsur-bar em.c { background: #d49a12; } .unsur-bar em.k { background: #dc3545; }
+.cat-nilai { margin: 0; padding-left: 18px; font-size: .85rem; line-height: 1.5; }
+.ok-nilai { color: var(--hadir); font-weight: 600; }
+.foot-nilai { margin: 14px 0 0; font-size: .75rem; color: var(--muted); }
 /* pratinjau disembunyikan sampai ukuran kamera stabil (lihat bukaKamera di app.js) */
 .kamera video { opacity: 0; transition: opacity .15s; }
 .kamera.siap video { opacity: 1; }
