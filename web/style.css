@@ -278,6 +278,33 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .cat-nilai { margin: 0; padding-left: 18px; font-size: .85rem; line-height: 1.5; }
 .ok-nilai { color: var(--hadir); font-weight: 600; }
 .foot-nilai { margin: 14px 0 0; font-size: .75rem; color: var(--muted); }
+.chips-hari { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; }
+.chips-hari .lv { display: inline-flex; flex-direction: column; padding: 5px 9px; border-radius: 8px; font-size: .8rem; font-weight: 600; line-height: 1.25; }
+.chips-hari .lv small { font-size: .65rem; font-weight: 600; opacity: .75; }
+.lv.ok { background: var(--hadir-bg); color: var(--hadir); } .lv.warn { background: var(--warn-bg); color: var(--warn); }
+.lv.bad { background: var(--th-bg); color: var(--th); } .lv.na { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.seg2 { margin-top: 0; }
+.sebaran { display: flex; height: 12px; border-radius: 99px; overflow: hidden; margin: 14px 0 6px; background: var(--line); }
+.sebaran i, .sebaran-ket i { display: block; }
+.sebaran i.sb, .sebaran-ket i.sb { background: #1f9d55; } .sebaran i.b, .sebaran-ket i.b { background: #5aa832; }
+.sebaran i.c, .sebaran-ket i.c { background: #d49a12; } .sebaran i.k, .sebaran-ket i.k { background: #dc3545; }
+.sebaran-ket { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: .78rem; color: var(--muted); }
+.sebaran-ket span { display: inline-flex; align-items: center; gap: 5px; }
+.sebaran-ket i { width: 9px; height: 9px; border-radius: 3px; }
+.sebaran-ket b { color: var(--text); }
+.rk-cari { margin-top: 14px; }
+.rk-row { border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 8px 0; cursor: pointer; }
+.rk-row.buka { border-color: var(--muted); }
+.rk-top { display: flex; align-items: center; gap: 10px; }
+.rk-no { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .85rem; }
+.rk-nama { flex: 1; min-width: 0; }
+.rk-nama b { display: block; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rk-nama small { color: var(--muted); font-size: .75rem; }
+.rk-skor { flex: 0 0 auto; text-align: right; font-weight: 800; font-size: 1.15rem; line-height: 1.1; }
+.rk-skor small { display: block; font-size: .7rem; font-weight: 700; }
+.rk-skor.sb { color: #1f9d55; } .rk-skor.b { color: #5aa832; } .rk-skor.c { color: #d49a12; } .rk-skor.k { color: #dc3545; }
+.rk-isi { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 4px; }
 /* pratinjau disembunyikan sampai ukuran kamera stabil (lihat bukaKamera di app.js) */
 .kamera video { opacity: 0; transition: opacity .15s; }
 .kamera.siap video { opacity: 1; }

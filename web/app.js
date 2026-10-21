@@ -131,9 +131,13 @@
     const p = String(s || '').split('-');
     return p.length === 3 ? Number(p[2]) + ' ' + ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][Number(p[1]) - 1] : s;
   }
+  // pilihan periode yang ada datanya: harian selalu; mingguan & bulanan hanya setelah rekapnya final
+  function jenisAda(src) { return Object.keys(JENIS_NILAI).filter((j) => j === 'harian' || (src && src[j])); }
   function renderNilai() {
     const v = $('nilaiView');
-    const seg = '<div class="seg">' + Object.keys(JENIS_NILAI).map((j) =>
+    const ada = jenisAda(nilai && !nilai.error ? nilai : null);
+    if (!ada.includes(nilaiJenis)) nilaiJenis = 'harian';
+    const seg = '<div class="seg">' + ada.map((j) =>
       '<button data-j="' + j + '"' + (j === nilaiJenis ? ' class="on"' : '') + '>' + JENIS_NILAI[j] + '</button>').join('') + '</div>';
     const muatUlang = '<div class="switch"><button class="link muted-link" data-a="muatNilai">⟳ Muat ulang</button> · ' + gantiBtn() + '</div>';
     let isi;
@@ -149,6 +153,10 @@
         const unsur = n.unsur.map((u) => u.v == null ? '' :
           '<div class="unsur-bar"><span>' + esc(u.n) + '</span><b>' + u.v + '</b><i><em class="' + warnaNilai(u.v) + '" style="width:' +
           Math.max(2, Math.min(100, u.v)) + '%"></em></i></div>').join('');
+        const dh = n.detail || {};
+        const jamHari = nilaiJenis === 'harian' && (dh.cw || dh.masuk) ? '<h3>Hari itu</h3><div class="chips-hari">' +
+          [['CW Pagi', dh.cw], ['Ceklok masuk', dh.masuk], ['Ceklok pulang', dh.pulang]].filter((x) => x[1])
+            .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(x[1][0]) + '</span>').join('') + '</div>' : '';
         const catatan = n.catatan.length
           ? '<h3>Perlu diperhatikan</h3><ul class="cat-nilai">' + n.catatan.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>'
           : '<p class="sub ok-nilai">✓ Tidak ada catatan. Pertahankan!</p>';
@@ -158,13 +166,91 @@
           (n.peringkat ? '<div class="rank">Peringkat <b>' + n.peringkat + '</b> dari ' + n.jumlah + '</div>' : '') +
           '<div class="sub">' + esc(n.periode) + (n.sementara ? ' <span class="badge far">sementara</span>' : '') + '</div></div></div>' +
           '<p class="motivasi">' + esc(PESAN_NILAI[n.predikat] || '') + '</p>' +
-          '<h3>Rincian</h3>' + unsur + catatan +
+          jamHari + '<h3>Rincian</h3>' + unsur + catatan +
           '<p class="foot-nilai">' + (n.sementara ? 'Nilai hari ini masih sementara; final setelah verifikasi esok pagi. ' : '') +
           'Dinilai s.d. ' + tglPendek(n.sampai) + ' · diperbarui ' + esc(n.diperbarui) + '</p>';
       }
+      if (ada.length < 3) isi += '<p class="foot-nilai">Nilai mingguan dan bulanan muncul setelah rekapnya final ' +
+        '(mingguan: Senin pagi sesudah minggu berakhir; bulanan: sesudah akhir bulan).</p>';
     }
     v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Nilai Saya</b><div class="loc">' +
       esc((nilai && nilai.nama) || data.nama || '') + '</div></div></div>' + seg + isi + muatUlang + '</section>';
+  }
+
+  // ---------- Rekap Integritas: rekap nilai semua anggota untuk pengawas (NRP_PENGAWAS di server) ----------
+  let rekap = null, rekapMuat = false, rekapCari = '';
+  let rekapJenis = load('cw_rkj') || 'harian', rekapGrup = load('cw_rkg') || 'satpas';
+  const rekapBuka = {};
+  const NAMA_GRUP = { satpas: 'Anggota Satpas', cw: 'Personel CW Pagi' };
+  async function muatRekap() {
+    rekapMuat = true;
+    if (mode === 'rekapInt') renderRekapInt();
+    try {
+      const res = await fetch(API + '?pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=rekap');
+      rekap = await res.json();
+    } catch (err) {
+      rekap = { error: 'Gagal memuat rekap. Periksa sinyal internet lalu ketuk Muat ulang.' };
+    }
+    rekapMuat = false;
+    if (mode === 'rekapInt') renderRekapInt();
+  }
+  function rekapListHtml(G) {
+    const cari = rekapCari.trim().toLowerCase();
+    const list = G.baris.filter((r) => !cari || r.nama.toLowerCase().includes(cari));
+    if (!list.length) return '<p class="sub">Tidak ada nama yang cocok.</p>';
+    return list.map((r) => {
+      const w = warnaNilai(r.skor), k = rekapGrup + '|' + r.nrp + '|' + r.nama, d = r.detail || {};
+      const chips = rekapJenis === 'harian' ? [['CW', d.cw], ['Masuk', d.masuk], ['Pulang', d.pulang]].filter((x) => x[1])
+        .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(x[1][0]) + '</span>').join('') : '';
+      const buka = rekapBuka[k] ? '<div class="rk-isi">' + r.unsur.map((u) => u.v == null ? '' :
+        '<div class="unsur-bar"><span>' + esc(u.n) + '</span><b>' + u.v + '</b><i><em class="' + warnaNilai(u.v) + '" style="width:' +
+        Math.max(2, Math.min(100, u.v)) + '%"></em></i></div>').join('') +
+        (r.catatan.length ? '<ul class="cat-nilai">' + r.catatan.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>'
+          : '<p class="sub ok-nilai">✓ Tidak ada catatan</p>') + '</div>' : '';
+      return '<div class="rk-row' + (rekapBuka[k] ? ' buka' : '') + '" data-k="' + esc(k) + '"><div class="rk-top">' +
+        '<span class="rk-no">' + (r.peringkat || '–') + '</span><div class="rk-nama"><b>' + esc(r.nama) + '</b>' +
+        (d.ket ? '<small>' + esc(d.ket) + '</small>' : '') + '</div><span class="rk-skor ' + w + '">' + String(r.skor).replace('.', ',') +
+        '<small>' + esc(r.predikat) + '</small></span></div>' + (chips ? '<div class="chips-hari">' + chips + '</div>' : '') + buka + '</div>';
+    }).join('');
+  }
+  function renderRekapInt() {
+    const v = $('rekapIntView');
+    const ada = jenisAda(rekap && !rekap.error ? rekap : null);
+    if (!ada.includes(rekapJenis)) rekapJenis = 'harian';
+    const seg = '<div class="seg">' + ada.map((j) =>
+      '<button data-j="' + j + '"' + (j === rekapJenis ? ' class="on"' : '') + '>' + JENIS_NILAI[j] + '</button>').join('') + '</div>';
+    const kaki = '<div class="switch"><button class="link muted-link" data-a="muatRekap">⟳ Muat ulang</button> · ' + gantiBtn() + '</div>';
+    let isi;
+    const P = rekap && !rekap.error ? rekap[rekapJenis] : null;
+    if (!rekap) isi = '<p class="sub">' + (rekapMuat ? 'Memuat rekap…' : 'Ketuk Muat ulang untuk melihat rekap.') + '</p>';
+    else if (rekap.error) isi = '<div class="gps out"><b>' + esc(rekap.error) + '</b></div>';
+    else if (!P) isi = '<p class="sub">Belum ada rekap ' + JENIS_NILAI[rekapJenis].toLowerCase() + '. Nilai dihitung setiap pagi ±07.30 dan sore ±15.15.</p>';
+    else {
+      const grup = Object.keys(NAMA_GRUP).filter((g) => P[g]);
+      if (!grup.includes(rekapGrup)) rekapGrup = grup[0];
+      const G = P[rekapGrup];
+      const seg2 = grup.length > 1 ? '<div class="seg seg2">' + grup.map((g) => '<button data-g="' + g + '"' + (g === rekapGrup ? ' class="on"' : '') + '>' +
+        NAMA_GRUP[g] + ' (' + P[g].baris.length + ')</button>').join('') + '</div>' : '';
+      const skor = G.baris.map((r) => r.skor);
+      const rata = skor.length ? Math.round(skor.reduce((a, b) => a + b, 0) / skor.length * 10) / 10 : 0;
+      const hit = { 'Sangat Baik': 0, 'Baik': 0, 'Cukup': 0, 'Kurang': 0 };
+      G.baris.forEach((r) => { if (r.predikat in hit) hit[r.predikat]++; });
+      const kls = { 'Sangat Baik': 'sb', 'Baik': 'b', 'Cukup': 'c', 'Kurang': 'k' };
+      const sebaran = '<div class="sebaran">' + Object.keys(hit).filter((p) => hit[p]).map((p) =>
+        '<i class="' + kls[p] + '" style="flex:' + hit[p] + '"></i>').join('') + '</div><div class="sebaran-ket">' +
+        Object.keys(hit).map((p) => '<span><i class="' + kls[p] + '"></i>' + p + ' <b>' + hit[p] + '</b></span>').join('') + '</div>';
+      isi = seg2 + '<div class="skor-box"><div class="ring ' + warnaNilai(rata) + '" style="--p:' + rata + '"><b>' +
+        String(rata).replace('.', ',') + '</b><small>rata-rata</small></div><div class="skor-ket"><b>' + NAMA_GRUP[rekapGrup] + '</b>' +
+        '<div class="sub">' + esc(G.periode) + (G.sementara ? ' <span class="badge far">sementara</span>' : '') + '</div>' +
+        '<div class="sub">' + G.baris.length + ' dinilai · diperbarui ' + esc(G.diperbarui) + '</div></div></div>' + sebaran +
+        '<input class="note-in rk-cari" id="rekapCari" placeholder="Cari nama…" value="' + esc(rekapCari) + '">' +
+        '<p class="foot-nilai">Urut peringkat. Ketuk nama untuk melihat rincian unsur dan catatan.</p>' +
+        '<div id="rkList">' + rekapListHtml(G) + '</div>';
+      if (ada.length < 3) isi += '<p class="foot-nilai">Rekap mingguan dan bulanan muncul setelah final ' +
+        '(mingguan: Senin pagi sesudah minggu berakhir; bulanan: sesudah akhir bulan).</p>';
+    }
+    v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Rekap Integritas</b><div class="loc">' +
+      esc(data.nama || '') + ' · pengawas</div></div></div>' + seg + isi + kaki + '</section>';
   }
 
   async function fetchData(day) {
@@ -241,13 +327,14 @@
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
-      mode = mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
+      mode = d.pengawas ? 'rekapInt' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
       mintaAdmin = false;
       edits = {};
       noteEdits = {};
       showNeed = false;
       render();
+      if (mode === 'rekapInt' && !rekap && !rekapMuat) muatRekap();
       const r = mode === 'lapor' && myRow();
       if (r && ['datang', 'tunggu', 'selesai'].includes(fase(r)) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
       if (mode === 'ceklok' && ['masuk', 'pulang'].includes(ckFase()) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
@@ -313,13 +400,21 @@
   function render() {
     if (mode === 'ceklok' && !data.ceklok) mode = 'lapor';
     if (mode === 'lapor' && hanyaCeklok(data)) mode = 'ceklok';
-    if ($('btnModeLapor')) $('btnModeLapor').hidden = hanyaCeklok(data);
+    if (data.pengawas) mode = 'rekapInt';
+    if ($('btnModeLapor')) $('btnModeLapor').hidden = hanyaCeklok(data) || !!data.pengawas;
+    $('btnModeNilai').hidden = !!data.pengawas;
+    $('btnModeRekapInt').hidden = !data.pengawas;
     [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
     $('btnModeCeklok').hidden = !data.ceklok;
     $('laporView').hidden = mode !== 'lapor';
     $('rekapView').hidden = mode !== 'rekap';
     $('ceklokView').hidden = mode !== 'ceklok';
     $('nilaiView').hidden = mode !== 'nilai';
+    $('rekapIntView').hidden = mode !== 'rekapInt';
+    if (mode === 'rekapInt') {
+      $('saveBar').hidden = true;
+      return renderRekapInt();
+    }
     if (mode === 'nilai') {
       $('saveBar').hidden = true;
       return renderNilai();
@@ -1157,7 +1252,7 @@
     if (!bebas && m > c.tutup) return 'tutup';
     return 'masuk';
   }
-  function okLokasiCk() { const c = data.ceklok; return data.bebasWaktu || (draft.lat != null && jarakM(draft, c) <= c.radius); }
+  function okLokasiCk() { const c = data.ceklok; return data.bebasWaktu || (draft.lat != null && (c.bebasLokasi || jarakM(draft, c) <= c.radius)); }
   function labelIzin(k) { const c = (data.ceklok.izin || []).find((x) => x.code === k); return c ? c.label : k; }
 
   function gpsCkHtml() {
@@ -1169,6 +1264,8 @@
     const peta = '<a href="https://maps.google.com/?q=' + draft.lat.toFixed(6) + ',' + draft.lng.toFixed(6) + '" target="_blank" rel="noopener">lihat peta</a>';
     const akurasi = 'akurasi ±' + Math.round(draft.acc) + ' m · ' + peta;
     const d = jarakM(draft, c);
+    if (c.bebasLokasi) return '<div class="gps ok"><b>✓ Lokasi tercatat</b>' + esc(c.khusus || 'Ceklok khusus') +
+      ': boleh ceklok di lokasi tugas (tanpa batas radius kantor), lokasi & foto tetap dicatat · ' + akurasi + '</div>';
     return d <= c.radius
       ? '<div class="gps ok"><b>✓ Di kantor Satpas</b>' + fmtJarak(d) + ' dari titik ceklok (maks ' + c.radius + ' m) · ' + akurasi + '</div>'
       : '<div class="gps out"><b>✕ Di luar kantor Satpas' + (data.bebasWaktu ? ' (uji coba: tetap bisa ceklok)' : ' — belum bisa ceklok') + '</b>' +
@@ -1372,6 +1469,21 @@
     }
     renderCeklok();
   });
+  $('rekapIntView').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-j],[data-g],[data-a],.rk-row');
+    if (!b) return;
+    if (b.dataset.j) { rekapJenis = b.dataset.j; store('cw_rkj', rekapJenis); return renderRekapInt(); }
+    if (b.dataset.g) { rekapGrup = b.dataset.g; store('cw_rkg', rekapGrup); return renderRekapInt(); }
+    if (b.dataset.a === 'muatRekap') return muatRekap();
+    if (b.dataset.a === 'keluar') return logout();
+    if (b.dataset.k) { rekapBuka[b.dataset.k] = !rekapBuka[b.dataset.k]; return renderRekapInt(); }
+  });
+  $('rekapIntView').addEventListener('input', (e) => {
+    if (e.target.id !== 'rekapCari') return;
+    rekapCari = e.target.value;
+    const P = rekap && rekap[rekapJenis];
+    if (P && P[rekapGrup] && $('rkList')) $('rkList').innerHTML = rekapListHtml(P[rekapGrup]);
+  });
   $('nilaiView').addEventListener('click', (e) => {
     const b = e.target.closest('[data-j],[data-a]');
     if (!b) return;
@@ -1447,6 +1559,12 @@
     const b = e.target.closest('button');
     if (!b || memuat || sending) return;
     // Nilai Saya: tidak memakai GPS / kamera, cukup ambil nilai dari server
+    if (b.dataset.m === 'rekapInt' && data) {
+      mode = 'rekapInt';
+      render();
+      window.scrollTo(0, 0);
+      return muatRekap();
+    }
     if (b.dataset.m === 'nilai' && data) {
       mode = 'nilai';
       render();
@@ -1603,9 +1721,10 @@
       data = c;
       me = c.me ? String(c.me) : '';
       if (c.ceklok && !c.me) mode = 'ceklok';
+      if (c.pengawas) mode = 'rekapInt';
       render();
     }
-    ambilLokasi();
+    if (!c || !c.pengawas) ambilLokasi();
     reload().then(() => kirimAntre());
   }
 

@@ -365,9 +365,30 @@ dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), 
   Nilai harian & mingguan personel CW dihitung lewat `hitungPenilaianCw({dari, sampai, tanpaTulis})`.
 - Aplikasi meminta `GET ?action=nilai`; server hanya mengirim nilai milik NRP yang login.
 - Nilai hari ini muncul setelah hitungan sore dengan tanda **sementara**, final setelah hitungan pagi berikutnya.
+- Pilihan **Mingguan** dan **Bulanan** baru muncul setelah rekapnya **final**: mingguan = minggu yang sudah selesai
+  (Senin pagi sesudahnya), bulanan = bulan yang sudah selesai. Di sheet tersimpan sebagai jenis `mingguan_final` /
+  `bulanan_final`; yang masih berjalan (`mingguan`, `bulanan`) tidak ditampilkan.
+- Nilai harian juga memuat jam hari itu (CW Datang–Selesai, Ceklok Masuk/Pulang) berwarna seperti INTEGRITAS HARIAN.
 - Menu untuk tanggal / minggu lama tidak mengubah nilai yang dilihat anggota (hanya periode yang sama atau lebih baru
   yang menimpa); perhitungan tanpa hari dinilai (mis. sesudah reset uji coba) juga tidak menimpa.
 - Catatan teknis ("skor dari unsur yang ada datanya saja", dll.) tidak ditampilkan ke anggota.
+
+## Aturan khusus per NRP (AturanKhusus.gs)
+
+| Daftar | NRP | Aturan |
+| --- | --- | --- |
+| `NRP_PENGAWAS` | 86071494 (Baur SIM) | Tidak wajib CW Pagi & Ceklok, **tidak dinilai** dan tidak masuk peringkat, tidak tercetak di rekap ceklok, tidak dianggap "tanpa plotting" di 🩺. Di aplikasi hanya tab **Rekap Integritas**. |
+| `CEKLOK_KHUSUS` | 83050535 (operator SIM keliling) | Ceklok dibuka **06.00**, jam masuk **06.00**, jam pulang **17.00** (Senin–Sabtu), lembur sesudah 17.30 s.d. 21.00, **boleh ceklok di mana saja** (GPS, peta, foto tetap wajib & dicatat). |
+
+**Tab Rekap Integritas (pengawas):** pilihan Harian (selalu) · Mingguan · Bulanan (setelah final), kelompok **Anggota
+Satpas** dan **Personel CW Pagi**. Isinya: rata-rata skor, sebaran predikat, kotak cari nama, daftar urut peringkat
+(skor, predikat, pokja/lokasi, dan untuk harian jam CW / Ceklok Masuk / Pulang berwarna). Ketuk nama = rincian unsur dan
+catatan. Server: `GET ?action=rekap` hanya untuk pengawas dan admin. Menambah pengawas / jadwal khusus cukup mengubah
+daftar di AturanKhusus.gs, simpan, lalu deploy versi baru.
+
+**Sheet Data Satpas:** 🩺 Cek & Perbaiki memeriksa anggota tanpa NRP / nomor; PHL tanpa nomor diberi tombol
+**Beri nomor PHL** (nomor PHL terbesar + 1, fungsi `beriNomorPhl`). Perubahan nama/pokja di sheet Data terbaca
+otomatis paling lambat 10 menit (cache).
 
 ## Rekapitulasi nilai
 
