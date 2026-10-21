@@ -90,7 +90,7 @@
   }
   // gambar ulang Lapor CW, kecuali sedang mengetik catatan (agar keyboard tidak tertutup)
   function segarkanLapor() {
-    const ketik = document.activeElement && ['laporNote', 'ckNote'].includes(document.activeElement.id);
+    const ketik = document.activeElement && ['laporNote', 'ckNote', 'ckLembur'].includes(document.activeElement.id);
     if (!data || sending || ketik) return;
     if (mode === 'lapor') renderLapor(); else if (mode === 'ceklok' && data.ceklok) renderCeklok();
   }
@@ -542,7 +542,8 @@
     if (m > j.tutup) return 'tutup';
     if (draft.tidak) return 'tidak';
     if (draft.tinggal && l.datang) return 'tinggal';
-    if (!l.datang) return m <= j.batasDatang ? 'datang' : 'telat';
+    // lewat batas Lapor Datang tetap bisa lapor sampai tutup, tercatat terlambat (nilai Ketepatan Waktu berkurang)
+    if (!l.datang) return 'datang';
     return m < j.mulaiSelesai ? 'tunggu' : 'selesai';
   }
 
@@ -588,7 +589,7 @@
     const f = lastFase = fase(r);
     if (f === 'beres') return renderSelesai(r, l);
     const j = J(), m = menitSekarang();
-    const jadwalTeks = 'Lapor Datang ' + jamTeks(j.buka) + '–' + jamTeks(j.batasDatang) +
+    const jadwalTeks = 'Lapor Datang ' + jamTeks(j.buka) + '–' + jamTeks(j.batasDatang) + ' (lewat itu tercatat terlambat, paling lambat ' + jamTeks(j.tutup) + ')' +
       ', Lapor Selesai ' + jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ', dalam radius ' + radius() + ' m dari titik.';
     const tidakLink = '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>';
     const tinggalLink = '<div class="switch"><button class="btn tinggal" data-a="modeTinggal">🚨 Ada tugas mendadak? Tinggalkan lokasi</button></div>';
@@ -615,7 +616,10 @@
         'Tetap di lokasi. Lapor Selesai dibuka pukul ' + jamTeks(j.mulaiSelesai) + ' (' + Math.max(1, Math.ceil(j.mulaiSelesai - m)) +
         ' menit lagi). Tanpa Lapor Selesai di lokasi, kehadiran tidak dihitung.') + gpsStep + tinggalLink;
     } else if (f === 'datang') {
-      body = info('Langkah 1 dari 2: Lapor Datang', data.bebasWaktu ? 'Lapor Selesai sesudahnya di titik yang sama.'
+      const telat = data.bebasWaktu ? 0 : Math.floor(m - j.batasDatang);
+      body = info(telat > 0 ? '⚠️ Lapor Datang – terlambat ' + telat + ' menit' : 'Langkah 1 dari 2: Lapor Datang', data.bebasWaktu ? 'Lapor Selesai sesudahnya di titik yang sama.'
+        : telat > 0 ? 'Batas pukul ' + jamTeks(j.batasDatang) + ' sudah lewat. Masih bisa lapor sampai ' + jamTeks(j.tutup) +
+          ', tercatat <b>terlambat</b> dan nilai Ketepatan Waktu berkurang. Lapor Selesai sesudahnya di titik yang sama (paling lambat ' + jamTeks(j.tutup) + ').'
         : 'Batas pukul ' + jamTeks(j.batasDatang) + '. Lapor Selesai pukul ' +
         jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ' di titik yang sama.') +
         gpsStep + fotoStep + noteStep + tombol('kirimDatang', '📍 Lapor Datang') + tidakLink;
@@ -1050,7 +1054,15 @@
   }
 
   // ---------- Ceklok Satpas: absen masuk & pulang dinas di kantor Satpas ----------
-  const ck = { tidak: false, alasan: '', note: '', keluar: false, jenis: '' };   // isian Ceklok yang belum dikirim
+  const ck = { tidak: false, alasan: '', note: '', keluar: false, jenis: '', lembur: '' };   // isian Ceklok yang belum dikirim
+  // menit lembur bila Ceklok Pulang sekarang (0 = bukan lembur); batas & minimum dari server
+  function menitLembur(m) {
+    const c = data.ceklok;
+    if (c.pulang == null) return 0;
+    const x = Math.floor(m - c.pulang);
+    return x >= (c.lemburMin || 30) ? x : 0;
+  }
+  function durTeks(m) { return (m >= 60 ? Math.floor(m / 60) + ' j ' : '') + (m % 60) + ' m'; }
   let lastCkFase = '';
   // ceklok hari ini dari server + yang masih di antrean HP
   function ckHari() {
@@ -1071,7 +1083,7 @@
     if (h.tidak) return 'izin';
     if (h.pulang || h.keluar) return 'beres';
     if (!c.kerja && !bebas) return 'libur';
-    if (h.masuk) return !bebas && m > c.tutup ? 'tutupPulang' : ck.keluar ? 'keluar' : 'pulang';
+    if (h.masuk) return !bebas && m > (c.tutupLembur || c.tutup) ? 'tutupPulang' : ck.keluar ? 'keluar' : 'pulang';
     if (ck.tidak) return 'tidak';
     if (!bebas && m < c.buka) return 'belumBuka';
     if (!bebas && m > c.tutup) return 'tutup';
@@ -1123,8 +1135,10 @@
       const ragu = (h.masuk && h.masuk.peringatan) || (h.pulang && h.pulang.peringatan);
       const telat = h.masuk.selisih > 0 ? ' <span class="badge far">terlambat ' + h.masuk.selisih + ' mnt</span>' : '';
       const cepat = h.pulang.selisih > 0 ? ' <span class="badge far">pulang cepat ' + h.pulang.selisih + ' mnt</span>' : '';
+      const p = String(h.pulang.jam).split('.'), lm = c.pulang != null ? Number(p[0]) * 60 + Number(p[1]) - c.pulang : 0;
+      const lemburBadge = lm >= (c.lemburMin || 30) ? ' <span class="badge th">lembur ' + durTeks(lm) + '</span>' : '';
       return kartuSelesai(ragu ? ' w' : '', ragu ? '!' : '✓', ragu ? 'Ceklok diterima, lokasi perlu diverifikasi admin' : 'Ceklok hari ini lengkap',
-        '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + telat + ' · Pulang ' + esc(h.pulang.jam) + tunda(h.pulang) + cepat + '</p>' +
+        '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + telat + ' · Pulang ' + esc(h.pulang.jam) + tunda(h.pulang) + cepat + lemburBadge + '</p>' +
         (ragu ? '<span class="badge far">⚠️ lokasi diragukan</span>' : '<span class="badge ok">✓ lengkap</span>'));
     }
     if (f === 'izin') {
@@ -1146,7 +1160,7 @@
     else if (f === 'belumBuka') body = info('⏰ Ceklok dibuka pukul ' + jamTeks(c.buka), 'Jam masuk ' + jamTeks(c.masuk) + '.') + tidakLink;
     else if (f === 'tutup') body = info('Waktu ceklok sudah berakhir (' + jamTeks(c.tutup) + ')', 'Hari ini Anda belum ceklok. Hubungi admin bila ada kendala.');
     else if (f === 'tutupPulang') {
-      body = info('Waktu ceklok sudah berakhir (' + jamTeks(c.tutup) + ')', 'Masuk tercatat pukul ' + esc(h.masuk.jam) + ' tanpa Ceklok Pulang.');
+      body = info('Waktu ceklok sudah berakhir (' + jamTeks(c.tutupLembur || c.tutup) + ')', 'Masuk tercatat pukul ' + esc(h.masuk.jam) + ' tanpa Ceklok Pulang.');
     } else if (f === 'masuk') {
       const telat = c.masuk != null ? Math.floor(m - c.masuk) : 0;
       body = info(telat > 0 && !data.bebasWaktu ? '⚠️ Ceklok Masuk – sudah lewat ' + telat + ' menit' : 'Ceklok Masuk',
@@ -1155,10 +1169,15 @@
         gpsStep + fotoStep + noteStep(false) + tombol('ckMasuk', '🏢 Ceklok Masuk', 'h') + tidakLink;
     } else if (f === 'pulang') {
       const cepat = c.pulang != null ? Math.ceil(c.pulang - m) : 0;
+      const lembur = menitLembur(m);
+      const batas = c.tutupLembur || c.tutup;
+      const lemburStep = lembur ? '<div class="step"><h3>Alasan lembur <small>wajib</small></h3>' +
+        '<input class="note-in" id="ckLembur" maxlength="200" placeholder="Mis. pelayanan SIM membludak, ujian praktik susulan" value="' + esc(ck.lembur) + '"></div>' : '';
       body = info('✓ Masuk pukul ' + esc(h.masuk.jam) + (h.masuk.antre ? ' (belum terkirim)' : ''),
         c.pulang != null && cepat > 0 ? 'Jam pulang ' + jamTeks(c.pulang) + '. Ceklok Pulang sekarang tercatat <b>pulang cepat ' + cepat + ' menit</b>.'
-          : 'Silakan Ceklok Pulang sebelum pukul ' + jamTeks(c.tutup) + '.') +
-        gpsStep + fotoStep + noteStep(false) + tombol('ckPulang', '🏠 Ceklok Pulang', cepat > 0 ? 'w' : 'h') +
+          : lembur ? 'Jam pulang ' + jamTeks(c.pulang) + '. Ceklok Pulang sekarang tercatat <b>lembur ' + durTeks(lembur) + '</b> (tidak mengurangi nilai). Isi alasan lembur. Batas pukul ' + jamTeks(batas) + '.'
+          : 'Silakan Ceklok Pulang' + (c.pulang != null ? ' (jam pulang ' + jamTeks(c.pulang) + ')' : '') + '. Bila lembur, Ceklok Pulang masih bisa sampai pukul ' + jamTeks(batas) + '.') +
+        gpsStep + fotoStep + lemburStep + noteStep(false) + tombol('ckPulang', lembur ? '🏠 Ceklok Pulang (lembur)' : '🏠 Ceklok Pulang', cepat > 0 ? 'w' : 'h') +
         '<div class="switch"><button class="btn tinggal" data-a="ckModeKeluar">🚨 Ada tugas mendadak? Tinggalkan kantor</button></div>';
     } else if (f === 'keluar') {
       const jenisList = c.tugasMendadak || ['Perintah pimpinan', 'Pengawalan/Patwal', 'Laka lantas', 'Kejadian darurat', 'Rapat/dinas luar', 'Lainnya'];
@@ -1196,7 +1215,7 @@
         pin, kode, action: 'ceklok', tahap, st: st || '', jenis: tahap === 'keluar' ? ck.jenis : '',
         lat: kirimGps ? draft.lat : null, lng: kirimGps ? draft.lng : null, acc: kirimGps ? draft.acc : null,
         foto: pakaiLokasi ? draft.foto : '', fotoMs: pakaiLokasi ? draft.fotoMs : 0,
-        note: ck.note.trim(),
+        note: ck.note.trim(), alasanLembur: tahap === 'pulang' ? ck.lembur.trim() : '',
         idKirim: Date.now().toString(36) + Math.random().toString(36).slice(2, 10),
         waktuMs: Math.round(serverNowMs() || Date.now())
       };
@@ -1207,7 +1226,7 @@
         const lat = draft.lat, lng = draft.lng, acc = draft.acc;
         draft = newDraft();
         Object.assign(draft, { lat, lng, acc });
-        Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
+        Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '', lembur: '' });
       };
       if (sebelumnya && tersimpan) {
         kosongkan();
@@ -1233,7 +1252,7 @@
       if (tahap === 'masuk' || tahap === 'tidak') ulangCk = false;
       toast(out.diperiksa ? 'Ceklok tercatat pukul ' + out.jam + ', lokasi perlu diverifikasi admin'
         : tahap === 'masuk' ? '✓ Ceklok Masuk pukul ' + out.jam + (out.selisih ? ' — terlambat ' + out.selisih + ' menit' : '')
-        : tahap === 'pulang' ? '✓ Ceklok Pulang pukul ' + out.jam + (out.selisih ? ' — pulang cepat ' + out.selisih + ' menit' : '')
+        : tahap === 'pulang' ? '✓ Ceklok Pulang pukul ' + out.jam + (out.selisih ? ' — pulang cepat ' + out.selisih + ' menit' : out.lembur ? ' — lembur ' + durTeks(out.lembur) : '')
         : tahap === 'keluar' ? '✓ Tercatat meninggalkan kantor pukul ' + out.jam + ' — ceklok hari ini selesai'
         : '✓ Laporan tidak masuk terkirim');
       sending = false;
@@ -1275,6 +1294,7 @@
         return toast('Foto sudah terlalu lama, ambil ulang foto');
       }
       if (!okFoto()) return toast('Ambil foto dari kamera dulu');
+      if (a === 'ckPulang' && menitLembur(menitSekarang()) && ck.lembur.trim().length < 3) return toast('Isi alasan lembur dulu');
       return kirimCeklok(a === 'ckMasuk' ? 'masuk' : 'pulang');
     }
     if (a === 'ckKirimTidak') {
@@ -1284,7 +1304,10 @@
     }
     renderCeklok();
   });
-  $('ceklokView').addEventListener('input', (e) => { if (e.target.id === 'ckNote') ck.note = e.target.value; });
+  $('ceklokView').addEventListener('input', (e) => {
+    if (e.target.id === 'ckNote') ck.note = e.target.value;
+    if (e.target.id === 'ckLembur') ck.lembur = e.target.value;
+  });
 
   $('laporView').addEventListener('click', (e) => {
     const el = e.target.closest('[data-a]');
@@ -1331,7 +1354,7 @@
     if (adaAntre()) kirimAntre();
     if (mode === 'ceklok' && data.ceklok) {
       const f = ckFase();
-      const ketik = document.activeElement && document.activeElement.id === 'ckNote';
+      const ketik = document.activeElement && ['ckNote', 'ckLembur'].includes(document.activeElement.id);
       if (f !== lastCkFase || (['masuk', 'pulang'].includes(f) && !ketik)) renderCeklok();
       if (++detak % 3 === 0 && ['masuk', 'pulang'].includes(f)) ambilLokasi();
       return;

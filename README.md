@@ -63,10 +63,13 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
 | --- | --- |
 | sebelum 06.00 | Belum dibuka |
 | 06.00 – 06.30 | **Lapor Datang** (langkah 1) – wajib di dalam radius titik |
-| 06.30 – 07.00 | Tetap di lokasi, ada hitung mundur |
+| 06.30 – 07.15 | Lapor Datang masih bisa, tercatat **TERLAMBAT** (LOG LAPOR: `[TERLAMBAT x mnt …]`) |
+| 06.30 – 07.00 | Yang sudah datang: tetap di lokasi, ada hitung mundur |
 | 07.00 – 07.15 | **Lapor Selesai** (langkah 2) – wajib di dalam radius titik |
 | setelah 07.15 | Ditutup |
 
+- Terlambat tidak ditolak, tetapi mengurangi nilai: **Ketepatan Waktu −2 per menit** sesudah 06.15 (0 sekitar 07.05)
+  dan durasi tugas yang pendek menurunkan poin durasi. Kehadiran tetap **H** bila Lapor Selesai sah.
 - Status **H** baru masuk ke sheet ABSENSI setelah **Lapor Selesai** yang sah.
   Yang hanya Lapor Datang tidak dihitung (kolom tetap kosong, tercatat di LOG LAPOR).
 - Di luar radius (bawaan **100 m**) tombol lapor terkunci dan muncul pemberitahuan merah.
@@ -229,8 +232,15 @@ dicocokkan per **nama petugas**, jadi dua orang di baris pos yang sama dihitung 
 Anggota Satpas (NRP ada di sheet **Data** spreadsheet Satpas) melihat tab **Ceklok Satpas** di aplikasi. Anggota
 Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsung diarahkan ke tab ini.
 - **Ceklok Masuk** dibuka pukul **07.00**. Lewat jam masuk (**08.00**) tercatat **terlambat** (menit).
-- **Ceklok Pulang** bisa setelah Masuk, paling lambat **15.00**. Sebelum jam pulang tercatat **pulang cepat**.
+- **Ceklok Pulang** bisa setelah Masuk. Sebelum jam pulang tercatat **pulang cepat**.
   Jam pulang **13.00** (Senin–Kamis) dan **12.00** (Jumat–Sabtu). Hari Minggu libur.
+- **Lembur:** Ceklok Pulang masih bisa sampai **21.00** (`CEKLOK.tutupLembur`; ceklok lain tetap ditutup 15.00).
+  Pulang ≥ **30 menit** setelah jam pulang (`LEMBUR_MIN`) = lembur: aplikasi meminta **alasan lembur (wajib)**,
+  tercatat di LOG CEKLOK kolom CATATAN (`LEMBUR 3 j 40 m: alasan`). Lembur **dicatat saja**: nilai Ceklok hari itu
+  tetap 100 (lengkap), tidak menambah skor. Jumlah & total jam lembur tampil di CATATAN PENILAIAN INTEGRITAS dan di
+  INTEGRITAS HARIAN (kolom Ceklok Pulang). Anggota yang masih di kantor saat hitungan sore ±15.15 belum dinilai
+  ("belum pulang – lembur?"), lalu dinilai final oleh hitungan pagi berikutnya. Lewat 21.00 tanpa Ceklok Pulang =
+  tanpa pulang (nilai 50).
 - Wajib dalam radius **100 m** dari titik kantor (-8.239257, 114.345514) dan foto langsung dari kamera.
   Deteksi lokasi palsu sama dengan Lapor CW Pagi.
 - **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas / Pelayanan dan isi keterangan. Hari itu tidak dinilai.
@@ -317,7 +327,8 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
 - **Pengunci predikat (gatekeeper):** anggota dengan **TERBUKTI ⚠️ PALSU ≥ 1** dalam periode itu paling tinggi mendapat
   predikat **Cukup** (`PREDIKAT_MAKS_PALSU`), walaupun skornya ≥ 80. Skor angka tetap apa adanya, CATATAN menulis
   "predikat dikunci …", dan peringkatnya diletakkan di bawah semua anggota yang bersih. Berlaku juga di penilaian mingguan.
-- Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 15.00): hitungan sore ±15.15 sudah memuat hari ini. Unsur yang belum ada datanya tidak
+- Hari ini baru dinilai setelah lapor ditutup (CW 07.15, ceklok 15.00): hitungan sore ±15.15 sudah memuat hari ini
+  (kecuali yang belum Ceklok Pulang karena mungkin lembur s.d. 21.00: dinilai hitungan pagi berikutnya). Unsur yang belum ada datanya tidak
   dihitung, dan bobot unsur lain disesuaikan.
 - **Masa uji coba:** `TGL_MULAI_INTEGRITAS = '2026-10-19'` (penilaian uji coba mulai 19 Oktober 2026). Ganti ke
   `'2026-11-01'` sebelum penilaian resmi agar data uji coba tidak ikut dinilai. Selama uji coba, data dihapus tiap
