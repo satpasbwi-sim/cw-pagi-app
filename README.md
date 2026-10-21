@@ -386,6 +386,11 @@ Satpas** dan **Personel CW Pagi**. Isinya: rata-rata skor, sebaran predikat, kot
 catatan. Server: `GET ?action=rekap` hanya untuk pengawas dan admin. Menambah pengawas / jadwal khusus cukup mengubah
 daftar di AturanKhusus.gs, simpan, lalu deploy versi baru.
 
+**Rekap harian berkala** (`rekapHarianBerkala`, IntegritasHarian.gs): hari ini dihitung ulang otomatis ±09.00, ±11.00,
+±13.00 (label *update pukul …*, tanda sementara) dan ±15.30 (label *final pukul …*, sesudah ceklok ditutup). Pada update,
+ceklok hari ini ikut dinilai: belum Ceklok Masuk = **Belum ceklok masuk**, sudah masuk tetapi belum pulang = **Belum ceklok
+pulang** (belum dinilai). Pemicu dipasang dengan `pasangPemicuRekapBerkala` (diperiksa juga oleh 🩺 Cek & Perbaiki).
+
 **Sheet Data Satpas:** 🩺 Cek & Perbaiki memeriksa anggota tanpa NRP / nomor; PHL tanpa nomor diberi tombol
 **Beri nomor PHL** (nomor PHL terbesar + 1, fungsi `beriNomorPhl`). Perubahan nama/pokja di sheet Data terbaca
 otomatis paling lambat 10 menit (cache).
