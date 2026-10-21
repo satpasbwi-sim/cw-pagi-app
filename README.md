@@ -426,6 +426,24 @@ lebih dari 5 menit** = 1 kejadian: dikirim ke server (disimpan di HP dulu bila s
 - Kejadian keliru (GPS melenceng): hapus barisnya di sheet LUAR RADIUS, nilai pulih di hitungan berikutnya.
 - Konstanta: `LUAR_RADIUS_MENIT = 5`, `POTONG_LUAR_RADIUS = 10` (LuarRadius.gs); POST `action=luarRadius`.
 
+## Pencegahan kecurangan (Perangkat.gs, Persetujuan.gs)
+
+**Satu NRP = satu HP.** Aplikasi membuat ID acak per HP (`cw_hp` di penyimpanan browser) dan mengirimnya di setiap
+permintaan. Login pertama mendaftarkan HP itu di sheet **PERANGKAT** (spreadsheet CW Pagi); HP lain dengan NRP yang sama
+ditolak dan tercatat di kolom HP BARU MENUNGGU (juga muncul di 🩺 Cek & Perbaiki). Ganti HP / data browser terhapus:
+operator mengetik **YA** di kolom IZINKAN HP BARU (atau mengosongkan ID HP) → login berikutnya dari HP baru terdaftar.
+Pengawas dan admin yang masuk dengan kode admin tidak diikat. Aplikasi versi lama (tanpa ID HP) diminta diperbarui.
+
+**Izin dan tugas mendadak perlu persetujuan atasan.** Setiap "Tidak bisa hadir / Tidak masuk" dan "Tinggalkan Lokasi /
+Kantor" dari aplikasi tercatat di sheet **PERSETUJUAN**; atasan memilih KEPUTUSAN = SETUJU / TOLAK (dropdown). Selama
+belum SETUJU: tidak hadir CW dihitung tidak hadir, tidak masuk Satpas dihitung tidak ceklok (0), tugas mendadak CW
+dihitung tanpa Lapor Selesai, tugas mendadak Satpas dihitung pulang cepat (70), dan hari itu bukan hari sempurna. Status
+yang diisi admin langsung di ABSENSI tidak perlu persetujuan. Jumlah yang menunggu tampil di 🩺 Cek & Perbaiki; di
+aplikasi kartu hasilnya bertanda "⏳ menunggu persetujuan atasan".
+
+**Foto wajah di Lapor Selesai.** Lapor Selesai kini juga meminta wajah pelapor dengan arus lalu lintas sebagai latar
+(sebelumnya hanya foto arus), agar HP tidak bisa ditinggal / dititipkan di titik.
+
 ## Rekapitulasi nilai
 
 File **Rekapitulasi.gs** (salinan di `apps-script/`):
