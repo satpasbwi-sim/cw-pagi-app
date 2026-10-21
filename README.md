@@ -301,8 +301,9 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
     `SESUAI` (tidak dipotong) · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
     (`CEK_FOTO` di Kode.gs). Kosong = tidak dipotong. Tidak perlu memeriksa semua foto; cukup acak / yang mencurigakan.
   - Potongan masuk unsur Kejujuran lokasi & foto, jenis dan jumlahnya ditulis di CATATAN.
-  - Foto CW dihapus otomatis setelah 3 hari (`FOTO_SIMPAN_HARI`), jadi periksa dalam 3 hari. Foto yang dinilai
-    selain `SESUAI` tetap disimpan sebagai bukti.
+  - Foto Lapor CW **dan foto Ceklok Satpas** dipindah ke Sampah otomatis setelah 3 hari (`FOTO_SIMPAN_HARI`,
+    `hapusFotoLama` ±08.00), jadi periksa dalam 3 hari. Foto laporan / ceklok bertanda ⚠️ dan yang dinilai selain
+    `SESUAI` tetap disimpan sebagai bukti; kolom FOTO di LOG ditandai "foto dihapus <tanggal>".
   - Pasang sekali: jalankan `siapkanBuktiFoto` (membuat sheet JADWAL SERAGAM dan kolom CEK FOTO).
 - **Periode:** PENILAIAN INTEGRITAS = akumulasi **bulan berjalan** (dari tanggal 1 / `TGL_MULAI_INTEGRITAS` s.d. hari terakhir
   yang sudah ditutup), dihitung ulang tiap pagi.
@@ -507,7 +508,8 @@ Email dikirim ke pemilik spreadsheet CW Pagi (sekarang **satpasbwi@gmail.com**).
 
 **🩺 Cek & Perbaiki** (menu 🚀 CW PAGI APP; file **CekPerbaiki.gs**) memeriksa: bulan di PENGATURAN (mengingatkan
 3 hari sebelum akhir bulan), struktur ABSENSI (baris 7–86 utuh), jadwal Piket BM, jadwal Patwal & Piket Laka hari ini,
-personel ANGGOTA yang tidak cocok dengan plotting/jadwal, ukuran LOG LAPOR, 7 pemicu otomatis, dan mode uji coba.
+personel ANGGOTA yang tidak cocok dengan plotting/jadwal, **sisa ruang Google Drive** (waspada ≥ 80%, hampir penuh
+≥ 95% juga dikirim lewat email cek kesehatan), ukuran LOG LAPOR, pemicu otomatis, dan mode uji coba.
 Masalah yang aman diperbaiki otomatis punya tombol (selalu dengan konfirmasi):
 
 | Masalah | Tombol |
