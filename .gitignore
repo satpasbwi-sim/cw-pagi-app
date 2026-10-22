@@ -7,6 +7,8 @@ apps-script/
 # dokumen jadwal berisi nama personel
 *.docx
 *.pdf
+# ekspor sheet (mis. data.csv) berisi nama & NRP personel
+*.csv
 ~$*
 # salinan lama yang tidak dipakai
 _arsip-lokal/
