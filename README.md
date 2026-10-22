@@ -239,8 +239,10 @@ Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsu
   Jam pulang **13.00** (Senin–Kamis) dan **12.00** (Jumat–Sabtu). Hari Minggu libur.
 - **Lembur:** Ceklok Pulang masih bisa sampai **21.00** (`CEKLOK.tutupLembur`; ceklok lain tetap ditutup 15.00).
   Pulang ≥ **30 menit** setelah jam pulang (`LEMBUR_MIN`) = lembur: aplikasi meminta **alasan lembur (wajib)**,
-  tercatat di LOG CEKLOK kolom CATATAN (`LEMBUR 3 j 40 m: alasan`). Lembur **dicatat saja**: nilai Ceklok hari itu
-  tetap 100 (lengkap), tidak menambah skor. Jumlah & total jam lembur tampil di CATATAN PENILAIAN INTEGRITAS dan di
+  tercatat di LOG CEKLOK kolom CATATAN (`LEMBUR 3 j 40 m: alasan`). Nilai Ceklok hari itu tetap 100
+  (lengkap), dan lembur memberi **bonus kecil di skor akhir**: **+1 per hari lembur, maks +3 per periode**
+  (harian / mingguan / bulanan; `BONUS_LEMBUR`, `BONUS_LEMBUR_MAKS`), skor tetap **maks 100**, tidak diberikan bila ada
+  ⚠️ PALSU di periode itu. Jumlah & total jam lembur tampil di CATATAN PENILAIAN INTEGRITAS dan di
   INTEGRITAS HARIAN (kolom Ceklok Pulang). Anggota yang masih di kantor saat hitungan sore ±15.15 belum dinilai
   ("belum pulang – lembur?"), lalu dinilai final oleh hitungan pagi berikutnya. Lewat 21.00 tanpa Ceklok Pulang =
   tanpa pulang (nilai 50).
