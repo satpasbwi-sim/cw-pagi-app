@@ -335,3 +335,22 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 }
 
 /* ---------- Form kode admin ---------- */
+
+/* ---------- Layar HP sempit: tab & baris tidak keluar dari kotak ---------- */
+main, .card, .person .info, .rk-nama, .skor-ket, .who > div { min-width: 0; }
+.card, .gps, .motivasi, .cat-nilai, .lapor-info, .rk-nama small { overflow-wrap: anywhere; }
+@media (max-width: 520px) {
+  /* admin punya sampai 5 tab: dibungkus ke baris kedua, bukan dijejalkan dalam satu baris */
+  .mode { flex-wrap: wrap; }
+  .mode button { flex: 1 1 30%; min-width: 0; padding: 9px 4px; font-size: .84rem; line-height: 1.2; }
+  .seg { flex-wrap: wrap; }
+  .seg button { min-width: 0; }
+  .person .line { flex-wrap: wrap; }
+  .person .seg { flex: 1 1 100%; }
+  .person .seg button { flex: 1; padding: 8px 4px; }
+  .skor-box { gap: 12px; }
+  .ring { width: 96px; height: 96px; }
+  .rk-top { gap: 8px; }
+  .rk-nama b { white-space: normal; overflow-wrap: anywhere; }
+  .who { flex-wrap: wrap; }
+}
