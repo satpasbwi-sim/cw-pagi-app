@@ -392,6 +392,10 @@ dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), 
 | `NRP_PENGAWAS` | 86071494 (Baur SIM) | Tidak wajib CW Pagi & Ceklok, **tidak dinilai** dan tidak masuk peringkat, tidak tercetak di rekap ceklok, tidak dianggap "tanpa plotting" di 🩺. Di aplikasi hanya tab **Rekap Integritas**. |
 | `CEKLOK_KHUSUS` | 83050535 (operator SIM keliling) | Ceklok dibuka **06.00**, jam masuk **06.00**, jam pulang **17.00** (Senin–Sabtu), lembur sesudah 17.30 s.d. 21.00, **boleh ceklok di mana saja** (GPS, peta, foto tetap wajib & dicatat). |
 
+**Kecepatan Rekap Integritas:** rekap terakhir (harian, mingguan & bulanan sekaligus) disimpan di HP (`cw_rekap_d`) dan
+langsung tampil saat tab dibuka; diambil ulang dari server di latar belakang paling sering tiap 10 menit, atau saat tab
+diketuk lagi / ⟳ Muat ulang. Bila sinyal putus, rekap tersimpan tetap tampil.
+
 **Tab Rekap Integritas (pengawas):** pilihan Harian (selalu) · Mingguan · Bulanan (setelah final), hanya kelompok
 **Anggota Satpas** (Personel CW Pagi tidak ditampilkan). Isinya: rata-rata skor, sebaran predikat, kotak cari nama, daftar urut peringkat
 (skor, predikat, pokja/lokasi, dan untuk harian jam CW / Ceklok Masuk / Pulang berwarna). Ketuk nama = rincian unsur dan

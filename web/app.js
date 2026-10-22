@@ -96,10 +96,11 @@
     if (data && (terkirim || ditolak)) await reload(data.today);
     else segarkanLapor();
   }
+  // sedang mengetik catatan / keterangan: jangan gambar ulang form (keyboard HP akan tertutup)
+  function sedangMengetik() { return !!document.activeElement && ['laporNote', 'ckNote', 'ckLembur'].includes(document.activeElement.id); }
   // gambar ulang Lapor CW, kecuali sedang mengetik catatan (agar keyboard tidak tertutup)
   function segarkanLapor() {
-    const ketik = document.activeElement && ['laporNote', 'ckNote', 'ckLembur'].includes(document.activeElement.id);
-    if (!data || sending || ketik) return;
+    if (!data || sending || sedangMengetik()) return;
     if (mode === 'lapor') renderLapor(); else if (mode === 'ceklok' && data.ceklok) renderCeklok();
   }
   window.addEventListener('online', () => kirimAntre());
@@ -232,17 +233,36 @@
       peringkat: r.peringkat == null ? null : 1 + baris.filter((x) => x.peringkat != null && x.peringkat < r.peringkat).length
     }));
   }
+  // rekap terakhir (harian, mingguan & bulanan sekaligus) disimpan di HP: tab langsung tampil, diperbarui dari server
+  // di latar belakang paling sering tiap NILAI_SEGAR_MS, atau saat tab diketuk lagi / ⟳ Muat ulang
+  let rekapAt = 0;
+  function bacaCacheRekap() {
+    try {
+      const c = JSON.parse(load('cw_rekap_d') || 'null');
+      if (c && c.pin === pin && c.v) { rekap = c.v; rekapAt = c.at; }
+    } catch (e) { /* abaikan */ }
+  }
+  function rekapPerluMuat() { return !rekap || rekap.error || Date.now() - rekapAt > NILAI_SEGAR_MS; }
   async function muatRekap() {
+    if (rekapMuat) return;
     rekapMuat = true;
     if (mode === 'rekapInt') renderRekapInt();
+    const pinMuat = pin;
     try {
       const res = await fetch(API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=rekap');
-      rekap = await res.json();
+      const v = await res.json();
+      if (pinMuat !== pin) return;   // sudah keluar / ganti NRP selagi memuat
+      rekap = v;
+      if (!v.error) { rekapAt = Date.now(); store('cw_rekap_d', JSON.stringify({ pin, at: rekapAt, v })); }
     } catch (err) {
-      rekap = { error: 'Gagal memuat rekap. Periksa sinyal internet lalu ketuk Muat ulang.' };
+      // gagal: tetap tampilkan rekap tersimpan bila ada
+      if (rekap && !rekap.error) toast('Gagal memperbarui rekap — menampilkan rekap tersimpan');
+      else rekap = { error: 'Gagal memuat rekap. Periksa sinyal internet lalu ketuk Muat ulang.' };
+    } finally {
+      rekapMuat = false;
     }
-    rekapMuat = false;
-    if (mode === 'rekapInt') renderRekapInt();
+    // tidak menggambar ulang saat pengawas sedang mengetik di kotak cari nama
+    if (mode === 'rekapInt' && !(document.activeElement && document.activeElement.id === 'rekapCari')) renderRekapInt();
   }
   // Rekap Integritas tidak menampilkan angka aturan nilai: "(nilai 90)", "(−10)", "(−25 per kali)" dan sejenisnya
   function tanpaNilai(t) {
@@ -275,7 +295,8 @@
     if (!ada.includes(rekapJenis)) rekapJenis = 'harian';
     const seg = '<div class="seg">' + ada.map((j) =>
       '<button data-j="' + j + '"' + (j === rekapJenis ? ' class="on"' : '') + '>' + JENIS_NILAI[j] + '</button>').join('') + '</div>';
-    const kaki = '<div class="switch"><button class="link muted-link" data-a="muatRekap">⟳ Muat ulang</button> · ' + gantiBtn() + '</div>';
+    const kaki = '<div class="switch"><button class="link muted-link" data-a="muatRekap">' +
+      (rekapMuat && rekap ? '⟳ memperbarui…' : '⟳ Muat ulang') + '</button> · ' + gantiBtn() + '</div>';
     let isi;
     const P = rekap && !rekap.error ? rekap[rekapJenis] : null;
     if (!rekap) isi = '<p class="sub">' + (rekapMuat ? 'Memuat rekap…' : 'Ketuk Muat ulang untuk melihat rekap.') + '</p>';
@@ -399,8 +420,9 @@
       edits = {};
       noteEdits = {};
       showNeed = false;
-      render();
-      if (mode === 'rekapInt' && !rekap && !rekapMuat) muatRekap();
+      // data terbaru tiba saat anggota sedang mengetik: tampilan diperbarui nanti, keyboard tidak ditutup
+      if (!sedangMengetik()) render();
+      if (mode === 'rekapInt' && rekapPerluMuat()) muatRekap();
       // siapkan Nilai Saya di latar belakang agar tab itu langsung tampil saat diketuk
       if (!d.pengawas && nilaiPerluMuat()) setTimeout(muatNilai, 1500);
       const r = mode === 'lapor' && myRow();
@@ -957,8 +979,10 @@
   // perbarui kotak lokasi & tombol kirim tanpa menggambar ulang form (isian catatan tidak hilang)
   function updateGps() {
     if (!data || mode !== 'lapor') return;   // GPS bisa selesai sebelum data dari server tiba
+    // langkah tanpa kotak lokasi (Tinggalkan Lokasi, Tidak Hadir, selesai): jangan gambar ulang seluruh form —
+    // GPS dipantau terus (watchPosition, tiap ±1 detik), dan menggambar ulang menutup keyboard saat mengetik keterangan
+    if (!myRow() || !$('gpsBox')) return;
     const r = myRow();
-    if (!r || !$('gpsBox')) return render();
     $('gpsBox').innerHTML = gpsHtml(r) + luarHtml();
     if ($('btnKirim')) $('btnKirim').disabled = sending || !okLokasi(r) || !okFoto();
   }
@@ -1675,11 +1699,13 @@
     const b = e.target.closest('button');
     // pindah tab tidak menunggu data server: tampilkan data yang ada, pembaruan berjalan di belakang
     if (!b || sending) return;
+    // Rekap Integritas: rekap tersimpan langsung tampil, server hanya bila perlu (atau tab diketuk lagi)
     if (b.dataset.m === 'rekapInt' && data) {
+      const ulang = mode === 'rekapInt';
       mode = 'rekapInt';
       render();
       window.scrollTo(0, 0);
-      return muatRekap();
+      return ulang || rekapPerluMuat() ? muatRekap() : undefined;
     }
     // Nilai Saya: tidak memakai GPS / kamera; nilai tersimpan langsung tampil, server hanya bila perlu
     if (b.dataset.m === 'nilai' && data) {
@@ -1712,8 +1738,10 @@
     store('cw_kode', '');
     store('cw_data', '');
     store('cw_nilai_d', '');
+    store('cw_rekap_d', '');
     data = null;
     nilai = null; nilaiAt = 0;
+    rekap = null; rekapAt = 0;
     draft = newDraft();
     Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
     ulangCW = false; ulangCk = false;
@@ -1837,6 +1865,7 @@
     $('mode').hidden = false;
     const c = bacaCache();
     bacaCacheNilai();
+    bacaCacheRekap();
     mode = load('cw_mode') === 'ceklok' && (!c || c.ceklok) ? 'ceklok' : 'lapor';
     if (c) {
       data = c;
