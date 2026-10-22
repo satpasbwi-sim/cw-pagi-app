@@ -77,6 +77,12 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .ios-share { display: inline-block; border: 1px solid var(--line); border-radius: 6px; padding: 0 5px; }
 
 main { max-width: 760px; margin: -42px auto 0; padding: 0 16px; }
+/* tampilan admin di PC: Rekap Admin / Rekap Integritas melebar, simpul berjajar dua kolom */
+@media (min-width: 900px) {
+  main.lebar { max-width: 1080px; }
+  main.lebar #simpulList { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; align-items: start; }
+  main.lebar .mode button { flex: 0 1 auto; padding: 9px 18px; }
+}
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 14px; }
 
 /* ---------- Login ---------- */

@@ -292,6 +292,26 @@
         '<small>' + esc(r.predikat) + '</small></span></div>' + (chips ? '<div class="chips-hari">' + chips + '</div>' : '') + buka + '</div>';
     }).join('');
   }
+  // NRP admin (ADMIN_NRP di server) membuka Rekap Admin dengan kode admin; kode salah ditolak server
+  function renderAdminMasuk() {
+    $('adminMasukView').innerHTML = '<section class="card"><h2 class="t">Masuk sebagai Admin</h2>' +
+      '<p class="sub">Ketik <b>kode admin</b> untuk membuka Rekap Admin (rekap per simpul, teks WhatsApp) dan Rekap Integritas. ' +
+      'Kode diatur lewat menu spreadsheet: CW PAGI APP → Atur Kode Admin Aplikasi.</p>' +
+      '<input id="kodeAdmin" class="search" type="password" autocomplete="off" placeholder="Kode admin">' +
+      '<button id="btnKodeAdmin" class="btn primary block">Buka Rekap Admin</button></section>';
+  }
+  async function masukAdmin() {
+    const k = ($('kodeAdmin') && $('kodeAdmin').value || '').trim();
+    if (!k) return toast('Ketik kode admin dulu');
+    kode = k; store('cw_kode', k);
+    mode = 'rekap';
+    rekap = null; rekapAt = 0;
+    await reload();
+    if (!data || data.role !== 'admin') { mode = 'adminMasuk'; render(); }
+  }
+  $('adminMasukView').addEventListener('click', (e) => { if (e.target.id === 'btnKodeAdmin') masukAdmin(); });
+  $('adminMasukView').addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'kodeAdmin') masukAdmin(); });
+
   function renderRekapInt() {
     const v = $('rekapIntView');
     const ada = jenisAda(rekap && !rekap.error ? rekap : null);
@@ -340,7 +360,7 @@
         '(mingguan: Senin pagi sesudah minggu berakhir; bulanan: sesudah akhir bulan).</p>';
     }
     v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Rekap Integritas</b><div class="loc">' +
-      esc(data.nama || '') + ' · pengawas</div></div></div>' + seg + isi + kaki + '</section>';
+      esc(data.nama || '') + (data.role === 'admin' ? ' · admin' : ' · pengawas') + '</div></div></div>' + seg + isi + kaki + '</section>';
   }
 
   async function fetchData(day) {
@@ -417,7 +437,7 @@
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
-      mode = d.pengawas ? 'rekapInt' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
+      mode = d.pengawas ? 'rekapInt' : d.role === 'admin' && ['rekap', 'rekapInt', 'nilai'].includes(mode) ? mode : d.role === 'admin' && !d.me && !d.ceklok ? 'rekap' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
       mintaAdmin = false;
       edits = {};
@@ -496,7 +516,13 @@
     if (data.pengawas) mode = 'rekapInt';
     if ($('btnModeLapor')) $('btnModeLapor').hidden = hanyaCeklok(data) || !!data.pengawas;
     $('btnModeNilai').hidden = !!data.pengawas;
-    $('btnModeRekapInt').hidden = !data.pengawas;
+    const admin = data.role === 'admin';
+    $('btnModeRekapInt').hidden = !(data.pengawas || admin);
+    $('btnModeRekap').hidden = !admin;
+    $('btnModeAdminMasuk').hidden = !(data.bisaAdmin && !admin);
+    if (!admin && mode === 'rekap') mode = 'lapor';
+    if (admin && mode === 'adminMasuk') mode = 'rekap';
+    $('app').classList.toggle('lebar', admin && (mode === 'rekap' || mode === 'rekapInt'));
     [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
     $('btnModeCeklok').hidden = !data.ceklok;
     $('laporView').hidden = mode !== 'lapor';
@@ -504,6 +530,11 @@
     $('ceklokView').hidden = mode !== 'ceklok';
     $('nilaiView').hidden = mode !== 'nilai';
     $('rekapIntView').hidden = mode !== 'rekapInt';
+    $('adminMasukView').hidden = mode !== 'adminMasuk';
+    if (mode === 'adminMasuk') {
+      $('saveBar').hidden = true;
+      return renderAdminMasuk();
+    }
     if (mode === 'rekapInt') {
       $('saveBar').hidden = true;
       return renderRekapInt();
