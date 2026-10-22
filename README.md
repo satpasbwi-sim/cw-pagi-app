@@ -293,10 +293,10 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
 - **Tinggalkan Lokasi** lebih dari 3× sebulan ditulis di CATATAN untuk dicek atasan (tidak mengurangi skor).
 - **Bukti foto (wajah, seragam, foto asli)**:
   - Sheet **JADWAL SERAGAM** (spreadsheet CW Pagi): isi seragam per hari (Senin … Minggu, mis. PDH / PDL / Gampol).
-    Tanggal khusus (dd/MM/yyyy) di baris bawah mengalahkan hari. Seragam hari itu tampil di layar kamera.
+    Tanggal khusus (dd/MM/yyyy) di baris bawah mengalahkan hari. Seragam tidak lagi ditampilkan di layar kamera
+    (dihapus 22 Okt 2026); jadwal ini tetap jadi acuan atasan saat mengisi CEK FOTO.
   - Kamera **hanya kamera depan** (kamera belakang tidak bisa dipilih; HP tanpa kamera depan tidak bisa memotret).
-  - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas,
-    seragam hari ini, dan ambil langsung di lokasi (bukan memotret layar HP / foto lain). Foto Lapor Selesai
+  - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas dan ambil langsung di lokasi (bukan memotret layar HP / foto lain). Foto Lapor Selesai
     (arus lalu lintas) hanya diingatkan soal lokasi.
   - Kolom **N "CEK FOTO (atasan)"** di LOG LAPOR dan LOG CEKLOK diisi atasan dengan buka tautan FOTO:
     `SESUAI` (tidak dipotong) · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
@@ -366,6 +366,9 @@ dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), 
   ringkas disimpan di sheet tersembunyi **NILAI APLIKASI** (spreadsheet CW Pagi), satu baris per orang per periode.
   Nilai harian & mingguan personel CW dihitung lewat `hitungPenilaianCw({dari, sampai, tanpaTulis})`.
 - Aplikasi meminta `GET ?action=nilai`; server hanya mengirim nilai milik NRP yang login.
+- Agar cepat: nilai terakhir disimpan di HP (`cw_nilai_d`) dan langsung tampil; diambil ulang dari server di latar
+  belakang setelah aplikasi dibuka, lalu paling sering tiap 10 menit (`NILAI_SEGAR_MS`) atau saat tab diketuk lagi /
+  ⟳ Muat ulang. Pindah tab Lapor CW · Ceklok Satpas · Nilai Saya tidak lagi menunggu data server selesai dimuat.
 - Nilai hari ini muncul setelah hitungan sore dengan tanda **sementara**, final setelah hitungan pagi berikutnya.
 - Pilihan **Mingguan** dan **Bulanan** baru muncul setelah rekapnya **final**: mingguan = minggu yang sudah selesai
   (Senin pagi sesudahnya), bulanan = bulan yang sudah selesai. Di sheet tersimpan sebagai jenis `mingguan_final` /

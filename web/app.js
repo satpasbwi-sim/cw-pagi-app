@@ -111,8 +111,17 @@
   }
 
   // ---------- Nilai Saya: nilai ringkas milik anggota yang login (harian · mingguan · bulanan) ----------
-  let nilai = null, nilaiMuat = false;
+  // nilai terakhir disimpan di HP: tab Nilai Saya langsung tampil, diperbarui dari server paling sering tiap NILAI_SEGAR_MS
+  // (nilai hanya berubah saat hitungan terjadwal 07.30 / 09.00 / 11.00 / 13.00 / 15.15 / 15.30)
+  const NILAI_SEGAR_MS = 10 * 60 * 1000;
+  let nilai = null, nilaiMuat = false, nilaiAt = 0;
   let nilaiJenis = load('cw_nilai') || 'harian';
+  function bacaCacheNilai() {
+    try {
+      const c = JSON.parse(load('cw_nilai_d') || 'null');
+      if (c && c.pin === pin && c.v) { nilai = c.v; nilaiAt = c.at; }
+    } catch (e) { /* abaikan */ }
+  }
   const JENIS_NILAI = { harian: 'Harian', mingguan: 'Mingguan', bulanan: 'Bulanan' };
   const PESAN_NILAI = {
     'Sangat Baik': 'Luar biasa! Pertahankan disiplin dan integritas Anda.',
@@ -121,17 +130,27 @@
     'Kurang': 'Perlu perbaikan. Ikuti catatan di bawah, Anda pasti bisa.'
   };
   async function muatNilai() {
+    if (nilaiMuat) return;
     nilaiMuat = true;
     if (mode === 'nilai') renderNilai();
+    const pinMuat = pin;
     try {
       const res = await fetch(API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=nilai');
-      nilai = await res.json();
+      const v = await res.json();
+      if (pinMuat !== pin) return;   // sudah keluar / ganti NRP selagi memuat
+      nilai = v;
+      if (!v.error) { nilaiAt = Date.now(); store('cw_nilai_d', JSON.stringify({ pin, at: nilaiAt, v })); }
     } catch (err) {
-      nilai = { error: 'Gagal memuat nilai. Periksa sinyal internet lalu ketuk Muat ulang.' };
+      // gagal: tetap tampilkan nilai tersimpan bila ada
+      if (nilai && !nilai.error) toast('Gagal memperbarui nilai — menampilkan nilai tersimpan');
+      else nilai = { error: 'Gagal memuat nilai. Periksa sinyal internet lalu ketuk Muat ulang.' };
+    } finally {
+      nilaiMuat = false;
     }
-    nilaiMuat = false;
     if (mode === 'nilai') renderNilai();
   }
+  // ambil nilai dari server hanya bila belum ada / sudah lebih dari 10 menit
+  function nilaiPerluMuat() { return !nilai || nilai.error || Date.now() - nilaiAt > NILAI_SEGAR_MS; }
   function warnaNilai(v) { return v >= 90 ? 'sb' : v >= 80 ? 'b' : v >= 70 ? 'c' : 'k'; }
   // penentu urutan bila skor sama (server Urutan.gs): hari sempurna, beruntun, menit lebih awal, lembur
   function teladanHtml(n) { return n.detail && n.detail.urut && n.detail.urut.teladan ? ' <span class="badge teladan">★ Teladan</span>' : ''; }
@@ -155,7 +174,8 @@
     if (!ada.includes(nilaiJenis)) nilaiJenis = 'harian';
     const seg = '<div class="seg">' + ada.map((j) =>
       '<button data-j="' + j + '"' + (j === nilaiJenis ? ' class="on"' : '') + '>' + JENIS_NILAI[j] + '</button>').join('') + '</div>';
-    const muatUlang = '<div class="switch"><button class="link muted-link" data-a="muatNilai">⟳ Muat ulang</button> · ' + gantiBtn() + '</div>';
+    const muatUlang = '<div class="switch"><button class="link muted-link" data-a="muatNilai">' +
+      (nilaiMuat && nilai ? '⟳ memperbarui…' : '⟳ Muat ulang') + '</button> · ' + gantiBtn() + '</div>';
     let isi;
     if (!nilai) isi = '<p class="sub">' + (nilaiMuat ? 'Memuat nilai…' : 'Ketuk Muat ulang untuk melihat nilai.') + '</p>';
     else if (nilai.error) isi = '<div class="gps out"><b>' + esc(nilai.error) + '</b></div>';
@@ -355,6 +375,8 @@
       showNeed = false;
       render();
       if (mode === 'rekapInt' && !rekap && !rekapMuat) muatRekap();
+      // siapkan Nilai Saya di latar belakang agar tab itu langsung tampil saat diketuk
+      if (!d.pengawas && nilaiPerluMuat()) setTimeout(muatNilai, 1500);
       const r = mode === 'lapor' && myRow();
       if (r && ['datang', 'tunggu', 'selesai'].includes(fase(r)) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
       if (mode === 'ceklok' && ['masuk', 'pulang'].includes(ckFase()) && draft.lat == null && !draft.gpsMsg) ambilLokasi();
@@ -927,10 +949,7 @@
   function cekFotoHtml() {
     const wajah = true;   // semua foto (termasuk Lapor Selesai) wajib menampilkan wajah pelapor
     const baris = [];
-    if (wajah) {
-      baris.push('😀 Wajah terlihat jelas');
-      baris.push(data.seragam ? '👮 Seragam hari ini: <b>' + esc(data.seragam) + '</b>' : '👮 Seragam & atribut lengkap sesuai jadwal');
-    }
+    if (wajah) baris.push('😀 Wajah terlihat jelas');
     baris.push('📍 Ambil langsung di lokasi, jangan memotret layar HP / foto lain');
     return '<ul class="cek-foto">' + baris.map((b) => '<li>' + b + '</li>').join('') + '</ul>';
   }
@@ -1622,22 +1641,24 @@
   $('laporView').addEventListener('input', (e) => { if (e.target.id === 'laporNote') draft.note = e.target.value; });
   $('mode').onclick = (e) => {
     const b = e.target.closest('button');
-    if (!b || memuat || sending) return;
-    // Nilai Saya: tidak memakai GPS / kamera, cukup ambil nilai dari server
+    // pindah tab tidak menunggu data server: tampilkan data yang ada, pembaruan berjalan di belakang
+    if (!b || sending) return;
     if (b.dataset.m === 'rekapInt' && data) {
       mode = 'rekapInt';
       render();
       window.scrollTo(0, 0);
       return muatRekap();
     }
+    // Nilai Saya: tidak memakai GPS / kamera; nilai tersimpan langsung tampil, server hanya bila perlu
     if (b.dataset.m === 'nilai' && data) {
+      const ulang = mode === 'nilai';
       mode = 'nilai';
       render();
       window.scrollTo(0, 0);
-      return muatNilai();
+      return ulang || nilaiPerluMuat() ? muatNilai() : undefined;
     }
     // ketuk Lapor CW saat sudah terbuka (atau gagal memuat): ambil data terbaru dari server
-    if (!data || b.dataset.m === mode) return reload(data && data.today);
+    if (!data || b.dataset.m === mode) return memuat ? undefined : reload(data && data.today);
     if (b.dataset.m === 'lapor' && dirtyCount() && data.day !== data.today &&
       !confirm('Perubahan rekap yang belum disimpan akan hilang. Lanjut?')) return;
     mode = b.dataset.m;
@@ -1658,7 +1679,9 @@
     kode = '';
     store('cw_kode', '');
     store('cw_data', '');
+    store('cw_nilai_d', '');
     data = null;
+    nilai = null; nilaiAt = 0;
     draft = newDraft();
     Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
     ulangCW = false; ulangCk = false;
@@ -1781,6 +1804,7 @@
     $('app').hidden = false;
     $('mode').hidden = false;
     const c = bacaCache();
+    bacaCacheNilai();
     mode = load('cw_mode') === 'ceklok' && (!c || c.ceklok) ? 'ceklok' : 'lapor';
     if (c) {
       data = c;
