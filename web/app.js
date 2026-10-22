@@ -20,6 +20,8 @@
   let me = '';                             // no plotting milik NRP yang login (dari server)
   let draft = newDraft();                  // isian form Lapor CW yang belum dikirim
   let sending = false;
+  // jenis tugas / kepentingan saat Tinggalkan Lokasi / Kantor (cadangan; daftar resmi dikirim server)
+  const JENIS_TUGAS = ['Perintah pimpinan', 'Pelayanan', 'Rapat/Dinas', 'Keluarga', 'Lainnya'];
   let memuat = false;                      // sedang mengambil data terbaru dari server
   const CARI_GPS = 'Mencari lokasi GPS…';
 
@@ -862,7 +864,7 @@
         (data.bebasWaktu ? '' : ' Batas Lapor Selesai pukul ' + jamTeks(j.tutup) + '.')) +
         gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai') + tinggalLink;
     } else if (f === 'tinggal') {
-      const jenisList = data.tugasMendadak || ['Laka lantas', 'Pengawalan/Patwal', 'Perintah pimpinan', 'Kejadian darurat', 'Lainnya'];
+      const jenisList = data.tugasMendadak || JENIS_TUGAS;
       body = info('🚨 Tinggalkan Lokasi – Tugas Mendadak', 'Datang ' + (l.datang.antre ? 'pukul ' + esc(l.datang.jam) + ' (belum terkirim)' : 'tercatat pukul ' + esc(l.datang.jam)) +
           '. Kehadiran hari ini tetap tercatat (H). Setelah dikirim, Lapor Selesai tidak diperlukan.') +
         '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((j) =>
@@ -1456,11 +1458,11 @@
           : lembur ? 'Jam pulang ' + jamTeks(c.pulang) + '. Ceklok Pulang sekarang tercatat <b>lembur ' + durTeks(lembur) + '</b> (tidak mengurangi nilai). Isi alasan lembur. Batas pukul ' + jamTeks(batas) + '.'
           : 'Silakan Ceklok Pulang' + (c.pulang != null ? ' (jam pulang ' + jamTeks(c.pulang) + ')' : '') + '. Bila lembur, Ceklok Pulang masih bisa sampai pukul ' + jamTeks(batas) + '.') +
         gpsStep + fotoStep + lemburStep + noteStep(false) + tombol('ckPulang', lembur ? '🏠 Ceklok Pulang (lembur)' : '🏠 Ceklok Pulang', cepat > 0 ? 'w' : 'h') +
-        '<div class="switch"><button class="btn tinggal" data-a="ckModeKeluar">🚨 Ada tugas mendadak? Tinggalkan kantor</button></div>';
+        '<div class="switch"><button class="btn tinggal" data-a="ckModeKeluar">🚨 Ada Tugas/Kepentingan? Tinggalkan Kantor</button></div>';
     } else if (f === 'keluar') {
-      const jenisList = c.tugasMendadak || ['Perintah pimpinan', 'Pengawalan/Patwal', 'Laka lantas', 'Kejadian darurat', 'Rapat/dinas luar', 'Lainnya'];
+      const jenisList = c.tugasMendadak || JENIS_TUGAS;
       body = info('🚨 Tinggalkan Kantor – Tugas Mendadak', 'Masuk tercatat pukul ' + esc(h.masuk.jam) +
-          '. Ceklok hari ini selesai dan dihitung lengkap (tidak dihitung pulang cepat). Ceklok Pulang tidak diperlukan lagi.') +
+          '. Ceklok hari ini selesai, dinilai menurut jenisnya setelah disetujui atasan. Ceklok Pulang tidak diperlukan lagi.') +
         '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((x) =>
           '<button data-a="ckJenis" data-v="' + esc(x) + '"' + (ck.jenis === x ? ' class="on"' : '') + '>' + esc(x) + '</button>').join('') +
         '</div></div>' +

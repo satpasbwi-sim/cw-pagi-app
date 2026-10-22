@@ -195,8 +195,8 @@ Catatan proyek Apps Script:
 ## Tinggalkan Lokasi (tugas mendadak)
 
 Setelah **Lapor Datang** (kapan saja, meski baru 1 menit), anggota bisa mengetuk **🚨 Ada tugas mendadak?
-Tinggalkan lokasi**, memilih **jenis tugas** (Laka lantas · Pengawalan/Patwal · Perintah pimpinan · Kejadian
-darurat · Lainnya) dan mengisi **keterangan singkat**. Tanpa foto, tanpa cek radius, dan Lapor Selesai tidak
+Tinggalkan lokasi**, memilih **jenis tugas / kepentingan** (Perintah pimpinan · Pelayanan · Rapat/Dinas ·
+Keluarga · Lainnya) dan mengisi **keterangan singkat**. Tanpa foto, tanpa cek radius, dan Lapor Selesai tidak
 diperlukan lagi.
 - ABSENSI tetap **H** (sudah hadir saat Lapor Datang), kecuali Lapor Datang bertanda ⚠️ (tetap N).
 - LOG LAPOR status **TINGGAL**, kolom CATATAN berisi "jenis: keterangan"; sheet CATATAN / LAPORAN HARIAN
@@ -230,6 +230,22 @@ Diragukan ⚠️ = 0 · Tidak hadir (S/I/LD/D/P) tidak dihitung. Ambang & poin d
 (baris "Durasi Baik (menit)", "Durasi Sedang (menit)", "Poin Baik/Sedang/Kurang"). Pasangan Datang–Selesai
 dicocokkan per **nama petugas**, jadi dua orang di baris pos yang sama dihitung terpisah.
 
+## Nilai Tinggalkan Lokasi / Kantor per jenis (`NILAI_TUGAS_MENDADAK`, Code.gs)
+
+Berlaku setelah atasan memilih SETUJU di sheet PERSETUJUAN (sebelum itu aturan "belum disetujui" tetap berlaku).
+
+| Jenis | Nilai | CW Pagi | Ceklok Satpas |
+| --- | --- | --- | --- |
+| Perintah pimpinan | 100 | Kelengkapan hari itu 100 | Ceklok hari itu 100 |
+| Pelayanan | 100 | 100 | 100 |
+| Rapat/Dinas | 100 | 100 | 100 |
+| Keluarga | 40 | 40 | 40 |
+| Lainnya | 30 | 30 | 30 |
+
+- Hanya nilai 100 yang bisa menjadi **hari sempurna**. Keluarga / Lainnya ditulis di CATATAN penilaian.
+- Jenis lama (Laka lantas, Pengawalan/Patwal, Kejadian darurat, Rapat/dinas luar) dari data / aplikasi lama tetap dinilai 100.
+- Mengubah angka cukup di `NILAI_TUGAS_MENDADAK`, lalu deploy versi baru.
+
 ## Ceklok Satpas (absen dinas kantor)
 
 Anggota Satpas (NRP ada di sheet **Data** spreadsheet Satpas) melihat tab **Ceklok Satpas** di aplikasi. Anggota
@@ -248,8 +264,8 @@ Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsu
   Deteksi lokasi palsu sama dengan Lapor CW Pagi.
 - **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas / Pelayanan dan isi keterangan. Setelah disetujui atasan: Sakit, Dinas,
   Pelayanan bernilai 90, Izin / Cuti 80 (sedikit di bawah hadir, `NILAI_IZIN` di Kode.gs).
-- **Tugas mendadak setelah Ceklok Masuk?** Ketuk **🚨 Tinggalkan kantor**, pilih jenis tugas (Perintah pimpinan,
-  Pengawalan/Patwal, Laka lantas, Kejadian darurat, Rapat/dinas luar, Lainnya) dan isi keterangan. Tanpa foto dan
+- **Tugas mendadak setelah Ceklok Masuk?** Ketuk **🚨 Ada Tugas/Kepentingan? Tinggalkan Kantor**, pilih jenis
+  (Perintah pimpinan, Pelayanan, Rapat/Dinas, Keluarga, Lainnya) dan isi keterangan. Tanpa foto dan
   radius, lokasi terakhir tetap dicatat. Ceklok hari itu **selesai** (status KELUAR di LOG CEKLOK), Ceklok Pulang
   tidak diperlukan, dan hari itu dihitung **lengkap**. Bila atasan mengisi **PALSU** di kolom VERIFIKASI baris
   KELUAR, hari itu dihitung **pulang cepat**. Lebih dari 3× sebulan ditulis di CATATAN penilaian.
@@ -277,10 +293,10 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   | Unsur | Bobot | Cara hitung |
   | --- | --- | --- |
   | Kehadiran CW | 25% | hari H ÷ hari wajib di ABSENSI; S (sakit), D (dinas), P (pelayanan) disetujui = 0,9 hari, I (izin) = 0,8 hari (`NILAI_IZIN`); LD (lepas dinas piket) dan `-` tidak dinilai |
-  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap / tugas mendadak 100 · pulang cepat ≤ 15 mnt 90 · 16–60 mnt 70 · > 60 mnt 50 (`NILAI_PULANG_CEPAT`) · tanpa Ceklok Pulang 50 · tidak ceklok 0 · sakit / dinas / pelayanan disetujui 90 · izin / cuti disetujui 80 |
+  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap 100 · tugas / kepentingan disetujui menurut jenisnya (tabel di bawah) · pulang cepat ≤ 15 mnt 90 · 16–60 mnt 70 · > 60 mnt 50 (`NILAI_PULANG_CEPAT`) · tanpa Ceklok Pulang 50 · tidak ceklok 0 · sakit / dinas / pelayanan disetujui 90 · izin / cuti disetujui 80 |
   | Kejujuran lokasi & foto | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`), lalu dipotong lagi per CEK FOTO atasan (lihat **Bukti foto** di bawah) |
   | Ketepatan waktu | 10% | Lapor Datang ≤ 06.15 dan Ceklok Masuk ≤ 08.00 = 100, lalu −2 per menit (`BATAS_AMAN_CW`, `POTONG_PER_MENIT`) |
-  | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
+  | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas / kepentingan, bernilai menurut jenisnya) ÷ hari Lapor Datang |
   | Durasi tugas (CW + Satpas) | 10% | rata-rata dua nilai: CW = poin harian ÷ poin Baik; Satpas = jam efektif Masuk–Pulang yang berada di dalam jam dinas ÷ jam dinas (mis. 08.00–11.30 dari 08.00–13.00 = 70). Tinggalkan Kantor dan hari tanpa Ceklok Pulang tidak dihitung di sini. Hanya punya satu data = nilai itu saja |
 
 - **Verifikasi ⚠️ semi-otomatis** (file **Verifikasi.gs**, jalan otomatis di pemicu harian ±07.30, juga bisa
@@ -355,7 +371,7 @@ anggota Satpas. Ditulis ulang otomatis di hitungan pagi (±07.30) dan sore (±15
 | Kehadiran | 35% | hari H ÷ hari wajib di ABSENSI; S, D, P disetujui = 0,9 hari, I = 0,8 hari; LD dan `-` tidak dinilai |
 | Kejujuran lokasi & foto | 25% | 100 − 25 per ⚠️ PALSU, dikurangi CEK FOTO atasan |
 | Ketepatan waktu | 15% | Lapor Datang ≤ 15 menit setelah buka = 100, lalu −2 per menit |
-| Kelengkapan lapor | 15% | hari Datang + Selesai (atau Tinggalkan Lokasi) ÷ hari lapor |
+| Kelengkapan lapor | 15% | hari Datang + Selesai (atau Tinggalkan Lokasi, bernilai menurut jenisnya) ÷ hari lapor |
 | Durasi tugas | 10% | rata-rata poin harian ÷ poin Baik |
 
 - Predikat dan pengunci ⚠️ PALSU sama dengan PENILAIAN INTEGRITAS; peringkat yang terkunci di bawah yang bersih.
