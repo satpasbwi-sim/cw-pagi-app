@@ -828,7 +828,7 @@
     const jadwalTeks = 'Lapor Datang ' + jamTeks(j.buka) + '–' + jamTeks(j.batasDatang) + ' (lewat itu tercatat terlambat, paling lambat ' + jamTeks(j.tutup) + ')' +
       ', Lapor Selesai ' + jamTeks(j.mulaiSelesai) + '–' + jamTeks(j.tutup) + ', dalam radius ' + radius() + ' m dari titik.';
     const tidakLink = '<div class="switch"><button class="link muted-link" data-a="modeTidak">Tidak bisa hadir hari ini?</button></div>';
-    const tinggalLink = '<div class="switch"><button class="btn tinggal" data-a="modeTinggal">🚨 Ada tugas mendadak? Tinggalkan lokasi</button></div>';
+    const tinggalLink = '<div class="switch"><button class="btn tinggal" data-a="modeTinggal">🚨 Ada Tugas/Kepentingan? Tinggalkan Kantor</button></div>';
     const gpsStep = '<div class="step"><h3>Lokasi <small>otomatis</small></h3><div id="gpsBox">' + gpsHtml(r) + '</div>' +
       '<div class="mini"><button data-a="gps">⟳ Ambil ulang lokasi</button></div></div>';
     const noteStep = '<div class="step"><h3>Catatan <small>opsional</small></h3>' +

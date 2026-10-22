@@ -194,8 +194,8 @@ Catatan proyek Apps Script:
 
 ## Tinggalkan Lokasi (tugas mendadak)
 
-Setelah **Lapor Datang** (kapan saja, meski baru 1 menit), anggota bisa mengetuk **🚨 Ada tugas mendadak?
-Tinggalkan lokasi**, memilih **jenis tugas / kepentingan** (Perintah pimpinan · Pelayanan · Rapat/Dinas ·
+Setelah **Lapor Datang** (kapan saja, meski baru 1 menit), anggota bisa mengetuk **🚨 Ada Tugas/Kepentingan?
+Tinggalkan Kantor**, memilih **jenis tugas / kepentingan** (Perintah pimpinan · Pelayanan · Rapat/Dinas ·
 Keluarga · Lainnya) dan mengisi **keterangan singkat**. Tanpa foto, tanpa cek radius, dan Lapor Selesai tidak
 diperlukan lagi.
 - ABSENSI tetap **H** (sudah hadir saat Lapor Datang), kecuali Lapor Datang bertanda ⚠️ (tetap N).
