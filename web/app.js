@@ -242,6 +242,10 @@
     rekapMuat = false;
     if (mode === 'rekapInt') renderRekapInt();
   }
+  // Rekap Integritas tidak menampilkan angka aturan nilai: "(nilai 90)", "(−10)", "(−25 per kali)" dan sejenisnya
+  function tanpaNilai(t) {
+    return String(t == null ? '' : t).replace(/\s*\(\s*(nilai\s+\d+(?:[.,]\d+)?|[−-]\s*\d+(?:[.,]\d+)?(?:\s+per\s+\w+)?)\s*\)/gi, '');
+  }
   function rekapListHtml(baris) {
     const cari = rekapCari.trim().toLowerCase();
     const list = baris.filter((r) => !cari || r.nama.toLowerCase().includes(cari));
@@ -249,11 +253,11 @@
     return list.map((r) => {
       const w = warnaNilai(r.skor), k = rekapGrup + '|' + r.nrp + '|' + r.nama, d = r.detail || {};
       const chips = rekapJenis === 'harian' ? [['CW', d.cw], ['Masuk', d.masuk], ['Pulang', d.pulang]].filter((x) => x[1])
-        .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(x[1][0]) + '</span>').join('') : '';
+        .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(tanpaNilai(x[1][0])) + '</span>').join('') : '';
       const buka = rekapBuka[k] ? '<div class="rk-isi">' + urutHtml(d.urut, rekapJenis === 'harian') + r.unsur.map((u) => u.v == null ? '' :
         '<div class="unsur-bar"><span>' + esc(u.n) + '</span><b>' + u.v + '</b><i><em class="' + warnaNilai(u.v) + '" style="width:' +
         Math.max(2, Math.min(100, u.v)) + '%"></em></i></div>').join('') +
-        (r.catatan.length ? '<ul class="cat-nilai">' + r.catatan.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>'
+        (r.catatan.length ? '<ul class="cat-nilai">' + r.catatan.map((c) => '<li>' + esc(tanpaNilai(c)) + '</li>').join('') + '</ul>'
           : '<p class="sub ok-nilai">✓ Tidak ada catatan</p>') + '</div>' : '';
       return '<div class="rk-row' + (rekapBuka[k] ? ' buka' : '') + '" data-k="' + esc(k) + '"><div class="rk-top">' +
         '<span class="rk-no">' + (r.peringkat || '–') + '</span><div class="rk-nama"><b>' + (d.urut && d.urut.teladan ? '★ ' : '') + esc(r.nama) +

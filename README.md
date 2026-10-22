@@ -394,7 +394,8 @@ dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), 
 **Anggota Satpas** (Personel CW Pagi tidak ditampilkan). Isinya: rata-rata skor, sebaran predikat, kotak cari nama, daftar urut peringkat
 (skor, predikat, pokja/lokasi, dan untuk harian jam CW / Ceklok Masuk / Pulang berwarna). Ketuk nama = rincian unsur dan
 catatan. Anggota Satpas dipisah **Polri · PHL · Semua** (sub-tab), masing-masing dengan rata-rata, sebaran, dan peringkat
-sendiri; di Semua, PHL diberi lencana. Server: `GET ?action=rekap` hanya untuk pengawas dan admin (tiap baris membawa tanda `phl`). Menambah pengawas / jadwal khusus cukup mengubah
+sendiri; di Semua, PHL diberi lencana. Angka aturan nilai seperti "(nilai 90)" atau "(−10 per kali)" tidak ditampilkan di
+rekap ini (Harian, Mingguan, Bulanan); di sheet tetap tertulis. Server: `GET ?action=rekap` hanya untuk pengawas dan admin (tiap baris membawa tanda `phl`). Menambah pengawas / jadwal khusus cukup mengubah
 daftar di AturanKhusus.gs, simpan, lalu deploy versi baru.
 
 **Rekap harian berkala** (`rekapHarianBerkala`, IntegritasHarian.gs): hari ini dihitung ulang otomatis ±09.00, ±11.00,
