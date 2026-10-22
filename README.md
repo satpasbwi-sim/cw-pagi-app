@@ -395,7 +395,8 @@ dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), 
 (skor, predikat, pokja/lokasi, dan untuk harian jam CW / Ceklok Masuk / Pulang berwarna). Ketuk nama = rincian unsur dan
 catatan. Anggota Satpas dipisah **Polri · PHL · Semua** (sub-tab), masing-masing dengan rata-rata, sebaran, dan peringkat
 sendiri; di Semua, PHL diberi lencana. Angka aturan nilai seperti "(nilai 90)" atau "(−10 per kali)" tidak ditampilkan di
-rekap ini (Harian, Mingguan, Bulanan); di sheet tetap tertulis. Server: `GET ?action=rekap` hanya untuk pengawas dan admin (tiap baris membawa tanda `phl`). Menambah pengawas / jadwal khusus cukup mengubah
+rekap ini (Harian, Mingguan, Bulanan); di sheet tetap tertulis. Anggota dengan ⚠️ PALSU diberi tanda merah **"⚠️ PALSU –
+diurutkan di bawah"** (dan catatan yang sama di sheet), agar jelas kenapa peringkatnya di bawah anggota bernilai lebih rendah. Server: `GET ?action=rekap` hanya untuk pengawas dan admin (tiap baris membawa tanda `phl`). Menambah pengawas / jadwal khusus cukup mengubah
 daftar di AturanKhusus.gs, simpan, lalu deploy versi baru.
 
 **Rekap harian berkala** (`rekapHarianBerkala`, IntegritasHarian.gs): hari ini dihitung ulang otomatis ±09.00, ±11.00,
@@ -527,6 +528,10 @@ Email dikirim ke pemilik spreadsheet CW Pagi (sekarang **satpasbwi@gmail.com**).
   - deploy GitHub Actions terakhir tidak gagal;
   - pemicu `hitungDurasiPoin` (±07.30) dan `hitungIntegritasSore` (±15.15) masih terpasang dan berhasil dalam 26 jam terakhir.
 - Pesan yang sama dikirim paling sering sekali per **3 jam** (`NOTIF_JEDA_MENIT`), jadi kotak masuk tidak kebanjiran.
+- **Email ⚠️ kejadian** (`kabarPeringatan_`): setiap ada ⚠️ baru langsung satu email untuk dikroscek, yaitu Lapor CW / Ceklok
+  dengan lokasi diragukan (nama, jam, titik, alasan, jarak, akurasi, tautan peta & foto, tautan sheet untuk mengisi VERIFIKASI)
+  dan di luar radius > 5 menit (tautan sheet LUAR RADIUS). Maks `PERINGATAN_MAKS_HARI` = 40 email per hari (kuota Gmail);
+  matikan dengan `EMAIL_PERINGATAN = false`. Uji: jalankan `ujiEmailPeringatan`.
 - Pasang sekali: jalankan `pasangPemicuKesehatan` dari editor. Uji: jalankan `ujiNotifikasi`.
 - Saat pertama dijalankan Google meminta izin. Centang **Pilih semua**, termasuk **"Mengirim email atas nama Anda"**.
   Bila izin ini tidak dicentang, email tidak terkirim (log: *Anda tidak memiliki izin untuk memanggil MailApp.sendEmail*).

@@ -300,6 +300,7 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .rk-nama { flex: 1; min-width: 0; }
 .rk-nama b { display: block; font-size: .9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rk-nama small { color: var(--muted); font-size: .75rem; }
+.rk-nama small.rk-kunci { display: block; color: var(--th); font-weight: 600; }
 .rk-skor { flex: 0 0 auto; text-align: right; font-weight: 800; font-size: 1.15rem; line-height: 1.1; }
 .rk-skor small { display: block; font-size: .7rem; font-weight: 700; }
 .rk-skor.sb { color: #1f9d55; } .rk-skor.b { color: #5aa832; } .rk-skor.c { color: #d49a12; } .rk-skor.k { color: #dc3545; }

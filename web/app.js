@@ -262,7 +262,8 @@
       return '<div class="rk-row' + (rekapBuka[k] ? ' buka' : '') + '" data-k="' + esc(k) + '"><div class="rk-top">' +
         '<span class="rk-no">' + (r.peringkat || '–') + '</span><div class="rk-nama"><b>' + (d.urut && d.urut.teladan ? '★ ' : '') + esc(r.nama) +
         (rekapSub === 'semua' && r.phl ? ' <span class="badge">PHL</span>' : '') + '</b>' +
-        (d.ket ? '<small>' + esc(d.ket) + '</small>' : '') + '</div><span class="rk-skor ' + w + '">' + String(r.skor).replace('.', ',') +
+        (d.ket ? '<small>' + esc(d.ket) + '</small>' : '') +
+        (d.urut && d.urut.kunci ? '<small class="rk-kunci">⚠️ PALSU – diurutkan di bawah</small>' : '') + '</div><span class="rk-skor ' + w + '">' + String(r.skor).replace('.', ',') +
         '<small>' + esc(r.predikat) + '</small></span></div>' + (chips ? '<div class="chips-hari">' + chips + '</div>' : '') + buka + '</div>';
     }).join('');
   }
