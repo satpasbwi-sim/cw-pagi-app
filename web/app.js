@@ -753,7 +753,12 @@
   }
 
   // masa uji coba (data.bebasWaktu): GPS & radius tidak wajib, lokasi tetap dicatat bila ada
-  function okLokasi(r) { return data.bebasWaktu || (draft.lat != null && (r.lat == null || jarakM(draft, r) <= radius())); }
+  // titik tanpa koordinat: radius tidak bisa dicek, jadi belum bisa lapor (server juga menolak)
+  function okLokasi(r) { return data.bebasWaktu || (draft.lat != null && r.lat != null && jarakM(draft, r) <= radius()); }
+  function alasanLokasi(r) {
+    return draft.lat == null ? 'Lokasi GPS belum didapat'
+      : r.lat == null ? 'Koordinat titik ini belum diisi admin. Hubungi admin.' : 'Anda di luar radius ' + radius() + ' m dari titik';
+  }
 
   function gpsHtml(r) {
     if (draft.lat == null) {
@@ -763,8 +768,8 @@
     const peta = '<a href="https://maps.google.com/?q=' + draft.lat.toFixed(6) + ',' + draft.lng.toFixed(6) + '" target="_blank" rel="noopener">lihat peta</a>';
     const akurasi = 'akurasi ±' + Math.round(draft.acc) + ' m · ' + peta;
     if (r.lat == null) {
-      return '<div class="gps ok"><b>✓ Lokasi didapat</b>' + akurasi +
-        '<br><small>Koordinat titik ini belum diisi admin, jarak belum dicek.</small></div>';
+      return '<div class="gps out"><b>✕ Koordinat titik belum diisi admin' + (data.bebasWaktu ? ' (uji coba: tetap bisa lapor)' : ' — belum bisa lapor') + '</b>' +
+        'Jarak ke titik tidak bisa dicek. Hubungi admin agar koordinat titik ini diisi. · ' + akurasi + '</div>';
     }
     const d = jarakM(draft, r);
     return d <= radius()
@@ -1112,7 +1117,7 @@
     if (!r) return;
     const ok = okLokasi(r);
     if (!ok && terakhirOk !== false && ['datang', 'tunggu', 'selesai'].includes(fase(r))) {
-      toast(fase(r) === 'tunggu'
+      toast(r.lat == null ? alasanLokasi(r) : fase(r) === 'tunggu'
         ? 'Anda di luar radius ' + radius() + ' m! Kembali ke titik sebelum Lapor Selesai.'
         : 'Anda di luar radius ' + radius() + ' m dari titik. Laporan belum bisa dikirim.');
     }
@@ -1243,7 +1248,7 @@
       const kirimGps = pakaiLokasi || tahap === 'tinggal';
       if (pakaiLokasi) {
         await lokasiBaru();
-        if (!okLokasi(r)) throw new Error(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + radius() + ' m dari titik');
+        if (!okLokasi(r)) throw new Error(alasanLokasi(r));
       }
       const body = {
         pin, kode, action: 'lapor', tahap, no: r.no, st,
@@ -1602,7 +1607,7 @@
     }
     if (a === 'kirimDatang' || a === 'kirimSelesai') {
       const r = myRow();
-      if (!okLokasi(r)) return toast(draft.lat == null ? 'Lokasi GPS belum didapat' : 'Anda di luar radius ' + radius() + ' m dari titik');
+      if (!okLokasi(r)) return toast(alasanLokasi(r));
       if (draft.foto && serverNowMs() - draft.fotoMs > FOTO_MAKS_MENIT * 60000) {
         draft.foto = '';
         updateFoto();

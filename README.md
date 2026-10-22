@@ -73,7 +73,10 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
 - Status **H** baru masuk ke sheet ABSENSI setelah **Lapor Selesai** yang sah.
   Yang hanya Lapor Datang tidak dihitung (kolom tetap kosong, tercatat di LOG LAPOR).
 - Di luar radius (bawaan **100 m**) tombol lapor terkunci dan muncul pemberitahuan merah.
-- Titik yang **belum punya koordinat** tetap bisa lapor, ditandai "jarak belum dicek".
+- Titik yang **belum punya koordinat** di sheet KOORDINAT **tidak bisa** Lapor Datang / Selesai (radius tidak bisa dicek):
+  aplikasi menampilkan "Koordinat titik belum diisi admin" dan server menolak. Tinggalkan Lokasi dan Tidak Hadir tetap bisa.
+  Lokasi plotting baru otomatis masuk KOORDINAT dengan kolom B kosong, jadi isi koordinatnya sebelum dipakai;
+  🩺 Cek & Perbaiki menampilkan titik yang belum berkoordinat. Selama `UJI_COBA = true` belum ditolak.
 - **Tidak hadir** (Sakit/Izin/…) bisa dilaporkan 06.00–07.15 tanpa cek lokasi.
 - Foto **wajib** untuk Lapor Datang dan Lapor Selesai, diambil **langsung dari kamera aplikasi**
   (tidak bisa dari galeri). Foto diberi watermark **nama petugas** dan **tanggal & jam server**
@@ -93,7 +96,7 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
 | --- | --- |
 | Jam lapor / radius | Sheet **JADWAL**, kolom B (mis. `06:45`, radius `150`). Berlaku langsung. |
 | Anggota & NRP | Sheet **ANGGOTA**: kolom A = nama **persis** seperti kolom B (PETUGAS) di ABSENSI, kolom B = NRP. |
-| Koordinat titik | Sheet **KOORDINAT**: kolom A = nama lokasi (sama dengan ABSENSI), kolom B = `lat, lng` dari Google Maps (tekan lama titik → salin angka). |
+| Koordinat titik | Sheet **KOORDINAT**: kolom A = nama lokasi (sama dengan ABSENSI), kolom B = `lat, lng` dari Google Maps (tekan lama titik → salin angka). **Wajib diisi**: titik tanpa koordinat tidak bisa lapor. |
 | Plotting petugas | Sheet **ABSENSI** seperti biasa. Lokasi baru otomatis ditambahkan ke KOORDINAT. |
 | Personel pos jaga (BM) | Baris ABSENSI "Pos 12.04 Karangente / Pos 12.02 Ketapang" tidak memuat nama. Saat login, server membaca spreadsheet **Jadwal Piket BM** (sheet *Piket BM*) dan mengarahkan ke baris sesuai shift hari itu: KETERANGAN TUGAS "…Piket Malam" = M, "…Lepas Dinas" = LD, "Piket Siang" = S. Nama di ANGGOTA kolom A harus **sama persis** dengan nama di jadwal (mis. `AIPTU SUGIHARTO`). LOG LAPOR dan CATATAN mencatat nama asli pelapor. |
 | Personel Patwal R4 | Baris ABSENSI "Patwal R4" dengan KETERANGAN TUGAS "Cadangan 1 Wal R4" / "Cadangan 2 Wal R4" diisi unit CADANGAN 1 / CADANGAN 2 hari itu menurut spreadsheet **Piket Patwal** (sheet *Patwal*). Personel dicocokkan lewat **NRP** di tabel PERSONIL sheet Patwal (unit 503/504/506/507), jadi NRP di ANGGOTA harus sama dengan NRP di sheet Patwal. "Cadangan 3/4 Wal R4" sementara belum dipetakan. |
@@ -529,7 +532,7 @@ Email dikirim ke pemilik spreadsheet CW Pagi (sekarang **satpasbwi@gmail.com**).
 ## 10. Ganti bulan
 
 **🩺 Cek & Perbaiki** (menu 🚀 CW PAGI APP; file **CekPerbaiki.gs**) memeriksa: bulan di PENGATURAN (mengingatkan
-3 hari sebelum akhir bulan), struktur ABSENSI (baris 7–86 utuh), jadwal Piket BM, jadwal Patwal & Piket Laka hari ini,
+3 hari sebelum akhir bulan), struktur ABSENSI (baris 7–86 utuh), titik plotting tanpa koordinat, jadwal Piket BM, jadwal Patwal & Piket Laka hari ini,
 personel ANGGOTA yang tidak cocok dengan plotting/jadwal, **sisa ruang Google Drive** (waspada ≥ 80%, hampir penuh
 ≥ 95% juga dikirim lewat email cek kesehatan), ukuran LOG LAPOR, pemicu otomatis, dan mode uji coba.
 Masalah yang aman diperbaiki otomatis punya tombol (selalu dengan konfirmasi):
