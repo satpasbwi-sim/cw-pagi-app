@@ -530,7 +530,7 @@ Email dikirim ke pemilik spreadsheet CW Pagi (sekarang **satpasbwi@gmail.com**).
 `EMAIL_OPERATOR` (beberapa alamat dipisah koma).
 - **Error di pemicu harian**: verifikasi otomatis, PENILAIAN INTEGRITAS, dan INTEGRITAS MINGGUAN yang gagal
   langsung dikirim lewat email beserta isi errornya (`laporGagal_`).
-- **Cek kesehatan tiap jam** (pemicu `cekKesehatan`):
+- **Cek kesehatan tiap 4 jam** (pemicu `cekKesehatan`; `everyHours(4)` di `pasangPemicuKesehatan`, Apps Script hanya menerima 1, 2, 4, 6, 8, 12):
   - aplikasi GitHub Pages bisa dibuka;
   - Web App `/exec` menjawab (aplikasi bisa login / lapor);
   - deploy GitHub Actions terakhir tidak gagal;
