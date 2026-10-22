@@ -294,7 +294,8 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
 - **Bukti foto (wajah, seragam, foto asli)**:
   - Sheet **JADWAL SERAGAM** (spreadsheet CW Pagi): isi seragam per hari (Senin … Minggu, mis. PDH / PDL / Gampol).
     Tanggal khusus (dd/MM/yyyy) di baris bawah mengalahkan hari. Seragam hari itu tampil di layar kamera.
-  - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas (bisa pakai 🔄 kamera depan),
+  - Kamera **hanya kamera depan** (kamera belakang tidak bisa dipilih; HP tanpa kamera depan tidak bisa memotret).
+  - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas,
     seragam hari ini, dan ambil langsung di lokasi (bukan memotret layar HP / foto lain). Foto Lapor Selesai
     (arus lalu lintas) hanya diingatkan soal lokasi.
   - Kolom **N "CEK FOTO (atasan)"** di LOG LAPOR dan LOG CEKLOK diisi atasan dengan buka tautan FOTO:

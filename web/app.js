@@ -928,7 +928,7 @@
     const wajah = true;   // semua foto (termasuk Lapor Selesai) wajib menampilkan wajah pelapor
     const baris = [];
     if (wajah) {
-      baris.push('😀 Wajah terlihat jelas' + (arahKamera === 'user' ? '' : ' — ketuk 🔄 untuk kamera depan'));
+      baris.push('😀 Wajah terlihat jelas');
       baris.push(data.seragam ? '👮 Seragam hari ini: <b>' + esc(data.seragam) + '</b>' : '👮 Seragam & atribut lengkap sesuai jadwal');
     }
     baris.push('📍 Ambil langsung di lokasi, jangan memotret layar HP / foto lain');
@@ -968,13 +968,23 @@
     return [mode === 'ceklok' ? nama + ' · Ceklok Satpas' : nama, tgl + ' · ' + jam + ' ' + zonaTeks(tz)];
   }
 
-  // kamera belakang ('environment') atau depan ('user'); pilihan terakhir diingat di HP
-  let arahKamera = 'environment';
-  try { if (localStorage.getItem('cw-kamera') === 'user') arahKamera = 'user'; } catch (e) { /* abaikan */ }
-  function mintaKamera(arah) {
-    return navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: arah }, width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false
-    });
+  // hanya kamera depan ('user'): foto wajib menampilkan wajah pelapor, kamera belakang tidak bisa dipilih.
+  // Coba 'exact' dulu; webcam laptop yang tidak melaporkan arah ditolak 'exact', jadi ulangi dengan 'ideal'.
+  async function mintaKamera() {
+    const ukuran = { width: { ideal: 1280 }, height: { ideal: 960 } };
+    try {
+      return await navigator.mediaDevices.getUserMedia({ video: Object.assign({ facingMode: { exact: 'user' } }, ukuran), audio: false });
+    } catch (err) {
+      if (err.name !== 'OverconstrainedError' && err.name !== 'NotFoundError') throw err;
+      const s = await navigator.mediaDevices.getUserMedia({ video: Object.assign({ facingMode: { ideal: 'user' } }, ukuran), audio: false });
+      // HP yang ternyata memberi kamera belakang: tolak
+      const t = s.getVideoTracks()[0], arah = t && t.getSettings && t.getSettings().facingMode;
+      if (arah === 'environment') {
+        s.getTracks().forEach((x) => x.stop());
+        const e = new Error('Kamera depan tidak ditemukan'); e.name = 'KameraDepanTidakAda'; throw e;
+      }
+      return s;
+    }
   }
 
   async function bukaKamera() {
@@ -985,10 +995,11 @@
     }
     let stream;
     try {
-      stream = await mintaKamera(arahKamera);
+      stream = await mintaKamera();
     } catch (err) {
       draft.kameraGagal = err.name === 'NotAllowedError'
         ? 'Izin kamera ditolak — izinkan akses kamera untuk situs ini, lalu coba lagi'
+        : err.name === 'KameraDepanTidakAda' ? 'Kamera depan tidak ditemukan — foto harus memakai kamera depan'
         : 'Kamera tidak bisa dibuka (' + err.name + ')';
       return updateFoto();
     }
@@ -998,7 +1009,6 @@
     el.innerHTML = '<div class="kamera-tip">' + esc(petunjukFoto()) + '<div class="cek-isi"></div></div>' +
       '<video playsinline autoplay muted></video><div class="siapkan">Menyiapkan kamera…</div><div class="wm"></div>' +
       '<div class="kamera-bar"><button class="btn" data-k="batal">Batal</button>' +
-      '<button class="btn putar" data-k="putar" aria-label="Ganti kamera depan / belakang" hidden>🔄</button>' +
       '<button class="btn h" data-k="jepret">📷 Ambil Foto</button></div>';
     document.body.appendChild(el);
     const video = el.querySelector('video');
@@ -1016,36 +1026,12 @@
     const pasang = () => {
       el.classList.remove('siap');
       video.srcObject = stream;
-      el.classList.toggle('depan', arahKamera === 'user');
+      el.classList.add('depan');
       el.querySelector('.cek-isi').innerHTML = cekFotoHtml();
     };
     // aplikasi terpasang (layar penuh): kunci tegak selama kamera terbuka agar layar tidak ikut berputar saat HP dimiringkan
     try { screen.orientation.lock('portrait').catch(() => {}); } catch (e) { /* tidak didukung */ }
     pasang();
-    // tombol ganti kamera hanya bila HP punya lebih dari satu kamera
-    navigator.mediaDevices.enumerateDevices().then((d) => {
-      if (d.filter((x) => x.kind === 'videoinput').length > 1) el.querySelector('[data-k="putar"]').hidden = false;
-    }).catch(() => {});
-    let ganti = false;
-    const putarKamera = async () => {
-      if (ganti) return;
-      ganti = true;
-      const arah = arahKamera === 'user' ? 'environment' : 'user';
-      // HP umumnya hanya boleh membuka satu kamera sekaligus: matikan yang lama dulu
-      stream.getTracks().forEach((t) => t.stop());
-      try {
-        stream = await mintaKamera(arah);
-        arahKamera = arah;
-        try { localStorage.setItem('cw-kamera', arah); } catch (e) { /* abaikan */ }
-      } catch (err) {
-        toast('Kamera ' + (arah === 'user' ? 'depan' : 'belakang') + ' tidak bisa dibuka');
-        try { stream = await mintaKamera(arahKamera); } catch (e) { ganti = false; return tutup(); }
-      }
-      ganti = false;
-      // kamera ditutup (Batal) selagi berganti: matikan kamera yang baru terbuka
-      if (!el.isConnected) return stream.getTracks().forEach((t) => t.stop());
-      pasang();
-    };
     const tulis = () => { el.querySelector('.wm').innerHTML = watermark(serverNowMs()).map(esc).join('<br>'); };
     tulis();
     const timer = setInterval(tulis, 500);
@@ -1058,7 +1044,6 @@
       const b = e.target.closest('[data-k]');
       if (!b) return;
       if (b.dataset.k === 'batal') return tutup();
-      if (b.dataset.k === 'putar') return putarKamera();
       if (!video.videoWidth || !el.classList.contains('siap')) return toast('Kamera belum siap, tunggu sebentar');
       const ms = serverNowMs();
       draft.foto = jepret(video, watermark(ms));
