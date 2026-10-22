@@ -269,7 +269,8 @@ Sheet **PENILAIAN INTEGRITAS** di spreadsheet **Data Satpas** (`SATPAS_SS_ID` di
 otomatis setiap kali `hitungDurasiPoin` berjalan (pemicu ±07.30) dan **sore ±15.15** setelah ceklok ditutup
 (pemicu `hitungIntegritasSore`, pasang sekali dengan fungsi `pasangPemicuIntegritasSore`). Bisa juga dijalankan
 kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**.
-- Anggota diambil dari sheet **Data** (PETUGAS, PANGKAT, NRP, POKJA). Pencocokan dengan CW Pagi lewat **NRP**
+- Anggota diambil dari sheet **Data** (PETUGAS, JABATAN, PANGKAT, NRP, POKJA). Kolom dicari lewat **judul** (`barisDataSatpas_`),
+  jadi boleh disisipkan / digeser; PHL = JABATAN atau PANGKAT `PHL`. Pencocokan dengan CW Pagi lewat **NRP**
   (sheet ANGGOTA), dan dengan LOG CEKLOK juga lewat NRP.
 - **Skor 0–100** (`BOBOT_INTEGRITAS`):
 
@@ -392,7 +393,8 @@ dalam lingkaran berwarna, predikat, **peringkat** (mis. "Peringkat 3 dari 24"), 
 **Tab Rekap Integritas (pengawas):** pilihan Harian (selalu) · Mingguan · Bulanan (setelah final), hanya kelompok
 **Anggota Satpas** (Personel CW Pagi tidak ditampilkan). Isinya: rata-rata skor, sebaran predikat, kotak cari nama, daftar urut peringkat
 (skor, predikat, pokja/lokasi, dan untuk harian jam CW / Ceklok Masuk / Pulang berwarna). Ketuk nama = rincian unsur dan
-catatan. Server: `GET ?action=rekap` hanya untuk pengawas dan admin. Menambah pengawas / jadwal khusus cukup mengubah
+catatan. Anggota Satpas dipisah **Polri · PHL · Semua** (sub-tab), masing-masing dengan rata-rata, sebaran, dan peringkat
+sendiri; di Semua, PHL diberi lencana. Server: `GET ?action=rekap` hanya untuk pengawas dan admin (tiap baris membawa tanda `phl`). Menambah pengawas / jadwal khusus cukup mengubah
 daftar di AturanKhusus.gs, simpan, lalu deploy versi baru.
 
 **Rekap harian berkala** (`rekapHarianBerkala`, IntegritasHarian.gs): hari ini dihitung ulang otomatis ±09.00, ±11.00,
