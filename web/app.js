@@ -97,7 +97,10 @@
     else segarkanLapor();
   }
   // sedang mengetik catatan / keterangan: jangan gambar ulang form (keyboard HP akan tertutup)
-  function sedangMengetik() { return !!document.activeElement && ['laporNote', 'ckNote', 'ckLembur'].includes(document.activeElement.id); }
+  function sedangMengetik() {
+    const el = document.activeElement;
+    return !!el && (['laporNote', 'ckNote', 'ckLembur', 'rekapCari'].includes(el.id) || (el.dataset && el.dataset.act === 'note'));
+  }
   // gambar ulang Lapor CW, kecuali sedang mengetik catatan (agar keyboard tidak tertutup)
   function segarkanLapor() {
     if (!data || sending || sedangMengetik()) return;
@@ -262,7 +265,7 @@
       rekapMuat = false;
     }
     // tidak menggambar ulang saat pengawas sedang mengetik di kotak cari nama
-    if (mode === 'rekapInt' && !(document.activeElement && document.activeElement.id === 'rekapCari')) renderRekapInt();
+    if (mode === 'rekapInt' && !sedangMengetik()) renderRekapInt();
   }
   // Rekap Integritas tidak menampilkan angka aturan nilai: "(nilai 90)", "(−10)", "(−25 per kali)" dan sejenisnya
   function tanpaNilai(t) {
@@ -1197,17 +1200,24 @@
   const LUAR_MS = 5 * 60000;
   const LUAR_KIRIM = 'cw_luar';
   let luar = null;   // {jenis, mulai, jarak, tercatat}
+  // dihitung di tab mana pun (Lapor CW, Ceklok Satpas, Nilai Saya): pindah tab tidak menghentikan pantauan
   function statusLuar() {
     if (!data || draft.lat == null || !draft.posAt || Date.now() - draft.posAt > 120000) return null;
-    if (mode === 'lapor') {
-      const r = myRow();
-      if (!r || r.lat == null || !['tunggu', 'selesai', 'tinggal'].includes(fase(r))) return null;
+    const r = myRow();
+    if (r && r.lat != null && ['tunggu', 'selesai', 'tinggal'].includes(fase(r))) {
       return { jenis: 'cw', d: jarakM(draft, r), maks: radius() };
     }
-    if (mode === 'ceklok' && data.ceklok && !data.ceklok.bebasLokasi && ['pulang', 'keluar'].includes(ckFase())) {
+    if (data.ceklok && !data.ceklok.bebasLokasi && ['pulang', 'keluar'].includes(ckFase())) {
       return { jenis: 'ceklok', d: jarakM(draft, data.ceklok), maks: data.ceklok.radius };
     }
     return null;
+  }
+  // masih wajib berada di titik (setelah Lapor Datang) / kantor (setelah Ceklok Masuk): GPS harus tetap dipantau
+  function wajibDipantau() {
+    if (!data) return false;
+    const r = myRow();
+    if (r && ['tunggu', 'selesai', 'tinggal'].includes(fase(r))) return true;
+    return !!(data.ceklok && !data.ceklok.bebasLokasi && ['pulang', 'keluar'].includes(ckFase()));
   }
   function pantauLuar() {
     const s = statusLuar();
@@ -1283,7 +1293,7 @@
     if (document.hidden) { hentikanGps(); luar = null; }
     else {
       kirimLuar();
-      if (data && (mode === 'lapor' && myRow() || mode === 'ceklok' && data.ceklok)) ambilLokasi();
+      if (data && (mode === 'lapor' && myRow() || mode === 'ceklok' && data.ceklok || wajibDipantau())) ambilLokasi();
       kirimAntre();
     }
   });
@@ -1681,8 +1691,8 @@
     if (adaAntre()) kirimAntre();
     if (mode === 'ceklok' && data.ceklok) {
       const f = ckFase();
-      const ketik = document.activeElement && ['ckNote', 'ckLembur'].includes(document.activeElement.id);
-      if (f !== lastCkFase || (['masuk', 'pulang'].includes(f) && !ketik)) renderCeklok();
+      // sedang mengetik: tunggu sampai selesai (keyboard HP tidak ditutup), fase baru tampil di detak berikutnya
+      if (!sedangMengetik() && (f !== lastCkFase || ['masuk', 'pulang'].includes(f))) renderCeklok();
       if (++detak % 3 === 0 && ['masuk', 'pulang'].includes(f)) ambilLokasi();
       return;
     }
@@ -1690,8 +1700,7 @@
     const r = myRow();
     if (!r) return;
     const f = fase(r);
-    const mengetik = document.activeElement && document.activeElement.id === 'laporNote';
-    if (f !== lastFase || (f === 'tunggu' && !mengetik)) renderLapor();
+    if (!sedangMengetik() && (f !== lastFase || f === 'tunggu')) renderLapor();
     if (++detak % 3 === 0 && ['datang', 'tunggu', 'selesai'].includes(f)) ambilLokasi();
   }, 20000);
   $('laporView').addEventListener('input', (e) => { if (e.target.id === 'laporNote') draft.note = e.target.value; });
@@ -1711,6 +1720,7 @@
     if (b.dataset.m === 'nilai' && data) {
       const ulang = mode === 'nilai';
       mode = 'nilai';
+      if (wajibDipantau()) ambilLokasi();   // pantauan di luar radius tetap berjalan selama tab Nilai Saya dibuka
       render();
       window.scrollTo(0, 0);
       return ulang || nilaiPerluMuat() ? muatNilai() : undefined;
@@ -1866,6 +1876,9 @@
     const c = bacaCache();
     bacaCacheNilai();
     bacaCacheRekap();
+    // laporan tertunda dari hari lain tidak bisa dikirim lagi (server menolak): buang agar memori HP tidak penuh foto
+    const antreLama = bacaAntre();
+    if (antreLama.some((x) => x.tgl !== tglLokal())) tulisAntre(antreLama.filter((x) => x.tgl === tglLokal()));
     mode = load('cw_mode') === 'ceklok' && (!c || c.ceklok) ? 'ceklok' : 'lapor';
     if (c) {
       data = c;

@@ -217,7 +217,8 @@ terkirim**. Anggota bisa lanjut ke langkah berikutnya (mis. Lapor Selesai), dan 
 - Setiap laporan punya **ID kirim**. Bila laporan yang sama terkirim dua kali (jawaban server tidak sampai ke
   HP), server mengembalikan hasil pertama dan **tidak mencatatnya dua kali**.
 - Antrean hilang bila data browser dihapus. Bila anggota menekan **Keluar**, laporannya baru terkirim setelah
-  ia masuk lagi dengan NRP yang sama (ada peringatan sebelum keluar).
+  ia masuk lagi dengan NRP yang sama (ada peringatan sebelum keluar). Laporan tertunda dari **hari lain** dibuang saat
+  aplikasi dibuka (server pasti menolaknya), agar foto di antrean tidak memenuhi memori HP.
 
 ## Durasi tugas & poin
 
@@ -440,7 +441,8 @@ lebih dari 5 menit** = 1 kejadian: dikirim ke server (disimpan di HP dulu bila s
 - Penilaian: **−10 per kejadian** dari unsur Kejujuran lokasi & foto, catatan "N× di luar radius > 5 menit…", dan hari
   itu bukan hari sempurna. Berlaku di masa uji coba maupun resmi.
 - Hitungan mulai dari nol bila kembali ke dalam radius, GPS tidak segar (> 2 menit), atau aplikasi ditutup /
-  disembunyikan. Ceklok khusus tanpa radius (SIM keliling) tidak dipantau.
+  disembunyikan. Ceklok khusus tanpa radius (SIM keliling) tidak dipantau. Pantauan tetap berjalan walau anggota pindah ke
+  tab lain (Nilai Saya, atau Lapor CW saat Ceklok berjalan).
 - Kejadian keliru (GPS melenceng): hapus barisnya di sheet LUAR RADIUS, nilai pulih di hitungan berikutnya.
 - Konstanta: `LUAR_RADIUS_MENIT = 5`, `POTONG_LUAR_RADIUS = 10` (LuarRadius.gs); POST `action=luarRadius`.
 
