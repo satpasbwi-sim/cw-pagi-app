@@ -246,8 +246,8 @@ Satpas yang tidak ada di plotting CW Pagi tetap bisa masuk dengan NRP dan langsu
   tanpa pulang (nilai 50).
 - Wajib dalam radius **100 m** dari titik kantor (-8.239257, 114.345514) dan foto langsung dari kamera.
   Deteksi lokasi palsu sama dengan Lapor CW Pagi.
-- **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas / Pelayanan dan isi keterangan. Setelah disetujui atasan: Sakit bernilai 90,
-  Izin / Cuti 80 (sedikit di bawah hadir, `NILAI_IZIN` di Kode.gs); Dinas / Pelayanan tidak dinilai.
+- **Tidak masuk hari ini?** Pilih Sakit / Izin / Cuti / Dinas / Pelayanan dan isi keterangan. Setelah disetujui atasan: Sakit, Dinas,
+  Pelayanan bernilai 90, Izin / Cuti 80 (sedikit di bawah hadir, `NILAI_IZIN` di Kode.gs).
 - **Tugas mendadak setelah Ceklok Masuk?** Ketuk **🚨 Tinggalkan kantor**, pilih jenis tugas (Perintah pimpinan,
   Pengawalan/Patwal, Laka lantas, Kejadian darurat, Rapat/dinas luar, Lainnya) dan isi keterangan. Tanpa foto dan
   radius, lokasi terakhir tetap dicatat. Ceklok hari itu **selesai** (status KELUAR di LOG CEKLOK), Ceklok Pulang
@@ -275,8 +275,8 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
 
   | Unsur | Bobot | Cara hitung |
   | --- | --- | --- |
-  | Kehadiran CW | 25% | hari H ÷ hari wajib di ABSENSI; S (sakit) disetujui = 0,9 hari, I (izin) = 0,8 hari (`NILAI_IZIN`); LD/D/P dan `-` tidak dinilai |
-  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap / tugas mendadak 100 · pulang cepat ≤ 15 mnt 90 · 16–60 mnt 70 · > 60 mnt 50 (`NILAI_PULANG_CEPAT`) · tanpa Ceklok Pulang 50 · tidak ceklok 0 · sakit disetujui 90 · izin / cuti disetujui 80 · dinas / pelayanan tidak dinilai |
+  | Kehadiran CW | 25% | hari H ÷ hari wajib di ABSENSI; S (sakit), D (dinas), P (pelayanan) disetujui = 0,9 hari, I (izin) = 0,8 hari (`NILAI_IZIN`); LD (lepas dinas piket) dan `-` tidak dinilai |
+  | Ceklok Satpas | 25% | rata-rata per hari kerja: lengkap / tugas mendadak 100 · pulang cepat ≤ 15 mnt 90 · 16–60 mnt 70 · > 60 mnt 50 (`NILAI_PULANG_CEPAT`) · tanpa Ceklok Pulang 50 · tidak ceklok 0 · sakit / dinas / pelayanan disetujui 90 · izin / cuti disetujui 80 |
   | Kejujuran lokasi & foto | 20% | 100 − 25 per ⚠️ terbukti (`POTONG_PALSU`), lalu dipotong lagi per CEK FOTO atasan (lihat **Bukti foto** di bawah) |
   | Ketepatan waktu | 10% | Lapor Datang ≤ 06.15 dan Ceklok Masuk ≤ 08.00 = 100, lalu −2 per menit (`BATAS_AMAN_CW`, `POTONG_PER_MENIT`) |
   | Kelengkapan lapor CW | 10% | hari Datang + Selesai (atau tugas mendadak) ÷ hari Lapor Datang |
@@ -351,7 +351,7 @@ anggota Satpas. Ditulis ulang otomatis di hitungan pagi (±07.30) dan sore (±15
 
 | Unsur | Bobot (`BOBOT_CW`) | Cara hitung |
 | --- | --- | --- |
-| Kehadiran | 35% | hari H ÷ hari wajib di ABSENSI; S disetujui = 0,9 hari, I = 0,8 hari; LD/D/P dan `-` tidak dinilai |
+| Kehadiran | 35% | hari H ÷ hari wajib di ABSENSI; S, D, P disetujui = 0,9 hari, I = 0,8 hari; LD dan `-` tidak dinilai |
 | Kejujuran lokasi & foto | 25% | 100 − 25 per ⚠️ PALSU, dikurangi CEK FOTO atasan |
 | Ketepatan waktu | 15% | Lapor Datang ≤ 15 menit setelah buka = 100, lalu −2 per menit |
 | Kelengkapan lapor | 15% | hari Datang + Selesai (atau Tinggalkan Lokasi) ÷ hari lapor |
