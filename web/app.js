@@ -1462,7 +1462,7 @@
     } else if (f === 'keluar') {
       const jenisList = c.tugasMendadak || JENIS_TUGAS;
       body = info('🚨 Tinggalkan Kantor – Tugas Mendadak', 'Masuk tercatat pukul ' + esc(h.masuk.jam) +
-          '. Ceklok hari ini selesai, dinilai menurut jenisnya setelah disetujui atasan. Ceklok Pulang tidak diperlukan lagi.') +
+          '. Ceklok hari ini selesai dan dihitung lengkap setelah disetujui atasan. Ceklok Pulang tidak diperlukan lagi.') +
         '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((x) =>
           '<button data-a="ckJenis" data-v="' + esc(x) + '"' + (ck.jenis === x ? ' class="on"' : '') + '>' + esc(x) + '</button>').join('') +
         '</div></div>' +
