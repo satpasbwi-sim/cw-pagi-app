@@ -649,7 +649,7 @@
     const d = l.datang, s = l.selesai;
     let html = d ? '📍 datang ' + esc(d.jam) + tautan(d) : '';
     if (s) html += (html ? ' · ' : '📍 ') + 'selesai ' + esc(s.jam) + tautan(s) + ' <span class="badge ok">✓ lengkap</span>';
-    else if (l.tinggal) html += ' · 🚨 tinggalkan lokasi ' + esc(l.tinggal.jam) + ' <span class="badge far">tugas mendadak</span>' +
+    else if (l.tinggal) html += ' · 🚨 tinggalkan lokasi ' + esc(l.tinggal.jam) + ' <span class="badge far">tugas/kepentingan mendadak</span>' +
       (l.tinggal.ket ? ' ' + esc(l.tinggal.ket) : '');
     else if (d) html += ' <span class="badge far">⏳ belum Lapor Selesai</span>';
     if (l.diperiksa) html += ' <span class="badge far">⚠️ lokasi diragukan, dicatat Nihil</span>';
@@ -887,9 +887,9 @@
         gpsStep + fotoStep + noteStep + tombol('kirimSelesai', '✓ Lapor Selesai') + tinggalLink;
     } else if (f === 'tinggal') {
       const jenisList = data.tugasMendadak || JENIS_TUGAS;
-      body = info('🚨 Tinggalkan Lokasi – Tugas Mendadak', 'Datang ' + (l.datang.antre ? 'pukul ' + esc(l.datang.jam) + ' (belum terkirim)' : 'tercatat pukul ' + esc(l.datang.jam)) +
+      body = info('🚨 Tinggalkan Lokasi – Tugas/Kepentingan Mendadak', 'Datang ' + (l.datang.antre ? 'pukul ' + esc(l.datang.jam) + ' (belum terkirim)' : 'tercatat pukul ' + esc(l.datang.jam)) +
           '. Kehadiran hari ini tetap tercatat (H). Setelah dikirim, Lapor Selesai tidak diperlukan.') +
-        '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((j) =>
+        '<div class="step"><h3>Jenis tugas / kepentingan <small>wajib</small></h3><div class="chips">' + jenisList.map((j) =>
           '<button data-a="jenis" data-v="' + esc(j) + '"' + (draft.jenis === j ? ' class="on"' : '') + '>' + esc(j) + '</button>').join('') +
         '</div></div>' +
         '<div class="step"><h3>Keterangan singkat <small>wajib</small></h3>' +
@@ -939,7 +939,7 @@
       $('laporView').innerHTML =
         '<section class="card done w">' +
           '<div class="ic">🚨</div>' +
-          '<h2 class="t">Meninggalkan lokasi – tugas mendadak</h2>' +
+          '<h2 class="t">Meninggalkan lokasi – tugas/kepentingan mendadak</h2>' +
           '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Meninggalkan lokasi ' + esc(l.tinggal.jam) + '</p>' +
           (l.tinggal.ket ? '<p class="sub">' + esc(l.tinggal.ket) + '</p>' : '') +
@@ -1431,7 +1431,7 @@
         ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div></section>';
     };
     if (f === 'beres' && h.keluar) {
-      return kartuSelesai(' w', '🚨', 'Meninggalkan kantor – tugas mendadak',
+      return kartuSelesai(' w', '🚨', 'Meninggalkan kantor – tugas/kepentingan mendadak',
         '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + ' · Keluar ' + esc(h.keluar.jam) + tunda(h.keluar) + '</p>' +
         (h.keluar.ket ? '<p class="sub">' + esc(h.keluar.ket) + '</p>' : '') + '<span class="badge ok">✓ ceklok hari ini selesai</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>');
     }
@@ -1485,9 +1485,9 @@
         '<div class="switch"><button class="btn tinggal" data-a="ckModeKeluar">🚨 Ada Tugas/Kepentingan? Tinggalkan Kantor</button></div>';
     } else if (f === 'keluar') {
       const jenisList = c.tugasMendadak || JENIS_TUGAS;
-      body = info('🚨 Tinggalkan Kantor – Tugas Mendadak', 'Masuk tercatat pukul ' + esc(h.masuk.jam) +
+      body = info('🚨 Tinggalkan Kantor – Tugas/Kepentingan Mendadak', 'Masuk tercatat pukul ' + esc(h.masuk.jam) +
           '. Ceklok hari ini selesai dan dihitung lengkap setelah disetujui atasan. Ceklok Pulang tidak diperlukan lagi.') +
-        '<div class="step"><h3>Jenis tugas <small>wajib</small></h3><div class="chips">' + jenisList.map((x) =>
+        '<div class="step"><h3>Jenis tugas / kepentingan <small>wajib</small></h3><div class="chips">' + jenisList.map((x) =>
           '<button data-a="ckJenis" data-v="' + esc(x) + '"' + (ck.jenis === x ? ' class="on"' : '') + '>' + esc(x) + '</button>').join('') +
         '</div></div>' +
         '<div class="step"><h3>Keterangan singkat <small>wajib</small></h3>' +
@@ -1585,8 +1585,8 @@
     if (a === 'ckModeKembali') ck.keluar = false;
     if (a === 'ckJenis') ck.jenis = el.dataset.v;
     if (a === 'ckKirimKeluar') {
-      if (!ck.jenis) return toast('Pilih jenis tugas dulu');
-      if (ck.note.trim().length < 3) return toast('Isi keterangan singkat tugas mendadak');
+      if (!ck.jenis) return toast('Pilih jenis tugas / kepentingan dulu');
+      if (ck.note.trim().length < 3) return toast('Isi keterangan singkat tugas / kepentingan');
       return kirimCeklok('keluar');
     }
     if (a === 'ckAlasan') ck.alasan = el.dataset.v;
@@ -1652,8 +1652,8 @@
     if (a === 'alasan') draft.alasan = el.dataset.v;
     if (a === 'jenis') draft.jenis = el.dataset.v;
     if (a === 'kirimTinggal') {
-      if (!draft.jenis) return toast('Pilih jenis tugas dulu');
-      if (draft.note.trim().length < 3) return toast('Isi keterangan singkat tugas mendadak');
+      if (!draft.jenis) return toast('Pilih jenis tugas / kepentingan dulu');
+      if (draft.note.trim().length < 3) return toast('Isi keterangan singkat tugas / kepentingan');
       return kirimLapor('tinggal', 'H');
     }
     if (a === 'kirimDatang' || a === 'kirimSelesai') {
