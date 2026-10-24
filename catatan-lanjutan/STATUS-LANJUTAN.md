@@ -58,6 +58,8 @@ Tidak berisi kata sandi atau kode rahasia.
 - B1 Peringkat & tren (naik/turun vs minggu lalu) di Nilai Saya.
 - B3 Papan penghargaan mingguan (Teladan, Paling konsisten).
 - B4 Alasan potongan per kejadian di Nilai Saya ("−6 karena terlambat 3 menit pada 28/10").
+- C1 QR dinamis dari tablet kantor untuk Ceklok Masuk/Pulang, beserta usulan peningkatannya: lihat
+  `catatan-lanjutan/SKEMA-QR-DINAMIS.md`.
 
 ### Audit celah kecurangan (21 Okt) yang belum diterapkan
 - 2 cek kehadiran acak selfie · 5 piket BM/Patwal/Laka dinilai dari jadwal · 6 laporan tertunda tidak menguntungkan ·
