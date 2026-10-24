@@ -326,6 +326,8 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .rk-skor { flex: 0 0 auto; text-align: right; font-weight: 800; font-size: 1.15rem; line-height: 1.1; }
 .rk-skor small { display: block; font-size: .7rem; font-weight: 700; }
 .rk-skor.sb { color: #1f9d55; } .rk-skor.b { color: #5aa832; } .rk-skor.c { color: #d49a12; } .rk-skor.k { color: #dc3545; }
+.pb-s { font-weight: 800; } .pb-s.sb { color: #1f9d55; } .pb-s.b { color: #5aa832; } .pb-s.c { color: #d49a12; } .pb-s.k { color: #dc3545; }
+.pb-panah { color: #dc3545; font-weight: 700; }
 .rk-isi { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 4px; }
 /* pratinjau disembunyikan sampai ukuran kamera stabil (lihat bukaKamera di app.js) */
 .kamera video { opacity: 0; transition: opacity .15s; }

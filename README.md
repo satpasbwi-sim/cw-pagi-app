@@ -86,7 +86,7 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
   koordinat sama persis dengan titik di KOORDINAT, atau sama persis dengan laporan lain (hari lain,
   Datang = Selesai, atau personil lain) dengan akurasi ≤ 20 m. Laporan bertanda ⚠️ **tidak dihitung
   hadir**: ABSENSI diisi **N (Nihil)**, sehingga LAPORAN HARIAN ikut Nihil, dan alasannya ditulis di
-  sheet CATATAN. Anggota melihat "menunggu verifikasi admin". Keputusannya di kolom **VERIFIKASI** LOG LAPOR
+  sheet CATATAN. Anggota melihat "menunggu verifikasi sistem". Keputusannya di kolom **VERIFIKASI** LOG LAPOR
   (lihat *Verifikasi ⚠️ semi-otomatis*); bila ASLI, ABSENSI otomatis berubah N → H.
 - Jam dan radius dicek di server, memakai jam server (tidak bisa diakali jam HP).
 
@@ -458,12 +458,12 @@ ditolak dan tercatat di kolom HP BARU MENUNGGU (juga muncul di 🩺 Cek & Perbai
 operator mengetik **YA** di kolom IZINKAN HP BARU (atau mengosongkan ID HP) → login berikutnya dari HP baru terdaftar.
 Pengawas dan admin yang masuk dengan kode admin tidak diikat. Aplikasi versi lama (tanpa ID HP) diminta diperbarui.
 
-**Izin dan tugas mendadak perlu persetujuan atasan.** Setiap "Tidak bisa hadir / Tidak masuk" dan "Tinggalkan Lokasi /
+**Izin dan tugas mendadak perlu verifikasi sistem.** Setiap "Tidak bisa hadir / Tidak masuk" dan "Tinggalkan Lokasi /
 Kantor" dari aplikasi tercatat di sheet **PERSETUJUAN**; atasan memilih KEPUTUSAN = SETUJU / TOLAK (dropdown). Selama
 belum SETUJU: tidak hadir CW dihitung tidak hadir, tidak masuk Satpas dihitung tidak ceklok (0), tugas mendadak CW
 dihitung tanpa Lapor Selesai, tugas mendadak Satpas dihitung pulang cepat (bertingkat menurut menit sebelum jam pulang), dan hari itu bukan hari sempurna. Status
 yang diisi admin langsung di ABSENSI tidak perlu persetujuan. Jumlah yang menunggu tampil di 🩺 Cek & Perbaiki; di
-aplikasi kartu hasilnya bertanda "⏳ menunggu persetujuan atasan".
+aplikasi kartu hasilnya bertanda "⏳ menunggu verifikasi sistem".
 
 **Foto wajah di Lapor Selesai.** Lapor Selesai kini juga meminta wajah pelapor dengan arus lalu lintas sebagai latar
 (sebelumnya hanya foto arus), agar HP tidak bisa ditinggal / dititipkan di titik.
@@ -598,7 +598,7 @@ Masalah yang aman diperbaiki otomatis punya tombol (selalu dengan konfirmasi):
 Yang tidak bisa diperbaiki otomatis hanya diberi saran: jadwal Patwal/Laka belum dibuat, struktur ABSENSI berubah,
 nama ANGGOTA, mode uji coba (perlu ubah kode + deploy), dan error di kode (dikirim lewat email, Notifikasi.gs).
 
-**📅 Ganti Bulan (1 klik)** – file **GantiBulan.gs**. Jalankan tanggal 1, sebelum lapor dibuka 06.15 (pemicu ±00.30
+**📅 Ganti Bulan (1 klik)** – file **GantiBulan.gs**. Jalankan tanggal 1, sebelum lapor dibuka 06.00 (pemicu ±00.30
 mengirim email pengingat bila belum). Hanya bisa bila bulan PENGATURAN sudah lewat. Urutannya:
 1. Hitung final bulan lama (DURASI POIN, PENILAIAN INTEGRITAS, PENILAIAN CW, INTEGRITAS HARIAN/MINGGUAN). Minggu
    yang terpotong akhir bulan disimpan ke RIWAYAT INTEGRITAS MINGGUAN sebagai "… – <akhir bulan>"; Senin berikutnya

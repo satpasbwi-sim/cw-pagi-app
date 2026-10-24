@@ -25,11 +25,17 @@ Tidak berisi kata sandi atau kode rahasia.
 | CW Pagi Senin–Jumat | Mulai 26/10 Sabtu/Minggu tidak ada Lapor CW dan tidak dinilai; Ceklok Satpas tetap Senin–Sabtu. | Server + aplikasi |
 | Bonus konsistensi | Mingguan/bulanan, ≥5 hari dinilai & ≥90% hari sempurna → +2 skor (maks 100, tidak bila ⚠️ PALSU). | Server |
 | Pengingat | Banner + notifikasi (bila diizinkan) untuk Lapor Datang/Selesai & Ceklok Masuk/Pulang; hanya saat aplikasi terbuka/di latar belakang. | Aplikasi |
-| Sheet PANDUAN | Ditulis ulang lewat `Panduan.gs` (fungsi `perbaruiPanduan`). | Spreadsheet |
-| Deploy server | **Versi 53** (24 Okt 2026, 14.49; CEK FOTO TIDAK SESUAI −30). Versi 52 (14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
+| Sheet PANDUAN | Ditulis ulang lewat `Panduan.gs` (fungsi `perbaruiPanduan`). Diperbarui 24 Okt 2026 malam untuk hari pertama resmi: jam Lapor Datang (06.15 / 06.30 / 07.15), PERSETUJUAN harian sebelum 15.00, verifikasi ⚠️ sebelum ±07.30 (bukti lemah otomatis ASLI), CEK FOTO, foto 3 hari, LUAR RADIUS, laporan tertunda ≤20 mnt, bagian mode resmi dibalik, tab Pembinaan, Ganti Bulan sebelum 06.00 (juga teks 🩺 Cek di Kode.gs; tanpa deploy baru). | Spreadsheet |
+| Deploy server | **Versi 54** (24 Okt 2026, 20.36; Peringatan dini pembinaan: `Pembinaan.gs` + `action=pembinaan` dan tanda `pembinaan: true` untuk pengawas/admin di Kode.gs). Versi 53 (14.49): CEK FOTO TIDAK SESUAI −30. Versi 52 (14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
 | Aplikasi (GitHub Pages) | Commit `76fba4d`, cache service worker `cw-pagi-v39`. | GitHub |
 
 ## BELUM DIKERJAKAN / BELUM DIUJI
+### Dipilih untuk dikerjakan
+- [x] Peringatan dini pembinaan (skor mingguan turun 2 minggu berturut-turut, tab Pembinaan untuk pengawas/admin):
+  server terpasang di Apps Script **Versi 54** (24 Okt 2026); `ujiPembinaan` jalan (daftar masih kosong).
+  - [ ] Gabungkan PR #1 (`web/`, cache `cw-pagi-v45`) ke `main` setelah disetujui pemilik, lalu cek: pengawas/admin
+    melihat tombol **Pembinaan**, anggota biasa tidak.
+
 ### Wajib dicek hari pertama (26/10/2026)
 - [ ] Satu NRP resmi: Lapor/Ceklok mengikuti aturan resmi (ditolak di luar jam/radius/tanpa foto).
 - [ ] Setelah reset ±19.00, data NRP resmi hari itu masih ada di LOG LAPOR / LOG CEKLOK.
@@ -58,6 +64,8 @@ Tidak berisi kata sandi atau kode rahasia.
 - B1 Peringkat & tren (naik/turun vs minggu lalu) di Nilai Saya.
 - B3 Papan penghargaan mingguan (Teladan, Paling konsisten).
 - B4 Alasan potongan per kejadian di Nilai Saya ("−6 karena terlambat 3 menit pada 28/10").
+- C1 QR dinamis dari tablet kantor untuk Ceklok Masuk/Pulang, beserta usulan peningkatannya: lihat
+  `catatan-lanjutan/SKEMA-QR-DINAMIS.md`.
 
 ### Audit celah kecurangan (21 Okt) yang belum diterapkan
 - 2 cek kehadiran acak selfie · 5 piket BM/Patwal/Laka dinilai dari jadwal · 6 laporan tertunda tidak menguntungkan ·
