@@ -86,7 +86,7 @@ Rekap, admin mengetik **kode admin** di kotak "Admin – buka menu Rekap" di baw
   koordinat sama persis dengan titik di KOORDINAT, atau sama persis dengan laporan lain (hari lain,
   Datang = Selesai, atau personil lain) dengan akurasi ≤ 20 m. Laporan bertanda ⚠️ **tidak dihitung
   hadir**: ABSENSI diisi **N (Nihil)**, sehingga LAPORAN HARIAN ikut Nihil, dan alasannya ditulis di
-  sheet CATATAN. Anggota melihat "menunggu verifikasi admin". Keputusannya di kolom **VERIFIKASI** LOG LAPOR
+  sheet CATATAN. Anggota melihat "menunggu verifikasi sistem". Keputusannya di kolom **VERIFIKASI** LOG LAPOR
   (lihat *Verifikasi ⚠️ semi-otomatis*); bila ASLI, ABSENSI otomatis berubah N → H.
 - Jam dan radius dicek di server, memakai jam server (tidak bisa diakali jam HP).
 

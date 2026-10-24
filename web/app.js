@@ -1494,7 +1494,7 @@
       const cepat = h.pulang.selisih > 0 ? ' <span class="badge far">pulang cepat ' + h.pulang.selisih + ' mnt</span>' : '';
       const p = String(h.pulang.jam).split('.'), lm = c.pulang != null ? Number(p[0]) * 60 + Number(p[1]) - c.pulang : 0;
       const lemburBadge = lm >= (c.lemburMin || 30) ? ' <span class="badge th">lembur ' + durTeks(lm) + '</span>' : '';
-      return kartuSelesai(ragu ? ' w' : '', ragu ? '!' : '✓', ragu ? 'Ceklok diterima, lokasi perlu diverifikasi admin' : 'Ceklok hari ini lengkap',
+      return kartuSelesai(ragu ? ' w' : '', ragu ? '!' : '✓', ragu ? 'Ceklok diterima, lokasi perlu diverifikasi sistem' : 'Ceklok hari ini lengkap',
         '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + telat + ' · Pulang ' + esc(h.pulang.jam) + tunda(h.pulang) + cepat + lemburBadge + '</p>' +
         (ragu ? '<span class="badge far">⚠️ lokasi diragukan</span>' : '<span class="badge ok">✓ lengkap</span>'));
     }
@@ -1607,7 +1607,7 @@
       if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk Ceklok Satpas');
       kosongkan();
       if (tahap === 'masuk' || tahap === 'tidak') ulangCk = false;
-      toast(out.diperiksa ? 'Ceklok tercatat pukul ' + out.jam + ', lokasi perlu diverifikasi admin'
+      toast(out.diperiksa ? 'Ceklok tercatat pukul ' + out.jam + ', lokasi perlu diverifikasi sistem'
         : tahap === 'masuk' ? '✓ Ceklok Masuk pukul ' + out.jam + (out.selisih ? ' — terlambat ' + out.selisih + ' menit' : '')
         : tahap === 'pulang' ? '✓ Ceklok Pulang pukul ' + out.jam + (out.selisih ? ' — pulang cepat ' + out.selisih + ' menit' : out.lembur ? ' — lembur ' + durTeks(out.lembur) : '')
         : tahap === 'keluar' ? '✓ Tercatat meninggalkan kantor pukul ' + out.jam + ' — ceklok hari ini selesai'
