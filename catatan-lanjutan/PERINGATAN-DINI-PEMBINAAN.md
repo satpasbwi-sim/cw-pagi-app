@@ -10,7 +10,11 @@ Dibuat 24 Okt 2026. Tidak berisi kode rahasia.
   `PERIODE (SENIN – MINGGU)` (teks "12 Oktober 2026 – 18 Oktober 2026"), `NAMA`, `NRP`, `POKJA`, 6 kolom unsur,
   `SKOR INTEGRITAS`, `PREDIKAT`, `CATATAN` (dipisah `;`). Tidak ada kolom hari dinilai, jadi filter
   `PEMBINAAN_MIN_HARI` tidak berlaku; minggu tanpa skor (kosong) tetap dilewati.
-- [ ] **Belum dipasang di Apps Script.** Ikuti bagian 8 (dikerjakan di laptop / editor Apps Script).
+- [x] **Dipasang di Apps Script 24 Okt 2026, deploy Versi 54** ("Peringatan dini pembinaan"). `ujiPembinaan` menjawab
+  `minggu: ["2026-10-12"]`, `aturan`, `daftar: []` (wajar: baru 1 minggu final). `/exec?pin=00000001` → `PIN salah`.
+  Di Kode.gs: cabang `action=pembinaan` (cek akses sama dengan `action=rekap`) dan `pembinaan: true` hanya pada
+  jawaban pengawas dan admin (bila `pembinaanData_` ada).
+- [ ] Uji tombol di aplikasi setelah PR #1 digabung ke `main` dan GitHub Pages ter-deploy.
 
 ## 1. Tujuan
 Pimpinan / pengawas melihat daftar anggota yang **skornya turun 2 minggu berturut-turut**, supaya bisa dibina
@@ -81,7 +85,7 @@ yang memakai data buatan.
 - Tambah kriteria lain dari bagian 2 (terlambat berulang, predikat Kurang, tidak ceklok berulang).
 - Email ringkasan Senin pagi ke pimpinan.
 
-## 8. Pemasangan di Apps Script (belum dikerjakan)
+## 8. Pemasangan di Apps Script (selesai 24 Okt 2026, Versi 54)
 1. Salin `catatan-lanjutan/server/Pembinaan.gs` ke `apps-script/Pembinaan.gs` di laptop, lalu ke editor Apps Script
    (tombol + → Skrip → beri nama `Pembinaan`).
 2. Di `doGet` (Kode.gs), di tempat `action=rekap` ditangani, tambahkan cabang yang sama untuk pembinaan, dengan

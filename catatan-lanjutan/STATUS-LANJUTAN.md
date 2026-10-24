@@ -26,14 +26,15 @@ Tidak berisi kata sandi atau kode rahasia.
 | Bonus konsistensi | Mingguan/bulanan, ≥5 hari dinilai & ≥90% hari sempurna → +2 skor (maks 100, tidak bila ⚠️ PALSU). | Server |
 | Pengingat | Banner + notifikasi (bila diizinkan) untuk Lapor Datang/Selesai & Ceklok Masuk/Pulang; hanya saat aplikasi terbuka/di latar belakang. | Aplikasi |
 | Sheet PANDUAN | Ditulis ulang lewat `Panduan.gs` (fungsi `perbaruiPanduan`). | Spreadsheet |
-| Deploy server | **Versi 53** (24 Okt 2026, 14.49; CEK FOTO TIDAK SESUAI −30). Versi 52 (14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
+| Deploy server | **Versi 54** (24 Okt 2026, 20.36; Peringatan dini pembinaan: `Pembinaan.gs` + `action=pembinaan` dan tanda `pembinaan: true` untuk pengawas/admin di Kode.gs). Versi 53 (14.49): CEK FOTO TIDAK SESUAI −30. Versi 52 (14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
 | Aplikasi (GitHub Pages) | Commit `76fba4d`, cache service worker `cw-pagi-v39`. | GitHub |
 
 ## BELUM DIKERJAKAN / BELUM DIUJI
 ### Dipilih untuk dikerjakan
-- [ ] Peringatan dini pembinaan (skor mingguan turun 2 minggu berturut-turut, tab Pembinaan untuk pengawas/admin):
-  aplikasi + `catatan-lanjutan/server/Pembinaan.gs` sudah dibuat; **tinggal dipasang di Apps Script** (langkah di
-  `catatan-lanjutan/PERINGATAN-DINI-PEMBINAAN.md` bagian 8).
+- [x] Peringatan dini pembinaan (skor mingguan turun 2 minggu berturut-turut, tab Pembinaan untuk pengawas/admin):
+  server terpasang di Apps Script **Versi 54** (24 Okt 2026); `ujiPembinaan` jalan (daftar masih kosong).
+  - [ ] Gabungkan PR #1 (`web/`, cache `cw-pagi-v45`) ke `main` setelah disetujui pemilik, lalu cek: pengawas/admin
+    melihat tombol **Pembinaan**, anggota biasa tidak.
 
 ### Wajib dicek hari pertama (26/10/2026)
 - [ ] Satu NRP resmi: Lapor/Ceklok mengikuti aturan resmi (ditolak di luar jam/radius/tanpa foto).
