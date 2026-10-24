@@ -6,6 +6,10 @@ Dibuat 24 Okt 2026. Tidak berisi kode rahasia.
 - [x] Aplikasi (`web/`): tab **Pembinaan** selesai. Tab hanya muncul bila server mengirim `pembinaan: true`, jadi aman
   di-push sebelum server dipasang.
 - [x] Server: `catatan-lanjutan/server/Pembinaan.gs` selesai dan logikanya sudah diuji dengan data contoh.
+- [x] Judul kolom RIWAYAT INTEGRITAS MINGGUAN (spreadsheet Absensi Satpas'26) dicek 24 Okt lewat Google Drive dan cocok:
+  `PERIODE (SENIN – MINGGU)` (teks "12 Oktober 2026 – 18 Oktober 2026"), `NAMA`, `NRP`, `POKJA`, 6 kolom unsur,
+  `SKOR INTEGRITAS`, `PREDIKAT`, `CATATAN` (dipisah `;`). Tidak ada kolom hari dinilai, jadi filter
+  `PEMBINAAN_MIN_HARI` tidak berlaku; minggu tanpa skor (kosong) tetap dilewati.
 - [ ] **Belum dipasang di Apps Script.** Ikuti bagian 8 (dikerjakan di laptop / editor Apps Script).
 
 ## 1. Tujuan

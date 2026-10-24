@@ -12,14 +12,14 @@ const PEMBINAAN_KOLOM = {
   nrp: ['NRP'],
   nama: ['NAMA', 'PETUGAS'],
   pokja: ['POKJA'],
-  minggu: ['MINGGU', 'PERIODE', 'SENIN', 'TANGGAL'],
+  minggu: ['PERIODE', 'MINGGU', 'SENIN', 'TANGGAL'],
   skor: ['SKOR', 'NILAI AKHIR'],
   predikat: ['PREDIKAT'],
   hari: ['HARI DINILAI', 'JUMLAH HARI'],
   catatan: ['CATATAN']
 };
 // unsur penilaian (BOBOT_INTEGRITAS); dipakai untuk "unsur paling turun" bila kolomnya ada di RIWAYAT
-const PEMBINAAN_UNSUR = ['Kehadiran CW', 'Ceklok Satpas', 'Kejujuran', 'Ketepatan waktu', 'Kelengkapan', 'Durasi'];
+const PEMBINAAN_UNSUR = ['Kehadiran CW', 'Ceklok Satpas', 'Kejujuran lokasi', 'Ketepatan waktu', 'Kelengkapan lapor', 'Durasi tugas'];
 
 // Dipanggil dari doGet untuk action=pembinaan (setelah cek pengawas / admin, sama seperti action=rekap).
 function pembinaanData_() {
@@ -125,7 +125,7 @@ function angkaPembinaan_(x) {
   if (!s || isNaN(Number(s))) return null;
   return Number(s);
 }
-// Date / "dd/MM/yyyy …" / "yyyy-MM-dd" → tanggal Senin minggu itu, 'yyyy-MM-dd'
+// Date / "12 Oktober 2026 – 18 Oktober 2026" (isi RIWAYAT) / "dd/MM/yyyy …" / "yyyy-MM-dd" → tanggal Senin minggu itu, 'yyyy-MM-dd'
 function seninPembinaan_(x) {
   let d = null;
   if (Object.prototype.toString.call(x) === '[object Date]' && !isNaN(x)) d = new Date(x.getFullYear(), x.getMonth(), x.getDate());
@@ -134,6 +134,10 @@ function seninPembinaan_(x) {
     let m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (m) d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
     else if ((m = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/))) d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    else if ((m = s.match(/(\d{1,2})\s+([A-Za-z]{3,})\.?\s+(\d{4})/))) {
+      const b = ['jan', 'feb', 'mar', 'apr', 'mei', 'jun', 'jul', 'agu', 'sep', 'okt', 'nov', 'des'].indexOf(m[2].slice(0, 3).toLowerCase());
+      if (b >= 0) d = new Date(Number(m[3]), b, Number(m[1]));
+    }
   }
   if (!d) return '';
   d.setDate(d.getDate() - (d.getDay() + 6) % 7);
