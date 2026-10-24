@@ -999,7 +999,7 @@
       $('laporView').innerHTML =
         '<section class="card done w">' +
           '<div class="ic">!</div>' +
-          '<h2 class="t">Laporan diterima, menunggu verifikasi admin</h2>' +
+          '<h2 class="t">Laporan diterima, menunggu verifikasi sistem</h2>' +
           '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + esc(s.jam) + '</p>' +
           '<span class="badge far">⚠️ lokasi perlu dicek admin</span>' +
