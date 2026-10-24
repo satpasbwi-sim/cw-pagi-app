@@ -989,7 +989,7 @@
           '<p class="sub">' + esc(namaSaya(r)) + ' · ' + esc(r.lokasi) + '<br>' + dateLabel() + '</p>' +
           '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Meninggalkan lokasi ' + esc(l.tinggal.jam) + '</p>' +
           (l.tinggal.ket ? '<p class="sub">' + esc(l.tinggal.ket) + '</p>' : '') +
-          '<span class="badge ok">✓ laporan tercatat</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>' +
+          '<span class="badge ok">✓ laporan tercatat</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu verifikasi sistem</span></p>' +
           ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
         '</section>';
       return;
@@ -1016,7 +1016,7 @@
         (hadir
           ? '<p class="sub">Datang ' + (d ? esc(d.jam) : '–') + ' · Selesai ' + (s ? esc(s.jam) : '–') + '</p>' +
             '<span class="badge ok">✓ lengkap</span>' + cekJarak(s)
-          : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>') +
+          : '<p class="sub">pukul ' + esc(t ? t.jam : '') + '</p><span class="badge th">' + esc(labelOf(l.st)) + '</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu verifikasi sistem</span></p>') +
         (note ? '<p class="sub" style="margin-top:8px">📝 ' + esc(note) + '</p>' : '') +
         ulangBtn() + '<div class="switch" style="margin-top:14px">' + gantiBtn() + '</div>' +
       '</section>';
@@ -1486,7 +1486,7 @@
     if (f === 'beres' && h.keluar) {
       return kartuSelesai(' w', '🚨', 'Meninggalkan kantor – tugas/kepentingan mendadak',
         '<p class="sub">Masuk ' + esc(h.masuk.jam) + tunda(h.masuk) + ' · Keluar ' + esc(h.keluar.jam) + tunda(h.keluar) + '</p>' +
-        (h.keluar.ket ? '<p class="sub">' + esc(h.keluar.ket) + '</p>' : '') + '<span class="badge ok">✓ ceklok hari ini selesai</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>');
+        (h.keluar.ket ? '<p class="sub">' + esc(h.keluar.ket) + '</p>' : '') + '<span class="badge ok">✓ ceklok hari ini selesai</span>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu verifikasi sistem</span></p>');
     }
     if (f === 'beres') {
       const ragu = (h.masuk && h.masuk.peringatan) || (h.pulang && h.pulang.peringatan);
@@ -1499,7 +1499,7 @@
         (ragu ? '<span class="badge far">⚠️ lokasi diragukan</span>' : '<span class="badge ok">✓ lengkap</span>'));
     }
     if (f === 'izin') {
-      return kartuSelesai(' t', '✕', 'Tidak masuk: ' + esc(labelIzin(h.tidak.kode)), '<p class="sub">dilaporkan pukul ' + esc(h.tidak.jam) + tunda(h.tidak) + '</p>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu persetujuan atasan</span></p>');
+      return kartuSelesai(' t', '✕', 'Tidak masuk: ' + esc(labelIzin(h.tidak.kode)), '<p class="sub">dilaporkan pukul ' + esc(h.tidak.jam) + tunda(h.tidak) + '</p>' + '<p class="sub" style="margin-top:8px"><span class="badge far">⏳ menunggu verifikasi sistem</span></p>');
     }
 
     const gpsStep = '<div class="step"><h3>Lokasi <small>otomatis</small></h3><div id="ckGpsBox">' + gpsCkHtml() + '</div>' +

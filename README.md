@@ -463,7 +463,7 @@ Kantor" dari aplikasi tercatat di sheet **PERSETUJUAN**; atasan memilih KEPUTUSA
 belum SETUJU: tidak hadir CW dihitung tidak hadir, tidak masuk Satpas dihitung tidak ceklok (0), tugas mendadak CW
 dihitung tanpa Lapor Selesai, tugas mendadak Satpas dihitung pulang cepat (bertingkat menurut menit sebelum jam pulang), dan hari itu bukan hari sempurna. Status
 yang diisi admin langsung di ABSENSI tidak perlu persetujuan. Jumlah yang menunggu tampil di 🩺 Cek & Perbaiki; di
-aplikasi kartu hasilnya bertanda "⏳ menunggu persetujuan atasan".
+aplikasi kartu hasilnya bertanda "⏳ menunggu verifikasi sistem".
 
 **Foto wajah di Lapor Selesai.** Lapor Selesai kini juga meminta wajah pelapor dengan arus lalu lintas sebagai latar
 (sebelumnya hanya foto arus), agar HP tidak bisa ditinggal / dititipkan di titik.
