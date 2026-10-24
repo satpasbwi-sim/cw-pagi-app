@@ -598,7 +598,7 @@ Masalah yang aman diperbaiki otomatis punya tombol (selalu dengan konfirmasi):
 Yang tidak bisa diperbaiki otomatis hanya diberi saran: jadwal Patwal/Laka belum dibuat, struktur ABSENSI berubah,
 nama ANGGOTA, mode uji coba (perlu ubah kode + deploy), dan error di kode (dikirim lewat email, Notifikasi.gs).
 
-**📅 Ganti Bulan (1 klik)** – file **GantiBulan.gs**. Jalankan tanggal 1, sebelum lapor dibuka 06.15 (pemicu ±00.30
+**📅 Ganti Bulan (1 klik)** – file **GantiBulan.gs**. Jalankan tanggal 1, sebelum lapor dibuka 06.00 (pemicu ±00.30
 mengirim email pengingat bila belum). Hanya bisa bila bulan PENGATURAN sudah lewat. Urutannya:
 1. Hitung final bulan lama (DURASI POIN, PENILAIAN INTEGRITAS, PENILAIAN CW, INTEGRITAS HARIAN/MINGGUAN). Minggu
    yang terpotong akhir bulan disimpan ke RIWAYAT INTEGRITAS MINGGUAN sebagai "… – <akhir bulan>"; Senin berikutnya
