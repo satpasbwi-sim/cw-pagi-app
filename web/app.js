@@ -1721,6 +1721,91 @@
     renderLapor();
   });
 
+  // ---------- Pengingat Lapor CW & Ceklok Satpas ----------
+  // Banner di atas menu bila Lapor Datang / Lapor Selesai / Ceklok Masuk / Ceklok Pulang waktunya dan belum dilakukan.
+  // Bila izin notifikasi diberikan, pengingat yang sama juga muncul sebagai notifikasi HP (sekali per kejadian per hari).
+  // Berjalan selama aplikasi terbuka atau masih di latar belakang; aplikasi yang ditutup sepenuhnya tidak bisa memberi notifikasi.
+  // Tidak aktif di masa uji coba (data.bebasWaktu) dan di hari libur.
+  function butuhPengingat() {
+    if (!data || $('app').hidden || data.bebasWaktu || data.role === 'pengawas') return null;
+    const m = menitSekarang(), j = J();
+    const r = !data.cwLibur && data.today && !hanyaCeklok(data) ? myRow() : null;
+    if (r) {
+      const l = laporOf(r) || {};
+      if (!l.st && !l.datang && m >= j.buka && m <= j.tutup) {
+        return m <= j.batasDatang
+          ? { kunci: 'datang', mode: 'lapor', judul: 'Belum Lapor Datang', teks: 'Lapor Datang di titik tugas, batas tanpa terlambat pukul ' + jamTeks(j.batasDatang) + '.' }
+          : { kunci: 'datang2', mode: 'lapor', judul: 'Segera Lapor Datang', teks: 'Sudah lewat ' + jamTeks(j.batasDatang) + ', laporan tercatat terlambat. Batas akhir pukul ' + jamTeks(j.tutup) + '.' };
+      }
+      if (!l.st && l.datang && m >= j.mulaiSelesai && m <= j.tutup) {
+        return { kunci: 'selesai', mode: 'lapor', judul: 'Saatnya Lapor Selesai', teks: 'Buka tab Lapor CW, batas pukul ' + jamTeks(j.tutup) + '.' };
+      }
+    }
+    const c = data.ceklok;
+    if (c && c.kerja && c.masuk != null) {
+      const f = ckFase();
+      if (f === 'masuk' && m >= c.buka) {
+        return m <= c.masuk
+          ? { kunci: 'masuk', mode: 'ceklok', judul: 'Belum Ceklok Masuk', teks: 'Jam masuk pukul ' + jamTeks(c.masuk) + '.' }
+          : { kunci: 'masuk2', mode: 'ceklok', judul: 'Segera Ceklok Masuk', teks: 'Sudah lewat jam masuk ' + jamTeks(c.masuk) + ', ceklok sekarang tercatat terlambat.' };
+      }
+      if (f === 'pulang' && c.pulang != null && m >= c.pulang && m <= (c.tutupLembur || c.tutup)) {
+        return { kunci: 'pulang', mode: 'ceklok', judul: 'Jangan lupa Ceklok Pulang', teks: 'Jam pulang pukul ' + jamTeks(c.pulang) + '. Ceklok Pulang sebelum meninggalkan kantor (lembur: isi alasan).' };
+      }
+    }
+    return null;
+  }
+  function notifPengingat(p) {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    let kunci;
+    try { kunci = 'cw_ping_' + p.kunci + '_' + new Date().toISOString().slice(0, 10); if (localStorage.getItem(kunci)) return; localStorage.setItem(kunci, '1'); } catch (e) { return; }
+    const opsi = { body: p.teks, icon: 'icon-192.png', tag: 'cw-' + p.kunci, vibrate: [200, 100, 200] };
+    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+      navigator.serviceWorker.ready.then((reg) => reg.showNotification(p.judul, opsi)).catch(() => { try { new Notification(p.judul, opsi); } catch (e) { /* abaikan */ } });
+    } else { try { new Notification(p.judul, opsi); } catch (e) { /* abaikan */ } }
+  }
+  function cekPengingat() {
+    let el = $('pengingat');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'pengingat';
+      el.hidden = true;
+      $('mode').insertAdjacentElement('afterend', el);
+      el.addEventListener('click', (e) => {
+        const b = e.target.closest('[data-ping]');
+        if (!b) return;
+        if (b.dataset.ping === 'izin') {
+          Notification.requestPermission().then(() => cekPengingat()).catch(() => {});
+        } else if (b.dataset.ping === 'tutup') {
+          try { localStorage.setItem('cw_ping_tolak', '1'); } catch (x) { /* abaikan */ }
+          cekPengingat();
+        } else {
+          const tab = document.querySelector('#mode button[data-m="' + b.dataset.ping + '"]');
+          if (tab) tab.click();
+        }
+      });
+    }
+    const p = butuhPengingat();
+    const bisaNotif = 'Notification' in window && Notification.permission === 'default';
+    let tolak = false;
+    try { tolak = !!localStorage.getItem('cw_ping_tolak'); } catch (e) { /* abaikan */ }
+    if (p) {
+      notifPengingat(p);
+      el.innerHTML = '<div class="step"><div class="gps far"><b>⏰ ' + esc(p.judul) + '</b>' + esc(p.teks) +
+        '<div style="margin-top:8px"><button class="btn" data-ping="' + p.mode + '">' + (p.mode === 'ceklok' ? 'Buka Ceklok Satpas' : 'Buka Lapor CW') + '</button>' +
+        (bisaNotif ? ' <button class="btn" data-ping="izin">🔔 Izinkan notifikasi</button>' : '') + '</div></div></div>';
+      el.hidden = false;
+    } else if (bisaNotif && !tolak && !$('app').hidden && data && data.role !== 'pengawas') {
+      el.innerHTML = '<div class="step"><div class="gps"><b>🔔 Aktifkan pengingat</b>Terima notifikasi bila Lapor / Ceklok belum dilakukan. ' +
+        '<div style="margin-top:8px"><button class="btn" data-ping="izin">Aktifkan</button> <button class="btn" data-ping="tutup">Nanti</button></div></div></div>';
+      el.hidden = false;
+    } else el.hidden = true;
+  }
+  setInterval(cekPengingat, 20000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) cekPengingat(); });
+  document.addEventListener('click', () => setTimeout(cekPengingat, 700));
+  setTimeout(cekPengingat, 2500);
+
   // jam berjalan: ganti fase otomatis (mis. 07.00 → Lapor Selesai) dan segarkan lokasi tiap menit
   let detak = 0;
   setInterval(() => {

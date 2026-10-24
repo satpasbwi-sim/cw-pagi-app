@@ -508,6 +508,17 @@ nilai dimulai sesudah reset). Data NRP resmi sebelum 26/10 dihapus oleh reset se
 - Pasang: tambahkan file **ModeResmi.gs** di proyek Apps Script CW Pagi, perbarui Code.gs, PenilaianCw.gs,
   IntegritasHarian.gs, ResetUjiCoba.gs, lalu deploy versi baru **sebelum 26/10**.
 
+## Bonus konsistensi & pengingat (26/10/2026)
+
+- **Bonus konsistensi** (`bonusKonsisten_` di Urutan.gs; Code.gs dan PenilaianCw.gs): penilaian **mingguan / bulanan** dengan minimal
+  `KONSISTEN_MIN_HARI` (5) hari dinilai dan ≥ `KONSISTEN_PERSEN` (90)% hari sempurna (tepat waktu, lengkap, tanpa ⚠️ / foto bermasalah)
+  mendapat **+`BONUS_KONSISTEN` (2)** skor akhir, maks 100, tidak berlaku bila ada ⚠️ PALSU. Bisa bertumpuk dengan bonus lembur
+  (maks +3). Tampil di CATATAN ("konsisten: x dari y hari sempurna"). Harian tidak pernah memenuhi syarat.
+- **Pengingat** (app.js, `cekPengingat`): banner di atas menu bila Lapor Datang / Lapor Selesai / Ceklok Masuk / Ceklok Pulang
+  waktunya dan belum dilakukan; bila anggota mengizinkan notifikasi, juga muncul sebagai notifikasi HP (sekali per kejadian per hari).
+  Berjalan selama aplikasi terbuka atau di latar belakang; aplikasi yang ditutup sepenuhnya **tidak** bisa memberi notifikasi
+  (butuh server push, tidak ada di Apps Script). Tidak aktif di mode uji coba dan hari libur CW.
+
 ## CW Pagi hanya Senin–Jumat (mulai 26/10/2026)
 
 `TGL_CW_SENIN_JUMAT` dan `cwLibur_(tgl)` di ModeResmi.gs. Mulai 26 Oktober 2026 **Sabtu dan Minggu tidak ada Lapor CW**
