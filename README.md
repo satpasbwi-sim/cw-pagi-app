@@ -458,7 +458,7 @@ ditolak dan tercatat di kolom HP BARU MENUNGGU (juga muncul di 🩺 Cek & Perbai
 operator mengetik **YA** di kolom IZINKAN HP BARU (atau mengosongkan ID HP) → login berikutnya dari HP baru terdaftar.
 Pengawas dan admin yang masuk dengan kode admin tidak diikat. Aplikasi versi lama (tanpa ID HP) diminta diperbarui.
 
-**Izin dan tugas mendadak perlu persetujuan atasan.** Setiap "Tidak bisa hadir / Tidak masuk" dan "Tinggalkan Lokasi /
+**Izin dan tugas mendadak perlu verifikasi sistem.** Setiap "Tidak bisa hadir / Tidak masuk" dan "Tinggalkan Lokasi /
 Kantor" dari aplikasi tercatat di sheet **PERSETUJUAN**; atasan memilih KEPUTUSAN = SETUJU / TOLAK (dropdown). Selama
 belum SETUJU: tidak hadir CW dihitung tidak hadir, tidak masuk Satpas dihitung tidak ceklok (0), tugas mendadak CW
 dihitung tanpa Lapor Selesai, tugas mendadak Satpas dihitung pulang cepat (bertingkat menurut menit sebelum jam pulang), dan hari itu bukan hari sempurna. Status
