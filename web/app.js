@@ -1764,6 +1764,22 @@
       navigator.serviceWorker.ready.then((reg) => reg.showNotification(p.judul, opsi)).catch(() => { try { new Notification(p.judul, opsi); } catch (e) { /* abaikan */ } });
     } else { try { new Notification(p.judul, opsi); } catch (e) { /* abaikan */ } }
   }
+  // Tawaran izin hanya sekali: setelah diketuk, apa pun hasilnya (diizinkan, ditolak, atau jendela izin tidak muncul /
+  // ditutup sehingga tetap "default"), kotak tawaran tidak tampil lagi. Izin bisa diubah lewat pengaturan situs di browser.
+  function mintaIzinNotif() {
+    try { localStorage.setItem('cw_ping_tolak', '1'); } catch (x) { /* abaikan */ }
+    let sudah = false;
+    const selesai = (hasil) => {
+      if (sudah) return;
+      sudah = true;
+      toast(hasil === 'granted' ? '🔔 Pengingat aktif' : 'Izin notifikasi belum diberikan. Bisa diaktifkan lewat pengaturan situs di browser.');
+      cekPengingat();
+    };
+    try {
+      const p = Notification.requestPermission(selesai);   // browser lama memakai callback, yang baru Promise
+      if (p && p.then) p.then(selesai, () => selesai('default'));
+    } catch (e) { selesai('default'); }
+  }
   function cekPengingat() {
     let el = $('pengingat');
     if (!el) {
@@ -1775,7 +1791,7 @@
         const b = e.target.closest('[data-ping]');
         if (!b) return;
         if (b.dataset.ping === 'izin') {
-          Notification.requestPermission().then(() => cekPengingat()).catch(() => {});
+          mintaIzinNotif();
         } else if (b.dataset.ping === 'tutup') {
           try { localStorage.setItem('cw_ping_tolak', '1'); } catch (x) { /* abaikan */ }
           cekPengingat();
@@ -1793,7 +1809,7 @@
       notifPengingat(p);
       el.innerHTML = '<div class="step"><div class="gps far"><b>⏰ ' + esc(p.judul) + '</b>' + esc(p.teks) +
         '<div style="margin-top:8px"><button class="btn" data-ping="' + p.mode + '">' + (p.mode === 'ceklok' ? 'Buka Ceklok Satpas' : 'Buka Lapor CW') + '</button>' +
-        (bisaNotif ? ' <button class="btn" data-ping="izin">🔔 Izinkan notifikasi</button>' : '') + '</div></div></div>';
+        (bisaNotif && !tolak ? ' <button class="btn" data-ping="izin">🔔 Izinkan notifikasi</button>' : '') + '</div></div></div>';
       el.hidden = false;
     } else if (bisaNotif && !tolak && !$('app').hidden && data && data.role !== 'pengawas') {
       el.innerHTML = '<div class="step"><div class="gps"><b>🔔 Aktifkan pengingat</b>Terima notifikasi bila Lapor / Ceklok belum dilakukan. ' +
