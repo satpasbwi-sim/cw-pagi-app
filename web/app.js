@@ -312,6 +312,7 @@
     kode = k; store('cw_kode', k);
     mode = 'rekap';
     rekap = null; rekapAt = 0;
+    pemb = null; pembAt = 0;
     await reload();
     if (!data || data.role !== 'admin') { mode = 'adminMasuk'; render(); }
   }
@@ -368,6 +369,78 @@
     v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Rekap Integritas</b><div class="loc">' +
       esc(data.nama || '') + (data.role === 'admin' ? ' · admin' : ' · pengawas') + '</div></div></div>' + seg + isi + kaki + '</section>';
   }
+
+  // ---------- Pembinaan: peringatan dini untuk pengawas / admin (server Pembinaan.gs, tanda data.pembinaan) ----------
+  // anggota yang skor mingguan finalnya turun 2 minggu berturut-turut; anggota sendiri tidak melihat daftar ini
+  let pemb = null, pembMuat = false, pembAt = 0;
+  const pembBuka = {};
+  function bisaPembinaan(d) { return !!(d && d.pembinaan && (d.pengawas || d.role === 'admin')); }
+  function bacaCachePembinaan() {
+    try {
+      const c = JSON.parse(load('cw_pembinaan_d') || 'null');
+      if (c && c.pin === pin && c.v) { pemb = c.v; pembAt = c.at; }
+    } catch (e) { /* abaikan */ }
+  }
+  function pembPerluMuat() { return !pemb || pemb.error || Date.now() - pembAt > NILAI_SEGAR_MS; }
+  async function muatPembinaan() {
+    if (pembMuat) return;
+    pembMuat = true;
+    if (mode === 'pembinaan') renderPembinaan();
+    const pinMuat = pin;
+    try {
+      const res = await fetch(API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=pembinaan');
+      const v = await res.json();
+      if (pinMuat !== pin) return;
+      pemb = v;
+      if (!v.error) { pembAt = Date.now(); store('cw_pembinaan_d', JSON.stringify({ pin, at: pembAt, v })); }
+    } catch (err) {
+      if (pemb && !pemb.error) toast('Gagal memperbarui daftar pembinaan — menampilkan daftar tersimpan');
+      else pemb = { error: 'Gagal memuat daftar pembinaan. Periksa sinyal internet lalu ketuk Muat ulang.' };
+    } finally {
+      pembMuat = false;
+    }
+    if (mode === 'pembinaan') renderPembinaan();
+  }
+  function renderPembinaan() {
+    const v = $('pembinaanView');
+    const kaki = '<div class="switch"><button class="link muted-link" data-a="muatPembinaan">' +
+      (pembMuat && pemb ? '⟳ memperbarui…' : '⟳ Muat ulang') + '</button> · ' + gantiBtn() + '</div>';
+    let isi;
+    if (!pemb) isi = '<p class="sub">' + (pembMuat ? 'Memuat daftar pembinaan…' : 'Ketuk Muat ulang untuk melihat daftar.') + '</p>';
+    else if (pemb.error) isi = '<div class="gps out"><b>' + esc(pemb.error) + '</b></div>';
+    else {
+      const daftar = pemb.daftar || [], mg = pemb.minggu || [];
+      const rentang = mg.length ? 'minggu ' + tglPendek(mg[0]) + ' – ' + tglPendek(mg[mg.length - 1]) : '';
+      const kepala = '<div class="skor-box"><div class="ring ' + (daftar.length ? 'k' : 'sb') + '" style="--p:100"><b>' + daftar.length +
+        '</b><small>anggota</small></div><div class="skor-ket"><b>' + (daftar.length ? 'Perlu pembinaan' : 'Tidak ada yang perlu dibina') + '</b>' +
+        '<div class="sub">' + esc(pemb.aturan || 'Skor mingguan final turun 2 minggu berturut-turut') + '</div>' +
+        (rentang ? '<div class="sub">' + esc(rentang) + (pemb.diperbarui ? ' · diperbarui ' + esc(pemb.diperbarui) : '') + '</div>' : '') + '</div></div>';
+      const list = daftar.length ? daftar.map((r) => {
+        const k = r.nrp + '|' + r.nama, akhir = r.skor[r.skor.length - 1];
+        const tren = r.skor.map((s, i) => '<span class="pb-s ' + warnaNilai(s) + '">' + String(s).replace('.', ',') + '</span>' +
+          (i < r.skor.length - 1 ? ' <span class="pb-panah">↘</span> ' : '')).join('');
+        const buka = pembBuka[k] ? '<div class="rk-isi">' +
+          (r.unsur ? '<p class="sub">Unsur paling turun: <b>' + esc(r.unsur) + '</b></p>' : '') +
+          (r.catatan && r.catatan.length ? '<ul class="cat-nilai">' + r.catatan.map((c) => '<li>' + esc(tanpaNilai(c)) + '</li>').join('') + '</ul>'
+            : '<p class="sub">Tidak ada catatan di minggu terakhir.</p>') + '</div>' : '';
+        return '<div class="rk-row' + (pembBuka[k] ? ' buka' : '') + '" data-k="' + esc(k) + '"><div class="rk-top">' +
+          '<span class="rk-no">−' + Math.round(r.turun) + '</span><div class="rk-nama"><b>' + esc(r.nama) + '</b>' +
+          '<small>' + (r.pokja ? esc(r.pokja) + ' · ' : '') + tren + '</small></div>' +
+          '<span class="rk-skor ' + warnaNilai(akhir) + '">' + String(akhir).replace('.', ',') + '<small>' + esc(r.predikat || '') + '</small></span></div>' + buka + '</div>';
+      }).join('') : '<p class="sub ok-nilai">✓ Tidak ada anggota dengan skor turun 2 minggu berturut-turut.</p>';
+      isi = kepala + (daftar.length ? '<p class="foot-nilai">Urut dari penurunan terbesar. Angka kiri = total turun. Ketuk nama untuk melihat rincian.</p>' : '') +
+        list + '<p class="foot-nilai">Hanya terlihat oleh pengawas dan admin. Dihitung dari rekap mingguan final (Senin pagi).</p>';
+    }
+    v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Peringatan Dini Pembinaan</b><div class="loc">' +
+      esc(data.nama || '') + (data.role === 'admin' ? ' · admin' : ' · pengawas') + '</div></div></div>' + isi + kaki + '</section>';
+  }
+  $('pembinaanView').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-a],.rk-row');
+    if (!b) return;
+    if (b.dataset.a === 'muatPembinaan') return muatPembinaan();
+    if (b.dataset.a === 'keluar') return logout();
+    if (b.dataset.k) { pembBuka[b.dataset.k] = !pembBuka[b.dataset.k]; return renderPembinaan(); }
+  });
 
   async function fetchData(day) {
     const url = API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') +
@@ -443,7 +516,7 @@
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
-      mode = d.pengawas ? 'rekapInt' : d.role === 'admin' && ['rekap', 'rekapInt', 'nilai'].includes(mode) ? mode : d.role === 'admin' && !d.me && !d.ceklok ? 'rekap' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
+      mode = mode === 'pembinaan' && bisaPembinaan(d) ? 'pembinaan' : d.pengawas ? 'rekapInt' : d.role === 'admin' && ['rekap', 'rekapInt', 'nilai'].includes(mode) ? mode : d.role === 'admin' && !d.me && !d.ceklok ? 'rekap' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
       mintaAdmin = false;
       edits = {};
@@ -452,6 +525,7 @@
       // data terbaru tiba saat anggota sedang mengetik: tampilan diperbarui nanti, keyboard tidak ditutup
       if (!sedangMengetik()) render();
       if (mode === 'rekapInt' && rekapPerluMuat()) muatRekap();
+      if (mode === 'pembinaan' && pembPerluMuat()) muatPembinaan();
       // siapkan Nilai Saya di latar belakang agar tab itu langsung tampil saat diketuk
       if (!d.pengawas && nilaiPerluMuat()) setTimeout(muatNilai, 1500);
       const r = mode === 'lapor' && myRow();
@@ -519,16 +593,18 @@
   function render() {
     if (mode === 'ceklok' && !data.ceklok) mode = 'lapor';
     if (mode === 'lapor' && hanyaCeklok(data)) mode = 'ceklok';
-    if (data.pengawas) mode = 'rekapInt';
+    if (mode === 'pembinaan' && !bisaPembinaan(data)) mode = 'rekapInt';
+    if (data.pengawas && mode !== 'pembinaan') mode = 'rekapInt';
     if ($('btnModeLapor')) $('btnModeLapor').hidden = hanyaCeklok(data) || !!data.pengawas;
     $('btnModeNilai').hidden = !!data.pengawas;
     const admin = data.role === 'admin';
     $('btnModeRekapInt').hidden = !(data.pengawas || admin);
+    $('btnModePembinaan').hidden = !bisaPembinaan(data);
     $('btnModeRekap').hidden = !admin;
     $('btnModeAdminMasuk').hidden = !(data.bisaAdmin && !admin);
     if (!admin && mode === 'rekap') mode = 'lapor';
     if (admin && mode === 'adminMasuk') mode = 'rekap';
-    $('app').classList.toggle('lebar', admin && (mode === 'rekap' || mode === 'rekapInt'));
+    $('app').classList.toggle('lebar', admin && (mode === 'rekap' || mode === 'rekapInt' || mode === 'pembinaan'));
     [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
     $('btnModeCeklok').hidden = !data.ceklok;
     $('laporView').hidden = mode !== 'lapor';
@@ -536,6 +612,7 @@
     $('ceklokView').hidden = mode !== 'ceklok';
     $('nilaiView').hidden = mode !== 'nilai';
     $('rekapIntView').hidden = mode !== 'rekapInt';
+    $('pembinaanView').hidden = mode !== 'pembinaan';
     $('adminMasukView').hidden = mode !== 'adminMasuk';
     if (mode === 'adminMasuk') {
       $('saveBar').hidden = true;
@@ -544,6 +621,10 @@
     if (mode === 'rekapInt') {
       $('saveBar').hidden = true;
       return renderRekapInt();
+    }
+    if (mode === 'pembinaan') {
+      $('saveBar').hidden = true;
+      return renderPembinaan();
     }
     if (mode === 'nilai') {
       $('saveBar').hidden = true;
@@ -1870,6 +1951,14 @@
       window.scrollTo(0, 0);
       return ulang || rekapPerluMuat() ? muatRekap() : undefined;
     }
+    // Pembinaan: daftar tersimpan langsung tampil, server hanya bila perlu (atau tab diketuk lagi)
+    if (b.dataset.m === 'pembinaan' && data) {
+      const ulang = mode === 'pembinaan';
+      mode = 'pembinaan';
+      render();
+      window.scrollTo(0, 0);
+      return ulang || pembPerluMuat() ? muatPembinaan() : undefined;
+    }
     // Nilai Saya: tidak memakai GPS / kamera; nilai tersimpan langsung tampil, server hanya bila perlu
     if (b.dataset.m === 'nilai' && data) {
       const ulang = mode === 'nilai';
@@ -1903,9 +1992,11 @@
     store('cw_data', '');
     store('cw_nilai_d', '');
     store('cw_rekap_d', '');
+    store('cw_pembinaan_d', '');
     data = null;
     nilai = null; nilaiAt = 0;
     rekap = null; rekapAt = 0;
+    pemb = null; pembAt = 0;
     draft = newDraft();
     Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
     ulangCW = false; ulangCk = false;
@@ -2030,6 +2121,7 @@
     const c = bacaCache();
     bacaCacheNilai();
     bacaCacheRekap();
+    bacaCachePembinaan();
     // laporan tertunda dari hari lain tidak bisa dikirim lagi (server menolak): buang agar memori HP tidak penuh foto
     const antreLama = bacaAntre();
     if (antreLama.some((x) => x.tgl !== tglLokal())) tulisAntre(antreLama.filter((x) => x.tgl === tglLokal()));

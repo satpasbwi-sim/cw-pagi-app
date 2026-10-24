@@ -1,10 +1,12 @@
-# Peringatan dini pembinaan (rancangan, belum dikerjakan)
+# Peringatan dini pembinaan
 
-Dibuat 24 Okt 2026. Dikerjakan di laptop (Claude Code Desktop), karena kode server ada di folder `apps-script/`
-yang tidak masuk git. Tidak berisi kode rahasia.
+Dibuat 24 Okt 2026. Tidak berisi kode rahasia.
 
-Cara melanjutkan: buka folder proyek di Claude Code Desktop, tulis
-"Baca catatan-lanjutan/PERINGATAN-DINI-PEMBINAAN.md lalu kerjakan."
+**Status (24 Okt 2026):**
+- [x] Aplikasi (`web/`): tab **Pembinaan** selesai. Tab hanya muncul bila server mengirim `pembinaan: true`, jadi aman
+  di-push sebelum server dipasang.
+- [x] Server: `catatan-lanjutan/server/Pembinaan.gs` selesai dan logikanya sudah diuji dengan data contoh.
+- [ ] **Belum dipasang di Apps Script.** Ikuti bagian 8 (dikerjakan di laptop / editor Apps Script).
 
 ## 1. Tujuan
 Pimpinan / pengawas melihat daftar anggota yang **skornya turun 2 minggu berturut-turut**, supaya bisa dibina
@@ -61,7 +63,7 @@ berulang, sheet PEMBINAAN, email ke pimpinan.
 - Kartu per anggota: nama + pokja, tren 3 minggu (mis. `88 → 82 → 75`, panah merah), unsur yang paling turun,
   catatan singkat. Judul atas: "N anggota perlu pembinaan · minggu 2–16 Nov".
 - Daftar kosong: "Tidak ada anggota dengan skor turun 2 minggu berturut-turut."
-- Naikkan versi cache di `web/sw.js`.
+- Versi cache `web/sw.js`: `cw-pagi-v45`.
 
 ## 6. Kapan mulai berguna
 Selama `UJI_COBA = true`, RIWAYAT INTEGRITAS MINGGUAN kosong karena data direset tiap hari. Butuh **3 minggu final**
@@ -74,3 +76,25 @@ yang memakai data buatan.
   ditangani diberi tanda.
 - Tambah kriteria lain dari bagian 2 (terlambat berulang, predikat Kurang, tidak ceklok berulang).
 - Email ringkasan Senin pagi ke pimpinan.
+
+## 8. Pemasangan di Apps Script (belum dikerjakan)
+1. Salin `catatan-lanjutan/server/Pembinaan.gs` ke `apps-script/Pembinaan.gs` di laptop, lalu ke editor Apps Script
+   (tombol + → Skrip → beri nama `Pembinaan`).
+2. Di `doGet` (Kode.gs), di tempat `action=rekap` ditangani, tambahkan cabang yang sama untuk pembinaan, dengan
+   **cek akses yang sama** (hanya pengawas / admin):
+   ```js
+   if (action === 'pembinaan') {
+     // ... cek pengawas / admin persis seperti action=rekap ...
+     return /* fungsi keluaran JSON yang dipakai action=rekap */(pembinaanData_());
+   }
+   ```
+3. Di jawaban data utama (GET tanpa action) untuk **pengawas dan admin**, tambahkan `pembinaan: true`. Anggota biasa
+   jangan diberi tanda ini.
+4. Jalankan `ujiPembinaan` dari editor: Log harus berisi `minggu`, `aturan`, `daftar` (boleh kosong). Bila muncul
+   "Kolom … tidak ditemukan", sesuaikan `PEMBINAAN_KOLOM` dengan judul kolom yang tertulis di pesan itu.
+   Bila RIWAYAT tidak punya kolom hari dinilai / per unsur, fitur tetap jalan (filter hari dan "unsur paling turun"
+   dilewati).
+5. Deploy versi baru (lihat STATUS-LANJUTAN "Cara deploy"). Push `web/` ke `main`.
+6. Cek: masuk sebagai pengawas → tab Pembinaan muncul di sebelah Rekap Integritas.
+
+Hasil disimpan di cache Apps Script 10 menit (`PEMBINAAN_CACHE_DETIK`); jalankan `ujiPembinaan` untuk menghapusnya.

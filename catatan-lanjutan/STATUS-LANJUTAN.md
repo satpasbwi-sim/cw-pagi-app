@@ -32,7 +32,8 @@ Tidak berisi kata sandi atau kode rahasia.
 ## BELUM DIKERJAKAN / BELUM DIUJI
 ### Dipilih untuk dikerjakan
 - [ ] Peringatan dini pembinaan (skor mingguan turun 2 minggu berturut-turut, tab Pembinaan untuk pengawas/admin):
-  rancangan lengkap di `catatan-lanjutan/PERINGATAN-DINI-PEMBINAAN.md`.
+  aplikasi + `catatan-lanjutan/server/Pembinaan.gs` sudah dibuat; **tinggal dipasang di Apps Script** (langkah di
+  `catatan-lanjutan/PERINGATAN-DINI-PEMBINAAN.md` bagian 8).
 
 ### Wajib dicek hari pertama (26/10/2026)
 - [ ] Satu NRP resmi: Lapor/Ceklok mengikuti aturan resmi (ditolak di luar jam/radius/tanpa foto).
