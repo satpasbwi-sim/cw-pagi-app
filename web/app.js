@@ -313,6 +313,7 @@
     mode = 'rekap';
     rekap = null; rekapAt = 0;
     pemb = null; pembAt = 0;
+    pant = null; pantAt = 0;
     await reload();
     if (!data || data.role !== 'admin') { mode = 'adminMasuk'; render(); }
   }
@@ -442,6 +443,157 @@
     if (b.dataset.k) { pembBuka[b.dataset.k] = !pembBuka[b.dataset.k]; return renderPembinaan(); }
   });
 
+  // ---------- Pantauan: hari ini, pola mencurigakan, tunggakan persetujuan (server Pantauan.gs, tanda data.pantauan) ----------
+  // pengawas hanya melihat anggota Satpas; admin melihat Satpas dan CW Pagi. Keputusan tetap diisi di spreadsheet.
+  const PANTAU_SEGAR_MS = 2 * 60 * 1000;
+  const BAGIAN_PANTAU = { hari: 'Hari ini', pola: 'Mencurigakan', setuju: 'Persetujuan' };
+  let pant = null, pantMuat = false, pantAt = 0, pantBagian = 'hari';
+  const pantBuka = {};
+  function bisaPantauan(d) { return !!(d && d.pantauan && (d.pengawas || d.role === 'admin')); }
+  function bacaCachePantauan() {
+    try {
+      const c = JSON.parse(load('cw_pantauan_d') || 'null');
+      if (c && c.pin === pin && c.v) { pant = c.v; pantAt = c.at; }
+    } catch (e) { /* abaikan */ }
+  }
+  function pantPerluMuat() { return !pant || pant.error || Date.now() - pantAt > PANTAU_SEGAR_MS; }
+  async function muatPantauan() {
+    if (pantMuat) return;
+    pantMuat = true;
+    if (mode === 'pantauan') renderPantauan();
+    const pinMuat = pin;
+    try {
+      const res = await fetch(API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') + '&action=pantauan');
+      const v = await res.json();
+      if (pinMuat !== pin) return;
+      pant = v;
+      if (!v.error) { pantAt = Date.now(); store('cw_pantauan_d', JSON.stringify({ pin, at: pantAt, v })); }
+    } catch (err) {
+      if (pant && !pant.error) toast('Gagal memperbarui pantauan — menampilkan data tersimpan');
+      else pant = { error: 'Gagal memuat pantauan. Periksa sinyal internet lalu ketuk Muat ulang.' };
+    } finally {
+      pantMuat = false;
+    }
+    if (mode === 'pantauan') renderPantauan();
+  }
+  // tautan dari server (peta / foto / sheet) hanya bila https
+  function tautanPantau(url, teks) { return /^https:\/\//.test(String(url || '')) ? ' <a href="' + esc(url) + '" target="_blank" rel="noopener">' + teks + '</a>' : ''; }
+  const STATUS_CK = {
+    belum: ['Belum masuk', 'th'], izin_tolak: ['Izin ditolak', 'th'], izin_menunggu: ['Izin menunggu', 'far'], terlambat: ['Terlambat', 'far'],
+    nanti: ['Belum waktunya', 'k'], hadir: ['Hadir', 'ok'], keluar: ['Keluar tugas', 'ok'], pulang: ['Pulang', 'ok'], izin: ['Izin', 'k']
+  };
+  const STATUS_CW = {
+    belum: ['Belum datang', 'th'], nihil: ['⚠️ Diperiksa', 'th'], datang: ['Datang', 'ok'], nanti: ['Belum waktunya', 'k'],
+    tidak: ['Tidak hadir', 'far'], tinggal: ['Tinggalkan lokasi', 'ok'], selesai: ['Selesai', 'ok'], kode: ['', 'k']
+  };
+  const JENIS_POLA = { lokasi: '⚠️ Lokasi diragukan', luar: 'Di luar radius', foto: 'Cek foto', mirip: 'Posisi nyaris sama', tunda: 'Laporan tertunda' };
+  function chipsRingkas(isi) {
+    return '<div class="chips-hari">' + isi.map((x) => '<span class="lv ' + x[2] + '"><small>' + x[0] + '</small>' + x[1] + '</span>').join('') + '</div>';
+  }
+  function pantBaris(nama, sub, badge, kls) {
+    return '<div class="rk-row pt-row"><div class="rk-top"><div class="rk-nama"><b>' + nama + '</b><small>' + sub + '</small></div>' +
+      '<span class="badge ' + kls + '">' + esc(badge) + '</span></div></div>';
+  }
+  function pantHariIni(h) {
+    let isi = '';
+    const ck = h.ceklok || {};
+    isi += '<h3 class="pt-judul">Ceklok Satpas</h3>';
+    if (ck.error) isi += '<div class="gps out"><b>' + esc(ck.error) + '</b></div>';
+    else if (ck.libur) isi += '<p class="sub">Hari ini libur Ceklok Satpas (' + esc(ck.libur) + ').</p>';
+    else {
+      const r = ck.ringkas || {};
+      isi += chipsRingkas([['Hadir', r.hadir + ' / ' + r.total, 'ok'], ['Terlambat', r.terlambat, r.terlambat ? 'warn' : 'na'],
+        ['Belum masuk', r.belum, r.belum ? 'bad' : 'na'], ['Izin', r.izin, 'na']]);
+      isi += (ck.baris || []).map((b) => {
+        const s = STATUS_CK[b.status] || [b.status, 'k'];
+        const sub = [b.pokja, b.masuk ? 'masuk ' + b.masuk + (b.telat ? ' (+' + b.telat + ' mnt)' : '') : '', b.pulang ? 'pulang ' + b.pulang : '', b.ket]
+          .filter(Boolean).map(esc).join(' · ');
+        return pantBaris(esc(b.nama) + (b.peringatan ? ' ⚠️' : '') + (b.ujiCoba ? ' <span class="badge k">uji coba</span>' : ''), sub,
+          s[0] + (b.status === 'terlambat' ? ' ' + b.telat + ' mnt' : b.status === 'izin' || b.status === 'izin_menunggu' ? ' ' + (b.ket || '') : ''), s[1]);
+      }).join('');
+    }
+    if (h.cw) {
+      const cw = h.cw;
+      isi += '<h3 class="pt-judul">CW Pagi</h3>';
+      if (cw.error) isi += '<div class="gps out"><b>' + esc(cw.error) + '</b></div>';
+      else if (cw.libur) isi += '<p class="sub">' + esc(cw.libur) + '.</p>';
+      else {
+        const r = cw.ringkas || {};
+        isi += chipsRingkas([['Datang', r.datang + ' / ' + r.total, 'ok'], ['Selesai', r.selesai, 'na'], ['Terlambat', r.terlambat, r.terlambat ? 'warn' : 'na'],
+          ['Belum datang', r.belum, r.belum ? 'bad' : 'na'], ['Tidak hadir', r.tidak, 'na']]);
+        if (cw.batasDatang) isi += '<p class="foot-nilai">Belum datang = lewat batas Lapor Datang ' + esc(cw.batasDatang) + ' tanpa laporan.</p>';
+        isi += (cw.baris || []).map((b) => {
+          const s = STATUS_CW[b.status] || [b.status, 'k'];
+          const sub = [b.lokasi, b.datang ? 'datang ' + b.datang + (b.telat ? ' (+' + b.telat + ' mnt)' : '') : '', b.selesai ? 'selesai ' + b.selesai : '',
+            b.status === 'tinggal' ? b.ket : ''].filter(Boolean).map(esc).join(' · ');
+          return pantBaris(esc(b.petugas), sub, (s[0] || b.ket) + (b.status === 'tidak' ? ' (' + b.kode + ')' : ''), b.telat && b.status === 'datang' ? 'far' : s[1]);
+        }).join('');
+      }
+    }
+    return isi;
+  }
+  function pantPola(p) {
+    if (p.error) return '<div class="gps out"><b>' + esc(p.error) + '</b></div>';
+    const daftar = p.daftar || [];
+    if (!daftar.length) return '<p class="sub ok-nilai">✓ Tidak ada pola mencurigakan dalam ' + (p.hari || 7) + ' hari terakhir.</p>';
+    return '<p class="foot-nilai">' + daftar.length + ' orang · ' + (p.hari || 7) + ' hari terakhir · urut dari yang paling perlu dicek. ' +
+      'Angka kiri = bobot. Ketuk nama untuk rincian.</p>' + daftar.map((o) => {
+      const k = 'pola|' + o.nama;
+      const ring = Object.keys(o.ringkas || {}).map((j) => (JENIS_POLA[j] || j) + ' ' + o.ringkas[j]).join(' · ');
+      const buka = pantBuka[k] ? '<div class="rk-isi"><ul class="cat-nilai">' + (o.kejadian || []).map((x) =>
+        '<li><b>' + esc(tglPendek(x.tgl) + (x.jam ? ' ' + x.jam : '')) + '</b> · ' + esc(x.sumber === 'CEKLOK' ? 'Ceklok' : 'CW') + ' · ' + esc(x.ket) +
+        tautanPantau(x.peta, 'peta') + tautanPantau(x.foto, 'foto') + '</li>').join('') + '</ul></div>' : '';
+      return '<div class="rk-row' + (pantBuka[k] ? ' buka' : '') + '" data-k="' + esc(k) + '"><div class="rk-top"><span class="rk-no">' + o.bobot + '</span>' +
+        '<div class="rk-nama"><b>' + esc(o.nama) + '</b><small>' + esc(ring) + '</small></div></div>' + buka + '</div>';
+    }).join('') + '<p class="foot-nilai">Kejadian yang sudah diverifikasi ASLI tidak dihitung. Putuskan di kolom VERIFIKASI / CEK FOTO pada LOG LAPOR / LOG CEKLOK.</p>';
+  }
+  function pantSetuju(s) {
+    if (s.error) return '<div class="gps out"><b>' + esc(s.error) + '</b></div>';
+    let isi = '<h3 class="pt-judul">Menunggu keputusan (' + (s.menunggu || []).length + ')</h3>';
+    isi += (s.menunggu || []).length ? s.menunggu.map((r) => pantBaris(esc(r.nama),
+      [tglPendek(r.tgl), r.jenis === 'CEKLOK' ? 'Ceklok' : 'CW', r.pengajuan, r.ket].filter(Boolean).map(esc).join(' · '),
+      r.umur ? r.umur + ' hari' : 'hari ini', r.umur >= 2 ? 'th' : r.umur ? 'far' : 'k')).join('') +
+      '<p class="foot-nilai">Selama belum SETUJU, dihitung tidak hadir / pulang cepat.</p>'
+      : '<p class="sub ok-nilai">✓ Tidak ada pengajuan yang menunggu.</p>';
+    isi += '<h3 class="pt-judul">Sering mengajukan (bulan ini)</h3>';
+    isi += (s.sering || []).length ? s.sering.map((r) => pantBaris(esc(r.nama),
+      'setuju ' + r.setuju + ' · tolak ' + r.tolak + ' · menunggu ' + r.menunggu, r.jumlah + ' kali', r.jumlah >= 5 ? 'th' : 'far')).join('')
+      : '<p class="sub">Belum ada yang mengajukan 3 kali atau lebih bulan ini.</p>';
+    if (s.url) isi += '<p class="foot-nilai">' + tautanPantau(s.url, 'Buka sheet PERSETUJUAN') + ' untuk memutuskan (SETUJU / TOLAK).</p>';
+    return isi;
+  }
+  function renderPantauan() {
+    const v = $('pantauanView');
+    const kaki = '<div class="switch"><button class="link muted-link" data-a="muatPantauan">' +
+      (pantMuat && pant ? '⟳ memperbarui…' : '⟳ Muat ulang') + '</button> · ' + gantiBtn() + '</div>';
+    let isi;
+    if (!pant) isi = '<p class="sub">' + (pantMuat ? 'Memuat pantauan…' : 'Ketuk Muat ulang untuk melihat pantauan.') + '</p>';
+    else if (pant.error) isi = '<div class="gps out"><b>' + esc(pant.error) + '</b></div>';
+    else {
+      const ck = (pant.hariIni && pant.hariIni.ceklok && pant.hariIni.ceklok.ringkas) || {};
+      const cw = (pant.hariIni && pant.hariIni.cw && pant.hariIni.cw.ringkas) || {};
+      const nBelum = (ck.belum || 0) + (cw.belum || 0);
+      const nPola = pant.pola && pant.pola.daftar ? pant.pola.daftar.length : 0;
+      const nSetuju = pant.persetujuan && pant.persetujuan.menunggu ? pant.persetujuan.menunggu.length : 0;
+      const angka = { hari: nBelum, pola: nPola, setuju: nSetuju };
+      const seg = '<div class="seg">' + Object.keys(BAGIAN_PANTAU).map((j) => '<button data-j="' + j + '"' + (j === pantBagian ? ' class="on"' : '') + '>' +
+        BAGIAN_PANTAU[j] + (angka[j] ? ' <span class="badge th">' + angka[j] + '</span>' : '') + '</button>').join('') + '</div>';
+      isi = seg + (pantBagian === 'pola' ? pantPola(pant.pola || {}) : pantBagian === 'setuju' ? pantSetuju(pant.persetujuan || {}) : pantHariIni(pant.hariIni || {})) +
+        '<p class="foot-nilai">Hanya terlihat oleh pengawas dan admin' + (pant.lingkup === 'satpas' ? ' · cakupan: anggota Satpas' : '') +
+        ' · diperbarui ' + esc(pant.diperbarui || '') + '</p>';
+    }
+    v.innerHTML = '<section class="card nilai"><div class="who"><div><b>Pantauan</b><div class="loc">' +
+      esc(data.nama || '') + (data.role === 'admin' ? ' · admin' : ' · pengawas') + '</div></div></div>' + isi + kaki + '</section>';
+  }
+  $('pantauanView').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-a],[data-j],.rk-row[data-k]');
+    if (!b || e.target.closest('a')) return;
+    if (b.dataset.a === 'muatPantauan') return muatPantauan();
+    if (b.dataset.a === 'keluar') return logout();
+    if (b.dataset.j) { pantBagian = b.dataset.j; return renderPantauan(); }
+    if (b.dataset.k) { pantBuka[b.dataset.k] = !pantBuka[b.dataset.k]; return renderPantauan(); }
+  });
+
   async function fetchData(day) {
     const url = API + '?hp=' + encodeURIComponent(HP_ID) + '&pin=' + encodeURIComponent(pin) + (kode ? '&kode=' + encodeURIComponent(kode) : '') +
       (day ? '&day=' + day : '');
@@ -516,7 +668,7 @@
       if (d.serverMs) jamServer = { ms: d.serverMs, perf: performance.now() };
       // tombol Rekap dihapus: Lapor CW (CW Pagi) dan, untuk anggota Satpas, Ceklok Satpas
       $('mode').hidden = false;
-      mode = mode === 'pembinaan' && bisaPembinaan(d) ? 'pembinaan' : d.pengawas ? 'rekapInt' : d.role === 'admin' && ['rekap', 'rekapInt', 'nilai'].includes(mode) ? mode : d.role === 'admin' && !d.me && !d.ceklok ? 'rekap' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
+      mode = mode === 'pembinaan' && bisaPembinaan(d) ? 'pembinaan' : mode === 'pantauan' && bisaPantauan(d) ? 'pantauan' : d.pengawas ? 'rekapInt' : d.role === 'admin' && ['rekap', 'rekapInt', 'nilai'].includes(mode) ? mode : d.role === 'admin' && !d.me && !d.ceklok ? 'rekap' : mode === 'nilai' ? 'nilai' : d.ceklok && (mode === 'ceklok' || !d.me || hanyaCeklok(d)) ? 'ceklok' : 'lapor';
       me = d.me ? String(d.me) : '';
       mintaAdmin = false;
       edits = {};
@@ -526,6 +678,7 @@
       if (!sedangMengetik()) render();
       if (mode === 'rekapInt' && rekapPerluMuat()) muatRekap();
       if (mode === 'pembinaan' && pembPerluMuat()) muatPembinaan();
+      if (mode === 'pantauan' && pantPerluMuat()) muatPantauan();
       // siapkan Nilai Saya di latar belakang agar tab itu langsung tampil saat diketuk
       if (!d.pengawas && nilaiPerluMuat()) setTimeout(muatNilai, 1500);
       const r = mode === 'lapor' && myRow();
@@ -594,17 +747,19 @@
     if (mode === 'ceklok' && !data.ceklok) mode = 'lapor';
     if (mode === 'lapor' && hanyaCeklok(data)) mode = 'ceklok';
     if (mode === 'pembinaan' && !bisaPembinaan(data)) mode = 'rekapInt';
-    if (data.pengawas && mode !== 'pembinaan') mode = 'rekapInt';
+    if (mode === 'pantauan' && !bisaPantauan(data)) mode = data.pengawas || data.role === 'admin' ? 'rekapInt' : 'lapor';
+    if (data.pengawas && mode !== 'pembinaan' && mode !== 'pantauan') mode = 'rekapInt';
     if ($('btnModeLapor')) $('btnModeLapor').hidden = hanyaCeklok(data) || !!data.pengawas;
     $('btnModeNilai').hidden = !!data.pengawas;
     const admin = data.role === 'admin';
     $('btnModeRekapInt').hidden = !(data.pengawas || admin);
     $('btnModePembinaan').hidden = !bisaPembinaan(data);
+    $('btnModePantauan').hidden = !bisaPantauan(data);
     $('btnModeRekap').hidden = !admin;
     $('btnModeAdminMasuk').hidden = !(data.bisaAdmin && !admin);
     if (!admin && mode === 'rekap') mode = 'lapor';
     if (admin && mode === 'adminMasuk') mode = 'rekap';
-    $('app').classList.toggle('lebar', admin && (mode === 'rekap' || mode === 'rekapInt' || mode === 'pembinaan'));
+    $('app').classList.toggle('lebar', admin && (mode === 'rekap' || mode === 'rekapInt' || mode === 'pembinaan' || mode === 'pantauan'));
     [...$('mode').children].forEach((b) => b.classList.toggle('on', b.dataset.m === mode));
     $('btnModeCeklok').hidden = !data.ceklok;
     $('laporView').hidden = mode !== 'lapor';
@@ -613,6 +768,7 @@
     $('nilaiView').hidden = mode !== 'nilai';
     $('rekapIntView').hidden = mode !== 'rekapInt';
     $('pembinaanView').hidden = mode !== 'pembinaan';
+    $('pantauanView').hidden = mode !== 'pantauan';
     $('adminMasukView').hidden = mode !== 'adminMasuk';
     if (mode === 'adminMasuk') {
       $('saveBar').hidden = true;
@@ -625,6 +781,10 @@
     if (mode === 'pembinaan') {
       $('saveBar').hidden = true;
       return renderPembinaan();
+    }
+    if (mode === 'pantauan') {
+      $('saveBar').hidden = true;
+      return renderPantauan();
     }
     if (mode === 'nilai') {
       $('saveBar').hidden = true;
@@ -1959,6 +2119,14 @@
       window.scrollTo(0, 0);
       return ulang || pembPerluMuat() ? muatPembinaan() : undefined;
     }
+    // Pantauan: data tersimpan langsung tampil, diperbarui dari server bila lebih dari 2 menit (atau tab diketuk lagi)
+    if (b.dataset.m === 'pantauan' && data) {
+      const ulang = mode === 'pantauan';
+      mode = 'pantauan';
+      render();
+      window.scrollTo(0, 0);
+      return ulang || pantPerluMuat() ? muatPantauan() : undefined;
+    }
     // Nilai Saya: tidak memakai GPS / kamera; nilai tersimpan langsung tampil, server hanya bila perlu
     if (b.dataset.m === 'nilai' && data) {
       const ulang = mode === 'nilai';
@@ -1993,10 +2161,12 @@
     store('cw_nilai_d', '');
     store('cw_rekap_d', '');
     store('cw_pembinaan_d', '');
+    store('cw_pantauan_d', '');
     data = null;
     nilai = null; nilaiAt = 0;
     rekap = null; rekapAt = 0;
     pemb = null; pembAt = 0;
+    pant = null; pantAt = 0;
     draft = newDraft();
     Object.assign(ck, { tidak: false, alasan: '', note: '', keluar: false, jenis: '' });
     ulangCW = false; ulangCk = false;
@@ -2122,6 +2292,7 @@
     bacaCacheNilai();
     bacaCacheRekap();
     bacaCachePembinaan();
+    bacaCachePantauan();
     // laporan tertunda dari hari lain tidak bisa dikirim lagi (server menolak): buang agar memori HP tidak penuh foto
     const antreLama = bacaAntre();
     if (antreLama.some((x) => x.tgl !== tglLokal())) tulisAntre(antreLama.filter((x) => x.tgl === tglLokal()));

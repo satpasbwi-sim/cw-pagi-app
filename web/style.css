@@ -328,6 +328,9 @@ h2.t { margin: 0 0 4px; font-size: 1.05rem; }
 .rk-skor.sb { color: #1f9d55; } .rk-skor.b { color: #5aa832; } .rk-skor.c { color: #d49a12; } .rk-skor.k { color: #dc3545; }
 .pb-s { font-weight: 800; } .pb-s.sb { color: #1f9d55; } .pb-s.b { color: #5aa832; } .pb-s.c { color: #d49a12; } .pb-s.k { color: #dc3545; }
 .pb-panah { color: #dc3545; font-weight: 700; }
+.pt-judul { margin: 16px 0 6px; font-size: .9rem; }
+.pt-row { cursor: default; padding: 8px 12px; margin: 6px 0; }
+.pt-row .badge { flex: 0 0 auto; white-space: nowrap; }
 .rk-isi { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 4px; }
 /* pratinjau disembunyikan sampai ukuran kamera stabil (lihat bukaKamera di app.js) */
 .kamera video { opacity: 0; transition: opacity .15s; }
