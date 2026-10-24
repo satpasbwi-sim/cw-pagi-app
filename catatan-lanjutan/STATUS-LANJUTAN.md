@@ -26,7 +26,7 @@ Tidak berisi kata sandi atau kode rahasia.
 | Bonus konsistensi | Mingguan/bulanan, ≥5 hari dinilai & ≥90% hari sempurna → +2 skor (maks 100, tidak bila ⚠️ PALSU). | Server |
 | Pengingat | Banner + notifikasi (bila diizinkan) untuk Lapor Datang/Selesai & Ceklok Masuk/Pulang; hanya saat aplikasi terbuka/di latar belakang. | Aplikasi |
 | Sheet PANDUAN | Ditulis ulang lewat `Panduan.gs` (fungsi `perbaruiPanduan`). | Spreadsheet |
-| Deploy server | **Versi 51** (24 Okt 2026). | Apps Script |
+| Deploy server | **Versi 52** (24 Okt 2026, 14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
 | Aplikasi (GitHub Pages) | Commit `76fba4d`, cache service worker `cw-pagi-v39`. | GitHub |
 
 ## BELUM DIKERJAKAN / BELUM DIUJI
@@ -41,6 +41,9 @@ Tidak berisi kata sandi atau kode rahasia.
 ### Keterbatasan yang diketahui
 - Pengingat tidak bisa memberi notifikasi bila aplikasi ditutup sepenuhnya (butuh server push; tidak ada di Apps Script).
 - LAPORAN HARIAN / REKAP BULANAN (rumus di sheet) tidak diubah: Sabtu/Minggu bisa tampak "belum lapor" (abaikan).
+- Baris ABSENSI pos jaga / Patwal / Laka dipakai bersama: bila anggota resmi dan uji coba lapor di baris yang sama pada hari yang
+  sama, kode H baris itu dipertahankan reset (milik anggota resmi).
+- Reset ±19.00 hari ≥ 26/10 tidak lagi menghapus kode H / N di ABSENSI yang tidak berasal dari laporan aplikasi (isian manual admin).
 - `UJI_COBA` masih `true` untuk semua. Bila seluruh anggota sudah resmi: ubah ke `false` di Code.gs, deploy.
 
 ### Usulan yang belum dipilih (dari diskusi 24 Okt)
