@@ -198,9 +198,9 @@
         const dh = n.detail || {};
         const jamHari = nilaiJenis === 'harian' && (dh.cw || dh.masuk) ? '<h3>Hari itu</h3><div class="chips-hari">' +
           [['CW Pagi', dh.cw], ['Ceklok masuk', dh.masuk], ['Ceklok pulang', dh.pulang]].filter((x) => x[1])
-            .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(x[1][0]) + '</span>').join('') + '</div>' : '';
+            .map((x) => '<span class="lv ' + esc(x[1][1]) + '"><small>' + x[0] + '</small>' + esc(tanpaNilai(x[1][0])) + '</span>').join('') + '</div>' : '';
         const catatan = n.catatan.length
-          ? '<h3>Perlu diperhatikan</h3><ul class="cat-nilai">' + n.catatan.map((c) => '<li>' + esc(c) + '</li>').join('') + '</ul>'
+          ? '<h3>Perlu diperhatikan</h3><ul class="cat-nilai">' + n.catatan.map((c) => '<li>' + esc(tanpaNilai(c)) + '</li>').join('') + '</ul>'
           : '<p class="sub ok-nilai">✓ Tidak ada catatan. Pertahankan!</p>';
         isi = '<div class="skor-box"><div class="ring ' + w + '" style="--p:' + Math.max(0, Math.min(100, n.skor)) + '"><b>' +
           String(n.skor).replace('.', ',') + '</b><small>dari 100</small></div><div class="skor-ket">' +
@@ -267,9 +267,15 @@
     // tidak menggambar ulang saat pengawas sedang mengetik di kotak cari nama
     if (mode === 'rekapInt' && !sedangMengetik()) renderRekapInt();
   }
-  // Rekap Integritas tidak menampilkan angka aturan nilai: "(nilai 90)", "(−10)", "(−25 per kali)" dan sejenisnya
+  // Nilai Saya dan Rekap Integritas tidak pernah menampilkan angka aturan nilai: "(nilai 90)", "(−10)", "(−25 per kali)",
+  // "(bonus +2 skor, maks 100)" dan sejenisnya. Bagian dalam kurung yang berupa angka aturan dibuang; keterangan lain
+  // (mis. "total 3 j 40 m") tetap ditampilkan.
+  const ANGKA_ATURAN = /nilai\s*\d|bonus|skor|maks\s*\d|^[−+-]\s*\d|per\s+(kali|menit|hari)/i;
   function tanpaNilai(t) {
-    return String(t == null ? '' : t).replace(/\s*\(\s*(nilai\s+\d+(?:[.,]\d+)?|[−-]\s*\d+(?:[.,]\d+)?(?:\s+per\s+\w+)?)\s*\)/gi, '');
+    return String(t == null ? '' : t).replace(/\s*\(([^()]*)\)/g, (m, isi) => {
+      const sisa = isi.split(/\s*,\s*/).filter((p) => p.trim() && !ANGKA_ATURAN.test(p.trim()));
+      return sisa.length ? ' (' + sisa.join(', ') + ')' : '';
+    }).replace(/\s{2,}/g, ' ').trim();
   }
   function rekapListHtml(baris) {
     const cari = rekapCari.trim().toLowerCase();
