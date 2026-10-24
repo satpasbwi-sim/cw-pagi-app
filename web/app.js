@@ -1393,7 +1393,7 @@
       if (out.jam === undefined) throw new Error('Code.gs belum diperbarui untuk fitur Lapor');
       kosongkanDraft();
       if (tahap === 'datang' || tahap === 'tidak') ulangCW = false;
-      toast(out.diperiksa ? 'Laporan tercatat pukul ' + out.jam + ', menunggu verifikasi admin'
+      toast(out.diperiksa ? 'Laporan tercatat pukul ' + out.jam + ', menunggu verifikasi sistem'
         : tahap === 'datang' ? '✓ Lapor Datang tercatat pukul ' + out.jam
         : tahap === 'selesai' ? '✓ Lapor Selesai pukul ' + out.jam + ' — kehadiran dihitung'
         : tahap === 'tinggal' ? '✓ Tercatat meninggalkan lokasi pukul ' + out.jam + ' — kehadiran tetap dihitung'
