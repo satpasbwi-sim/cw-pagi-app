@@ -307,7 +307,7 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas dan ambil langsung di lokasi (bukan memotret layar HP / foto lain). Foto Lapor Selesai
     (arus lalu lintas) hanya diingatkan soal lokasi.
   - Kolom **N "CEK FOTO (atasan)"** di LOG LAPOR dan LOG CEKLOK diisi atasan dengan buka tautan FOTO:
-    `SESUAI` (tidak dipotong) · `TIDAK SESUAI` −10 · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
+    `SESUAI` (tidak dipotong) · `TIDAK SESUAI` −30 · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
     (`CEK_FOTO` di Kode.gs). Kosong = tidak dipotong. Tidak perlu memeriksa semua foto; cukup acak / yang mencurigakan.
   - Warna di LOG LAPOR (menu 🎨 Rapikan Tampilan Sheet, `WARNA_VERIFIKASI` / `WARNA_CEK_FOTO` di TataSheet.gs; arti warna juga
     tertulis di catatan sel judul kolom): VERIFIKASI 🟩 ASLI · 🟥 PALSU. CEK FOTO 🟩 SESUAI · 🟧 TIDAK SESUAI · 🟨 WAJAH TIDAK JELAS ·

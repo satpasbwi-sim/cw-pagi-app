@@ -26,7 +26,7 @@ Tidak berisi kata sandi atau kode rahasia.
 | Bonus konsistensi | Mingguan/bulanan, ≥5 hari dinilai & ≥90% hari sempurna → +2 skor (maks 100, tidak bila ⚠️ PALSU). | Server |
 | Pengingat | Banner + notifikasi (bila diizinkan) untuk Lapor Datang/Selesai & Ceklok Masuk/Pulang; hanya saat aplikasi terbuka/di latar belakang. | Aplikasi |
 | Sheet PANDUAN | Ditulis ulang lewat `Panduan.gs` (fungsi `perbaruiPanduan`). | Spreadsheet |
-| Deploy server | **Versi 52** (24 Okt 2026, 14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
+| Deploy server | **Versi 53** (24 Okt 2026, 14.49; CEK FOTO TIDAK SESUAI −30). Versi 52 (14.10): perbaikan baris ABSENSI tanpa NRP ("Pos 12.04 …", "Patwal R4", "3 Pers Laka") tetap diperlakukan uji coba, dan INTEGRITAS HARIAN menulis "Uji coba – data sudah direset" untuk anggota uji coba. | Apps Script |
 | Aplikasi (GitHub Pages) | Commit `76fba4d`, cache service worker `cw-pagi-v39`. | GitHub |
 
 ## BELUM DIKERJAKAN / BELUM DIUJI
@@ -45,6 +45,11 @@ Tidak berisi kata sandi atau kode rahasia.
   sama, kode H baris itu dipertahankan reset (milik anggota resmi).
 - Reset ±19.00 hari ≥ 26/10 tidak lagi menghapus kode H / N di ABSENSI yang tidak berasal dari laporan aplikasi (isian manual admin).
 - `UJI_COBA` masih `true` untuk semua. Bila seluruh anggota sudah resmi: ubah ke `false` di Code.gs, deploy.
+
+### Keputusan PERSETUJUAN (24 Okt)
+- Dipilih: **atasan memeriksa sheet PERSETUJUAN setiap hari sebelum pukul 15.00** (manual, tanpa keputusan otomatis).
+- Belum dipilih / bisa ditambah nanti: pengajuan yang tidak diputuskan dalam 1×24 jam otomatis **SETUJU (otomatis)** dan ditandai di
+  🩺 Cek & Perbaiki + rekap pimpinan (saran), atau otomatis SETUJU dengan nilai lebih rendah, atau otomatis TOLAK.
 
 ### Usulan yang belum dipilih (dari diskusi 24 Okt)
 - A2 Bonus inisiatif lapangan (tugas mendadak disetujui / lembur beralasan).
