@@ -870,6 +870,12 @@
         '<p class="sub">Spreadsheet yang terhubung bukan untuk bulan berjalan. Hubungi admin.</p></section>';
       return;
     }
+    if (data.cwLibur) {
+      v.innerHTML = '<section class="card"><h2 class="t">Hari ini libur CW Pagi</h2>' +
+        '<p class="sub">CW Pagi hanya Senin–Jumat, jadi Sabtu dan Minggu tidak perlu lapor dan tidak dinilai.' +
+        (data.ceklok ? ' Absen dinas kantor tetap lewat tab <b>Ceklok Satpas</b>.' : '') + '</p></section>';
+      return;
+    }
     const r = myRow();
     if (!r) {
       v.innerHTML = '<section class="card"><h2 class="t">Nama Anda tidak ada di plotting bulan ini</h2>' +

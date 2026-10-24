@@ -307,8 +307,12 @@ kapan saja lewat menu **🖨️ REKAP CETAK → Integritas – Hitung sekarang**
   - Saat mengambil foto, aplikasi menampilkan daftar cek: wajah terlihat jelas dan ambil langsung di lokasi (bukan memotret layar HP / foto lain). Foto Lapor Selesai
     (arus lalu lintas) hanya diingatkan soal lokasi.
   - Kolom **N "CEK FOTO (atasan)"** di LOG LAPOR dan LOG CEKLOK diisi atasan dengan buka tautan FOTO:
-    `SESUAI` (tidak dipotong) · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
+    `SESUAI` (tidak dipotong) · `TIDAK SESUAI` −10 · `WAJAH TIDAK JELAS` −10 · `SERAGAM TIDAK SESUAI` −10 · `FOTO LAYAR / FOTO LAMA` −25
     (`CEK_FOTO` di Kode.gs). Kosong = tidak dipotong. Tidak perlu memeriksa semua foto; cukup acak / yang mencurigakan.
+  - Warna di LOG LAPOR (menu 🎨 Rapikan Tampilan Sheet, `WARNA_VERIFIKASI` / `WARNA_CEK_FOTO` di TataSheet.gs; arti warna juga
+    tertulis di catatan sel judul kolom): VERIFIKASI 🟩 ASLI · 🟥 PALSU. CEK FOTO 🟩 SESUAI · 🟧 TIDAK SESUAI · 🟨 WAJAH TIDAK JELAS ·
+    🟪 SERAGAM TIDAK SESUAI · 🟥 FOTO LAYAR / FOTO LAMA. Kosong = tanpa warna. Menu yang sama juga merapikan LOG CEKLOK di
+    spreadsheet Absensi Satpas (judul, filter, warna VERIFIKASI / CEK FOTO) dan mengurutkan + mewarnai tab di sana.
   - Potongan masuk unsur Kejujuran lokasi & foto, jenis dan jumlahnya ditulis di CATATAN.
   - Foto Lapor CW **dan foto Ceklok Satpas** dipindah ke Sampah otomatis setelah 3 hari (`FOTO_SIMPAN_HARI`,
     `hapusFotoLama` ±08.00), jadi periksa dalam 3 hari. Foto laporan / ceklok bertanda ⚠️ dan yang dinilai selain
@@ -492,6 +496,25 @@ Pasang sekali: tempel sebagai file baru di Apps Script → jalankan fungsi `pasa
 - Yang tercetak: judul, ringkasan, tabel, dan legenda kode (tanpa kop surat, garis kop, dan tanda tangan). Kepala tabel diulang di tiap halaman.
 - Rekap CW memakai sheet ABSENSI, jadi hanya bulan di PENGATURAN; minggu yang melewati pergantian bulan tampil abu-abu di tanggal bulan lain.
 - Rekap Ceklok tidak menghitung hari sebelum `TGL_MULAI_INTEGRITAS`.
+
+## Mode resmi bertahap per NRP (ModeResmi.gs)
+
+Uji coba semua orang berakhir **25/10/2026**. Mulai `TGL_RESMI` (**26/10/2026**) hanya NRP / kode di `NRP_RESMI`
+(NRP Polri dan nomor urut / kode akses di Data Absensi Satpas'26) memakai aturan resmi: jam lapor, GPS & radius, dan foto
+wajib; tanpa ulang putaran; **datanya tidak direset** dan dinilai mulai 26/10. Anggota lain tetap uji coba (direset ±19.00,
+nilai dimulai sesudah reset). Data NRP resmi sebelum 26/10 dihapus oleh reset seperti biasa.
+- `ujiCoba_(nrp)` menggantikan `UJI_COBA` di lapor, ceklok, dan `bebasWaktu` untuk aplikasi; `tglMulaiNilai_(nrp)` per orang.
+- Menambah / mengurangi orang: ubah `NRP_RESMI` di ModeResmi.gs, simpan, deploy versi baru.
+- Pasang: tambahkan file **ModeResmi.gs** di proyek Apps Script CW Pagi, perbarui Code.gs, PenilaianCw.gs,
+  IntegritasHarian.gs, ResetUjiCoba.gs, lalu deploy versi baru **sebelum 26/10**.
+
+## CW Pagi hanya Senin–Jumat (mulai 26/10/2026)
+
+`TGL_CW_SENIN_JUMAT` dan `cwLibur_(tgl)` di ModeResmi.gs. Mulai 26 Oktober 2026 **Sabtu dan Minggu tidak ada Lapor CW**
+(server menolak; tab Lapor CW menampilkan "Hari ini libur CW Pagi") dan **tidak dinilai**: hari itu dilewati di kehadiran
+PENILAIAN INTEGRITAS / PENILAIAN CW, tampil "Libur CW" di INTEGRITAS HARIAN, dan kosong (abu-abu) di rekap cetak CW.
+Berlaku untuk semua anggota, resmi maupun uji coba. **Ceklok Satpas tetap Senin–Sabtu** dan tetap dinilai. LAPORAN HARIAN /
+REKAP BULANAN (rumus di sheet) tidak diubah, jadi Sabtu bisa tampak "belum lapor" di sana dan diabaikan.
 
 ## Reset data uji coba (setiap hari ±19.00 WIB)
 
