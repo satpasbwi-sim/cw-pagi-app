@@ -1755,30 +1755,41 @@
     }
     return null;
   }
-  function notifPengingat(p) {
+  // Tombol Aktifkan langsung menyalakan pengingat di aplikasi (tanpa jendela izin browser): getar + bunyi singkat saat
+  // pengingat baru muncul. Notifikasi HP di luar aplikasi hanya bila izin notifikasi situs sudah diberikan di browser.
+  function pingAktif() { try { return localStorage.getItem('cw_ping_aktif') === '1'; } catch (e) { return false; } }
+  let audioPing = null;
+  function bunyiPing() {
+    try {
+      audioPing = audioPing || new (window.AudioContext || window.webkitAudioContext)();
+      if (audioPing.state === 'suspended') audioPing.resume();
+      [0, 0.35].forEach((t) => {
+        const o = audioPing.createOscillator(), g = audioPing.createGain();
+        o.frequency.value = 880; g.gain.value = 0.2;
+        o.connect(g); g.connect(audioPing.destination);
+        o.start(audioPing.currentTime + t); o.stop(audioPing.currentTime + t + 0.2);
+      });
+    } catch (e) { /* abaikan */ }
+  }
+  function aktifkanPing() {
+    try { localStorage.setItem('cw_ping_aktif', '1'); } catch (x) { /* abaikan */ }
+    bunyiPing();   // ketukan ini sekaligus membuka izin bunyi di halaman
+    if (navigator.vibrate) navigator.vibrate(150);
+    toast('🔔 Pengingat aktif');
+    cekPengingat();
+  }
+  function peringatkan(p) {
+    try {
+      const kunci = 'cw_ping_' + p.kunci + '_' + new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem(kunci)) return;
+      localStorage.setItem(kunci, '1');
+    } catch (e) { return; }
+    if (pingAktif()) { if (navigator.vibrate) navigator.vibrate([300, 150, 300]); bunyiPing(); }
     if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    let kunci;
-    try { kunci = 'cw_ping_' + p.kunci + '_' + new Date().toISOString().slice(0, 10); if (localStorage.getItem(kunci)) return; localStorage.setItem(kunci, '1'); } catch (e) { return; }
     const opsi = { body: p.teks, icon: 'icon-192.png', tag: 'cw-' + p.kunci, vibrate: [200, 100, 200] };
     if (navigator.serviceWorker && navigator.serviceWorker.ready) {
       navigator.serviceWorker.ready.then((reg) => reg.showNotification(p.judul, opsi)).catch(() => { try { new Notification(p.judul, opsi); } catch (e) { /* abaikan */ } });
     } else { try { new Notification(p.judul, opsi); } catch (e) { /* abaikan */ } }
-  }
-  // Tawaran izin hanya sekali: setelah diketuk, apa pun hasilnya (diizinkan, ditolak, atau jendela izin tidak muncul /
-  // ditutup sehingga tetap "default"), kotak tawaran tidak tampil lagi. Izin bisa diubah lewat pengaturan situs di browser.
-  function mintaIzinNotif() {
-    try { localStorage.setItem('cw_ping_tolak', '1'); } catch (x) { /* abaikan */ }
-    let sudah = false;
-    const selesai = (hasil) => {
-      if (sudah) return;
-      sudah = true;
-      toast(hasil === 'granted' ? '🔔 Pengingat aktif' : 'Izin notifikasi belum diberikan. Bisa diaktifkan lewat pengaturan situs di browser.');
-      cekPengingat();
-    };
-    try {
-      const p = Notification.requestPermission(selesai);   // browser lama memakai callback, yang baru Promise
-      if (p && p.then) p.then(selesai, () => selesai('default'));
-    } catch (e) { selesai('default'); }
   }
   function cekPengingat() {
     let el = $('pengingat');
@@ -1790,10 +1801,10 @@
       el.addEventListener('click', (e) => {
         const b = e.target.closest('[data-ping]');
         if (!b) return;
-        if (b.dataset.ping === 'izin') {
-          mintaIzinNotif();
+        if (b.dataset.ping === 'aktif') {
+          aktifkanPing();
         } else if (b.dataset.ping === 'tutup') {
-          try { localStorage.setItem('cw_ping_tolak', '1'); } catch (x) { /* abaikan */ }
+          try { localStorage.setItem('cw_ping_nanti', '1'); } catch (x) { /* abaikan */ }
           cekPengingat();
         } else {
           const tab = document.querySelector('#mode button[data-m="' + b.dataset.ping + '"]');
@@ -1802,18 +1813,17 @@
       });
     }
     const p = butuhPengingat();
-    const bisaNotif = 'Notification' in window && Notification.permission === 'default';
     let tolak = false;
-    try { tolak = !!localStorage.getItem('cw_ping_tolak'); } catch (e) { /* abaikan */ }
+    try { tolak = !!localStorage.getItem('cw_ping_nanti'); } catch (e) { /* abaikan */ }
     if (p) {
-      notifPengingat(p);
+      peringatkan(p);
       el.innerHTML = '<div class="step"><div class="gps far"><b>⏰ ' + esc(p.judul) + '</b>' + esc(p.teks) +
         '<div style="margin-top:8px"><button class="btn" data-ping="' + p.mode + '">' + (p.mode === 'ceklok' ? 'Buka Ceklok Satpas' : 'Buka Lapor CW') + '</button>' +
-        (bisaNotif && !tolak ? ' <button class="btn" data-ping="izin">🔔 Izinkan notifikasi</button>' : '') + '</div></div></div>';
+        (!pingAktif() ? ' <button class="btn" data-ping="aktif">🔔 Aktifkan pengingat</button>' : '') + '</div></div></div>';
       el.hidden = false;
-    } else if (bisaNotif && !tolak && !$('app').hidden && data && data.role !== 'pengawas') {
-      el.innerHTML = '<div class="step"><div class="gps"><b>🔔 Aktifkan pengingat</b>Terima notifikasi bila Lapor / Ceklok belum dilakukan. ' +
-        '<div style="margin-top:8px"><button class="btn" data-ping="izin">Aktifkan</button> <button class="btn" data-ping="tutup">Nanti</button></div></div></div>';
+    } else if (!pingAktif() && !tolak && !$('app').hidden && data && data.role !== 'pengawas') {
+      el.innerHTML = '<div class="step"><div class="gps"><b>🔔 Aktifkan pengingat</b>HP bergetar dan berbunyi bila Lapor / Ceklok belum dilakukan. ' +
+        '<div style="margin-top:8px"><button class="btn" data-ping="aktif">Aktifkan</button> <button class="btn" data-ping="tutup">Nanti</button></div></div></div>';
       el.hidden = false;
     } else el.hidden = true;
   }
